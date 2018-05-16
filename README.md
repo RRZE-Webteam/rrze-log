@@ -10,7 +10,7 @@ Die Protokollierung erfolgt über die WP-Funktion do_action().
 
 Einstellungsmenü (Multisite):
 
-``
+```
 Netzwerkverwaltung / Einstellungen / Protokoll
 ```
 
