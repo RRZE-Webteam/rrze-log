@@ -41,7 +41,7 @@ try {
 }
 ```
 
-Protokollierungs-Hooks (in absteigender Reihenfolge des Schweregrades)
+Protokollierungs-Hooks (in absteigender Reihenfolge des Schweregrades):
 
 ```
 'rrze.log.error'
