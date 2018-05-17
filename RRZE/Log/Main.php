@@ -40,6 +40,7 @@ class Main {
             add_filter('network_admin_plugin_action_links_' . $this->plugin_basename, [$this, 'network_admin_plugin_action_link']);            
         } else {
             add_action('admin_menu', [$this->settings, 'admin_settings_menu']);
+            add_action('admin_init', [$this->settings, 'admin_settings_sections']);
             add_filter('plugin_action_links_' . $this->plugin_basename, [$this, 'plugin_action_link']);
         }
     }
