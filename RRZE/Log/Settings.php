@@ -46,27 +46,23 @@ class Settings {
     
     public function admin_settings_sections() {
         register_setting('rrzelog_options', $this->option_name, [$this, 'options_validate']);
-        add_settings_section('rrzelog_section', FALSE, '__return_false', 'rrzelog');
-        add_settings_field('rrzelog-enable', __('Enable Log', 'rrze-log'), [$this, 'enabled_field'], 'rrzelog', 'rrzelog_section');
-        add_settings_field('rrzelog-threshold', __('Error Level', 'rrze-log'), [$this, 'threshold_field'], 'rrzelog', 'rrzelog_section');
+        add_settings_section('rrzelog_section', FALSE, '__return_false', 'rrzelog_options');
+        add_settings_field('rrzelog-enable', __('Enable Log', 'rrze-log'), [$this, 'enabled_field'], 'rrzelog_options', 'rrzelog_section');
+        add_settings_field('rrzelog-threshold', __('Error Level', 'rrze-log'), [$this, 'threshold_field'], 'rrzelog_options', 'rrzelog_section');
     }
 
     public function options_validate($input) {
         $input['enabled'] = !empty($input['enabled']) ? 1 : 0;
-        $threshold = isset($input['threshold']) ? (array) $input['threshold'] : [];
-        
-        $this->options->threshold = 0;
+        $input_threshold = !empty($input['threshold']) ? (array) $input['threshold'] : [];
 
+        $this->options->threshold = 0;
+        
         $levels = $this->log->get_error_levels();
 
         foreach ($levels as $level => $bitmask) {
-            if (isset($threshold[$level])) {
+            if (isset($input_threshold[$level])) {
                 $this->set_threshold($bitmask);
             }
-        }
-
-        if (!$this->options->threshold) {
-            $this->set_threshold(1);
         }
         
         $input['threshold'] = $this->options->threshold;
@@ -104,22 +100,17 @@ class Settings {
         if (isset($_POST['_wpnonce']) &&  wp_verify_nonce($_POST['_wpnonce'], 'rrzelog_network-options') && current_user_can('manage_network_options')) {
             
             if (isset($_POST['rrzelog-site-submit'])) {
-                $enabled = isset($_POST[$this->option_name]['enabled']) ? $_POST[$this->option_name]['enabled'] : 0;
-                $threshold = isset($_POST[$this->option_name]['threshold']) ? (array) $_POST[$this->option_name]['threshold'] : [];
+                $this->options->enabled = !empty($_POST[$this->option_name]['enabled']) ? 1 : 0;
+                $input_threshold = !empty($_POST[$this->option_name]['threshold']) ? (array) $_POST[$this->option_name]['threshold'] : [];
                 
-                $this->options->enabled = $enabled ? 1 : 0;
                 $this->options->threshold = 0;
                 
                 $levels = $this->log->get_error_levels();
                 
                 foreach ($levels as $level => $bitmask) {
-                    if (isset($threshold[$level])) {
+                    if (isset($input_threshold[$level])) {
                         $this->set_threshold($bitmask);
                     }
-                }
-                
-                if (!$this->options->threshold) {
-                    $this->set_threshold(1);
                 }
                 
                 update_site_option($this->option_name, $this->options);
