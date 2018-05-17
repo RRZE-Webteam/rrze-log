@@ -32,7 +32,7 @@ msgstr "Protokoll"
 
 #: ../RRZE/Log/Settings.php:35
 msgid "Log Settings"
-msgstr "Settings &rsaquo; Protokoll"
+msgstr "Einstellungen &rsaquo; Protokoll"
 
 #: ../RRZE/Log/Settings.php:50 ../RRZE/Log/Settings.php:162
 msgid "Enable Log"
