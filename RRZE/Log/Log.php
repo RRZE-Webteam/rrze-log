@@ -28,7 +28,11 @@ class Log {
        
         isset($this->func_overload) || $this->func_overload = (extension_loaded('mbstring') && ini_get('mbstring.func_overload'));
 
-        $this->log_path = RRZELOG_DIR . DIRECTORY_SEPARATOR . get_current_blog_id() . DIRECTORY_SEPARATOR;
+        if (is_multisite()) {
+            $this->log_path = RRZELOG_DIR . DIRECTORY_SEPARATOR . get_current_blog_id() . DIRECTORY_SEPARATOR;
+        } else {
+            $this->log_path = RRZELOG_DIR . DIRECTORY_SEPARATOR;
+        }
 
         $this->threshold = absint($this->options->threshold);
     }
