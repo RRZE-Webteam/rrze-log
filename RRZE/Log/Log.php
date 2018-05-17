@@ -30,12 +30,6 @@ class Log {
 
         $this->log_path = RRZELOG_DIR . DIRECTORY_SEPARATOR . get_current_blog_id() . DIRECTORY_SEPARATOR;
 
-        file_exists($this->log_path) || wp_mkdir_p($this->log_path);
-
-        if (!is_dir($this->log_path) || !$this->is_writable($this->log_path)) {
-            $this->enabled = FALSE;
-        }
-
         $this->threshold = absint($this->options->threshold);
     }
 
@@ -60,7 +54,7 @@ class Log {
     }
     
     protected function write($level, $context) {
-        if ($this->enabled === FALSE) {
+        if (!$this->is_log_path_writable()) {
             return FALSE;
         }
 
@@ -102,6 +96,16 @@ class Log {
         return is_int($result);
     }
 
+    protected function is_log_path_writable() {
+        file_exists($this->log_path) || wp_mkdir_p($this->log_path);
+
+        if (!is_dir($this->log_path) || !$this->is_writable($this->log_path)) {
+            return FALSE;
+        }
+        
+        return TRUE;
+    }
+    
     protected function is_writable($file) {
         if (DIRECTORY_SEPARATOR === '/' && !ini_get('safe_mode')) {
             return is_writable($file);
