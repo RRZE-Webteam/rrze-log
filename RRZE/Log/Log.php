@@ -130,9 +130,12 @@ class Log {
     }
 
     protected function format($level, $date, $context) {
-        $line[] = sprintf('[%1$s UTC] %2$s', $date, $level);
+        $line[] = sprintf('[%1$s UTC] [%2$s]', $date, $level);
         foreach($context as $key => $value) {
-            $line[] = sprintf('%1$s %2$s', $key, $value);
+            if(!is_serialized($value)) {
+                $value = maybe_serialize($value);
+            }
+            $line[] = sprintf('[%1$s %2$s]', $key, $value);
         }
         return implode(' ', $line) . PHP_EOL;
     }
