@@ -8,17 +8,19 @@ Ermöglicht die Protokollierung von Plugins und Themes.
 
 Die Protokollierung erfolgt über die WP-Funktion do_action().
 
-Einstellungsmenü (Multisite):
+### Einstellungsmenü (Multisite)
 
 ```
 Netzwerkverwaltung / Einstellungen / Protokoll
 ```
 
-Einstellungsmenü (Single Site):
+### Einstellungsmenü (Single Site)
 
 ```
 Dashboard / Einstellungen / Protokoll
 ```
+
+### Beispiele
 
 Ein Beispiel für die Protokollierung mit RRZE Log könnte so aussehen:
 
@@ -41,7 +43,7 @@ try {
 }
 ```
 
-Protokollierungs-Hooks (in absteigender Reihenfolge des Schweregrades):
+### Vorhandene Protokollierungs-Hooks
 
 ```
 'rrze.log.error'
@@ -51,7 +53,7 @@ Protokollierungs-Hooks (in absteigender Reihenfolge des Schweregrades):
 'rrze.log.debug'
 ```
 
-Anmerkungen:
+### Anmerkungen
 
 - Die Protokolldateien werden im Verzeichnis WP_CONTENT / log / rrzelog abgelegt
 - Die Protokollierung mittels rrze.log.error, rrze.log.warning und rrze.log.notice werden in derselben Datei gespeichert (error.{YY-MM-DD}.log)
