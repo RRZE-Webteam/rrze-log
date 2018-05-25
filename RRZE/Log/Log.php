@@ -58,21 +58,23 @@ class Log {
     }
     
     public function write_debug($content = []) {
-        $this->write('DEBUG', $content);
+        if (defined('WP_DEBUG') && WP_DEBUG) {        
+            $this->write('DEBUG', $content);
+        }
     }
     
     protected function write($level, $content) {
         if (!$this->is_log_path_writable()) {
             return FALSE;
         }
-
-        $level = strtoupper($level);
         
         if (!isset($this->levels[$level]) || !$this->get_threshold($this->levels[$level])) {
             return FALSE;
         }
-
-        $filepath = sprintf('%1$s%2$s.%3$s.log', $this->log_path, strtolower($level), date('Y-m-d', current_time('timestamp', 1)));
+        
+        $prefix = in_array($level, ['ERROR', 'WARNING', 'NOTICE']) ? 'error' : strtolower($level);
+        $timestamp = current_time('timestamp', 1);
+        $filepath = sprintf('%1$s%2$s.%3$s.log', $this->log_path, $prefix, date('Y-m-d', $timestamp));
         $line = '';
 
         if (!file_exists($filepath)) {
@@ -85,7 +87,7 @@ class Log {
 
         flock($fp, LOCK_EX);
 
-        $line .= $this->format($content);
+        $line .= $this->format($timestamp, $level, $content);
 
         for ($written = 0, $length = $this->strlen($line); $written < $length; $written += $result) {
             if (($result = fwrite($fp, $this->substr($line, $written))) === FALSE) {
@@ -128,7 +130,7 @@ class Log {
             @chmod($file, 0777);
             @unlink($file);
             return TRUE;
-        } elseif (!is_file($file) OR ( $fp = @fopen($file, 'ab')) === FALSE) {
+        } elseif (!is_file($file) || ($fp = @fopen($file, 'ab')) === FALSE) {
             return FALSE;
         }
 
@@ -136,9 +138,12 @@ class Log {
         return TRUE;
     }
 
-    protected function format($content) {
-        $date = sprintf('%s UTC', date('Y-m-d H:i:s', current_time('timestamp', 1)));
-        $line = json_encode(['date' => $date, 'blog_id' => $this->current_blog_id, 'content' => $content]) . PHP_EOL;
+    protected function format($timestamp, $level, $content) {
+        $date = sprintf('%s UTC', date('Y-m-d H:i:s', $timestamp));
+        $line = json_encode(['date' => $date, 'blog_id' => $this->current_blog_id, 'level' => $level, 'content' => $content]) . PHP_EOL;
+        if ($level == 'DEBUG') {
+            $line .= print_r($content, true) . PHP_EOL;
+        }
         return $line;
     }
 
