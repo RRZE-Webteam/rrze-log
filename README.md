@@ -8,16 +8,6 @@ Ermöglicht die Protokollierung von Plugins und Themes.
 
 Die Protokollierung erfolgt über die WP-Funktion do_action().
 
-### Vorhandene Protokollierungs-Hooks
-
-```
-'rrze.log.error'
-'rrze.log.warning'
-'rrze.log.notice'
-'rrze.log.info'
-'rrze.log.debug'
-```
-
 ### Einstellungsmenü (Multisite)
 
 ```
@@ -51,6 +41,16 @@ try {
         throw $exception;
     }
 }
+```
+
+### Vorhandene Protokollierungs-Hooks
+
+```
+'rrze.log.error'
+'rrze.log.warning'
+'rrze.log.notice'
+'rrze.log.info'
+'rrze.log.debug'
 ```
 
 ### Anmerkungen
