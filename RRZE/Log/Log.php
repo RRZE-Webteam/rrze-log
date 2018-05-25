@@ -14,6 +14,8 @@ class Log {
     protected $enabled;
     protected $func_overload;
     
+    protected $current_blog_id;
+    
     protected $file_permissions = 0644;    
     protected $levels = ['ERROR' => 1, 'WARNING' => 2, 'NOTICE' => 4, 'INFO' => 8, 'DEBUG' => 16];
 
@@ -25,11 +27,13 @@ class Log {
         if (!$this->enabled) {
             return FALSE;
         }
-       
+        
         isset($this->func_overload) || $this->func_overload = (extension_loaded('mbstring') && ini_get('mbstring.func_overload'));
-
+        
+        $this->current_blog_id = get_current_blog_id();
+        
         if (is_multisite()) {
-            $this->log_path = RRZELOG_DIR . DIRECTORY_SEPARATOR . get_current_blog_id() . DIRECTORY_SEPARATOR;
+            $this->log_path = RRZELOG_DIR . DIRECTORY_SEPARATOR . $this->current_blog_id . DIRECTORY_SEPARATOR;
         } else {
             $this->log_path = RRZELOG_DIR . DIRECTORY_SEPARATOR;
         }
@@ -37,27 +41,27 @@ class Log {
         $this->threshold = absint($this->options->threshold);
     }
 
-    public function write_error($context = []) {
-        $this->write('ERROR', $context);
+    public function write_error($content = []) {
+        $this->write('ERROR', $content);
     }
     
-    public function write_warning($context = []) {
-        $this->write('WARNING', $context);
+    public function write_warning($content = []) {
+        $this->write('WARNING', $content);
     }
 
-    public function write_notice($context = []) {
-        $this->write('NOTICE', $context);
+    public function write_notice($content = []) {
+        $this->write('NOTICE', $content);
     }
 
-    public function write_info($context = []) {
-        $this->write('INFO', $context);
+    public function write_info($content = []) {
+        $this->write('INFO', $content);
     }
     
-    public function write_debug($context = []) {
-        $this->write('DEBUG', $context);
+    public function write_debug($content = []) {
+        $this->write('DEBUG', $content);
     }
     
-    protected function write($level, $context) {
+    protected function write($level, $content) {
         if (!$this->is_log_path_writable()) {
             return FALSE;
         }
@@ -68,8 +72,8 @@ class Log {
             return FALSE;
         }
 
-        $filepath = $this->log_path . date('Y-m-d', current_time('timestamp', 1)) . '.log';
-        $message = '';
+        $filepath = sprintf('%1$s%2$s.%3$s.log', $this->log_path, strtolower($level), date('Y-m-d', current_time('timestamp', 1)));
+        $line = '';
 
         if (!file_exists($filepath)) {
             $newfile = TRUE;
@@ -81,11 +85,10 @@ class Log {
 
         flock($fp, LOCK_EX);
 
-        $date = date('Y-m-d H:i:s', current_time('timestamp', 1));
-        $message .= $this->format($level, $date, $context);
+        $line .= $this->format($content);
 
-        for ($written = 0, $length = $this->strlen($message); $written < $length; $written += $result) {
-            if (($result = fwrite($fp, $this->substr($message, $written))) === FALSE) {
+        for ($written = 0, $length = $this->strlen($line); $written < $length; $written += $result) {
+            if (($result = fwrite($fp, $this->substr($line, $written))) === FALSE) {
                 break;
             }
         }
@@ -133,15 +136,10 @@ class Log {
         return TRUE;
     }
 
-    protected function format($level, $date, $context) {
-        $line[] = sprintf('[%1$s UTC] [%2$s]', $date, $level);
-        foreach($context as $key => $value) {
-            if(!is_serialized($value)) {
-                $value = maybe_serialize($value);
-            }
-            $line[] = sprintf('[%1$s %2$s]', $key, $value);
-        }
-        return implode(' ', $line) . PHP_EOL;
+    protected function format($content) {
+        $date = sprintf('%s UTC', date('Y-m-d H:i:s', current_time('timestamp', 1)));
+        $line = json_encode(['date' => $date, 'blog_id' => $this->current_blog_id, 'content' => $content]) . PHP_EOL;
+        return $line;
     }
 
     protected function strlen($str) {
