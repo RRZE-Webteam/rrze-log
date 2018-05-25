@@ -50,3 +50,5 @@ Protokollierungs-Hooks (in absteigender Reihenfolge des Schweregrades):
 'rrze.log.info'
 'rrze.log.debug'
 ```
+
+Hinweis: Die Protokollierung mittels rrze.log.debug ist nur möglich, wenn die Konstante WP_DEBUG auf true gesetzt ist.
