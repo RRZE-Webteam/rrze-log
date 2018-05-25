@@ -51,4 +51,10 @@ Protokollierungs-Hooks (in absteigender Reihenfolge des Schweregrades):
 'rrze.log.debug'
 ```
 
-Hinweis: Die Protokollierung mittels rrze.log.debug ist nur möglich, wenn die Konstante WP_DEBUG auf true gesetzt ist.
+Anmerkungen
+
+- Die Protokolldateien werden im Verzeichnis WP_CONTENT / log / rrzelog abgelegt
+
+- Die Protokollierung mittels rrze.log.error, rrze.log.warning und rrze.log.notice werden in derselben Datei gespeichert (error.{YY-MM-DD}.log)
+
+- Die Protokollierung mittels rrze.log.debug ist nur möglich, wenn die Konstante WP_DEBUG auf true gesetzt ist
