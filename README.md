@@ -23,13 +23,13 @@ Dashboard / Einstellungen / Protokoll
 
 ### Beispiele
 
-Ein Beispiel für die Protokollierung mit RRZE Log könnte so aussehen:
+Ein Beispiel für die Protokollierung könnte so aussehen:
 
 ```
 do_action('rrze.log.error', ['plugin' =>'cms-basis', 'wp-error' => $wp_error]);
 ```
 
-Ein weiterer häufiger Anwendungsfall ist die Protokollierung einer Exception, die während der Ausführung von Code ausgelöst wird.
+Ein weiterer Anwendungsfall ist die Protokollierung einer Exception, die während der Ausführung von Code ausgelöst wird.
 
 ```
 try {
