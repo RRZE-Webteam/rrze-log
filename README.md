@@ -4,9 +4,10 @@ RRZE Log
 WordPress-Plugin
 ----------------
 
-Ermöglicht die Protokollierung von Plugins und Themes.
+Das Plugin erlaubt es, bestimmte Aktionen der Plugins und Themes in einer Logdatei zu protokollieren, die für weitere Untersuchungen notwendig sind oder sein können.
 
-Die Protokollierung erfolgt über die WP-Funktion do_action().
+- Die Protokollierung erfolgt über die WP-Funktion do_action()
+- Auch zum Debuggen geeignet
 
 ### Einstellungsmenü (Multisite)
 
