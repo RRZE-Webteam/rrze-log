@@ -4,7 +4,7 @@
  * Plugin Name:     Log
  * Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-logs
  * Description:     Log-Funktionen.
- * Version:         1.3.0
+ * Version:         1.4.0
  * Author:          RRZE-Webteam
  * Author URI:      https://blogs.fau.de/webworking/
  * License:         GNU General Public License v2
@@ -28,7 +28,7 @@ define('RRZELOG_DIR', WP_CONTENT_DIR . '/log/rrzelog');
 register_activation_hook(__FILE__, 'RRZE\Log\activation');
 register_deactivation_hook(__FILE__, 'RRZE\Log\deactivation');
 
-add_action('plugins_loaded', 'RRZE\Log\loaded');
+add_action('muplugins_loaded', 'RRZE\Log\loaded', PHP_INT_MAX);
 
 /*
  * Einbindung der Sprachdateien.
