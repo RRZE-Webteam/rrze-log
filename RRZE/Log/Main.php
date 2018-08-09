@@ -8,8 +8,8 @@ use RRZE\Log\Log;
 
 defined('ABSPATH') || exit;
 
-class Main {
-    
+class Main
+{
     protected $plugin_basename;
     
     protected $options;
@@ -18,7 +18,8 @@ class Main {
     
     public $log;
 
-    public function __construct($plugin_basename) {
+    public function __construct($plugin_basename)
+    {
         $this->plugin_basename = $plugin_basename;
         
         $options = new Options();
@@ -37,7 +38,7 @@ class Main {
         if (is_multisite()) {
             add_action('network_admin_menu', [$this->settings, 'network_settings_menu']);
             add_action('admin_init', [$this->settings, 'network_settings_sections']);
-            add_filter('network_admin_plugin_action_links_' . $this->plugin_basename, [$this, 'network_admin_plugin_action_link']);            
+            add_filter('network_admin_plugin_action_links_' . $this->plugin_basename, [$this, 'network_admin_plugin_action_link']);
         } else {
             add_action('admin_menu', [$this->settings, 'admin_settings_menu']);
             add_action('admin_init', [$this->settings, 'admin_settings_sections']);
@@ -45,18 +46,19 @@ class Main {
         }
     }
     
-    public function network_admin_plugin_action_link($links) {
+    public function network_admin_plugin_action_link($links)
+    {
         if (!current_user_can('manage_network_options')) {
             return $links;
         }
-        return array_merge($links, array(sprintf('<a href="%s">%s</a>', add_query_arg(array('page' => 'rrzelog-network'), network_admin_url('settings.php')), __('Settings', 'rrze-log'))));        
+        return array_merge($links, array(sprintf('<a href="%s">%s</a>', add_query_arg(array('page' => 'rrzelog-network'), network_admin_url('settings.php')), __('Settings', 'rrze-log'))));
     }
         
-    public function plugin_action_link($links) {
+    public function plugin_action_link($links)
+    {
         if (!current_user_can('manage_options')) {
             return $links;
         }
         return array_merge($links, array(sprintf('<a href="%s">%s</a>', add_query_arg(array('page' => 'rrzelog'), admin_url('options-general.php')), __('Settings', 'rrze-log'))));
     }
-    
 }

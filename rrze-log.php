@@ -4,7 +4,7 @@
  * Plugin Name:     Log
  * Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-logs
  * Description:     Log-Funktionen.
- * Version:         1.5.0
+ * Version:         1.6.0
  * Author:          RRZE-Webteam
  * Author URI:      https://blogs.fau.de/webworking/
  * License:         GNU General Public License v2
@@ -37,31 +37,34 @@ add_filter('pre_update_site_option_active_sitewide_plugins', 'RRZE\Log\loaded_fi
  * Einbindung der Sprachdateien.
  * @return void
  */
-function load_textdomain() {
-    load_plugin_textdomain('rrze-log', FALSE, sprintf('%s/languages/', dirname(plugin_basename(__FILE__))));
+function load_textdomain()
+{
+    load_plugin_textdomain('rrze-log', false, sprintf('%s/languages/', dirname(plugin_basename(__FILE__))));
 }
 
 /*
  * Wird durchgeführt, nachdem das Plugin aktiviert wurde.
  * @return void
  */
-function activation() {
+function activation()
+{
     // Sprachdateien werden eingebunden.
     load_textdomain();
 
     // Überprüft die minimal erforderliche PHP- u. WP-Version.
     system_requirements();
 
-    // Ab hier können die Funktionen hinzugefügt werden, 
+    // Ab hier können die Funktionen hinzugefügt werden,
     // die bei der Aktivierung des Plugins aufgerufen werden müssen.
-    // Bspw. wp_schedule_event, flush_rewrite_rules, etc.    
+    // Bspw. wp_schedule_event, flush_rewrite_rules, etc.
 }
 
 /*
  * Wird durchgeführt, nachdem das Plugin deaktiviert wurde.
  * @return void
  */
-function deactivation() {
+function deactivation()
+{
     // Hier können die Funktionen hinzugefügt werden, die
     // bei der Deaktivierung des Plugins aufgerufen werden müssen.
     // Bspw. wp_clear_scheduled_hook, flush_rewrite_rules, etc.
@@ -71,7 +74,8 @@ function deactivation() {
  * Überprüft die minimal erforderliche PHP- u. WP-Version.
  * @return void
  */
-function system_requirements() {
+function system_requirements()
+{
     $error = '';
 
     if (version_compare(PHP_VERSION, RRZE_PHP_VERSION, '<')) {
@@ -84,7 +88,7 @@ function system_requirements() {
 
     // Wenn die Überprüfung fehlschlägt, dann wird das Plugin automatisch deaktiviert.
     if (!empty($error)) {
-        deactivate_plugins(plugin_basename(__FILE__), FALSE, TRUE);
+        deactivate_plugins(plugin_basename(__FILE__), false, true);
         wp_die($error);
     }
 }
@@ -94,7 +98,8 @@ function system_requirements() {
  * und alle Plugins eingebunden wurden.
  * @return void
  */
-function loaded() {
+function loaded()
+{
     // Sprachdateien werden eingebunden.
     load_textdomain();
     
@@ -106,7 +111,8 @@ function loaded() {
  * Automatische Laden von Klassen.
  * @return void
  */
-function autoload() {
+function autoload()
+{
     require 'autoload.php';
     return new Main(plugin_basename(__FILE__));
 }
@@ -116,7 +122,8 @@ function autoload() {
  * @param array
  * @return array
  */
-function loaded_first(array $active_plugins) {
+function loaded_first(array $active_plugins)
+{
     $basename = plugin_basename(__FILE__);
     $key = array_search($basename, $active_plugins);
  
