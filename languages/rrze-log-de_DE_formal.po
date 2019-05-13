@@ -2,75 +2,90 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-05-16 17:28+0200\n"
-"PO-Revision-Date: \n"
-"Last-Translator: \n"
-"Language-Team: RRZE-Webteam <webmaster@rrze.fau.de>\n"
-"Language: de_DE@formal\n"
+"POT-Creation-Date: 2019-05-13 14:53+0000\n"
+"PO-Revision-Date: 2019-05-13 14:56+0000\n"
+"Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
+"Language-Team: \n"
+"Language: de_DE_formal\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Poedit-KeywordsList: __;_e;__ngettext:1,2;_n:1,2;__ngettext_noop:1,2;"
-"_n_noop:1,2;_c,_nc:4c,1,2;_x:1,2c;_nx:4c,1,2;_nx_noop:4c,1,2;_ex:1,2c;"
-"esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c\n"
-"X-Poedit-Basepath: .\n"
-"X-Poedit-SourceCharset: UTF-8\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 2.0.7\n"
-"X-Poedit-SearchPath-0: .\n"
-"X-Poedit-SearchPath-1: ..\n"
+"X-Generator: Loco https://localise.biz/\n"
+"X-Loco-Version: 2.2.2; wp-5.2\n"
+"X-Loco-Template: languages/rrze-log-de_DE.po"
 
-#: ../RRZE/Log/Main.php:51 ../RRZE/Log/Main.php:58
-msgid "Settings"
-msgstr "Einstellungen"
+#: rrze-log.php:71
+#, php-format
+msgid ""
+"The server is running PHP version %1$s. The Plugin requires at least PHP "
+"version %2$s."
+msgstr ""
+"Auf dem Server läuft PHP Version %1$s. Das Plugin benötigt mindestens PHP "
+"Version %2$s."
 
-#: ../RRZE/Log/Settings.php:28 ../RRZE/Log/Settings.php:135
-#: ../RRZE/Log/Settings.php:136 ../RRZE/Log/Settings.php:146
+#: rrze-log.php:77
+#, php-format
+msgid ""
+"The server is running WordPress version %1$s. The Plugin requires at least "
+"WordPress version %2$s."
+msgstr ""
+"Auf dem Server läuft WordPress Version %1$s. Das Plugin benötigt mindestens "
+"WordPress Version %2$s."
+
+#: includes/Settings.php:30 includes/Settings.php:128 includes/Settings.php:129
+#: includes/Settings.php:140
 msgid "Log"
 msgstr "Protokoll"
 
-#: ../RRZE/Log/Settings.php:35
+#: includes/Settings.php:38
 msgid "Log Settings"
-msgstr "Einstellungen &rsaquo; Protokoll"
+msgstr "Log Settings"
 
-#: ../RRZE/Log/Settings.php:50 ../RRZE/Log/Settings.php:162
+#: includes/Settings.php:52 includes/Settings.php:157
 msgid "Enable Log"
 msgstr "Protokoll aktivieren"
 
-#: ../RRZE/Log/Settings.php:51 ../RRZE/Log/Settings.php:163
+#: includes/Settings.php:53 includes/Settings.php:158
 msgid "Error Level"
 msgstr "Fehlerstufe"
 
-#: ../RRZE/Log/Settings.php:86
+#: includes/Settings.php:85
 msgid "Overview"
 msgstr "Übersicht"
 
-#: ../RRZE/Log/Settings.php:90
+#: includes/Settings.php:89
 msgid "For more information:"
 msgstr "Für weitere Informationen:"
 
-#: ../RRZE/Log/Settings.php:90
+#: includes/Settings.php:89
 msgid "RRZE Webteam on Github"
 msgstr "RRZE Webteam auf Github"
 
-#: ../RRZE/Log/Settings.php:152
+#: includes/Settings.php:146
 msgid "Saves Changes"
 msgstr "Änderungen speichern"
 
-#: ../rrze-log.php:75
-#, php-format
-msgid ""
-"Your server is running PHP version %s. Please upgrade at least to PHP "
-"version %s."
-msgstr ""
-"Ihre PHP-Version %s ist veraltet. Bitte aktualisieren Sie mindestens auf die "
-"PHP-Version %s."
+#: includes/Main.php:53 includes/Main.php:73
+msgid "Settings"
+msgstr "Einstellungen"
 
-#: ../rrze-log.php:79
-#, php-format
-msgid ""
-"Your Wordpress version is %s. Please upgrade at least to Wordpress version "
-"%s."
-msgstr ""
-"Ihre Wordpress-Version %s ist veraltet. Bitte aktualisieren Sie mindestens "
-"auf die Wordpress-Version %s."
+#. Name of the plugin
+msgid "RRZE Log"
+msgstr "RRZE Protokoll"
+
+#. Description of the plugin
+msgid "Log functions."
+msgstr "Protokollfunktionen"
+
+#. URI of the plugin
+msgid "https://gitlab.rrze.fau.de/rrze-webteam/rrze-logs"
+msgstr "https://gitlab.rrze.fau.de/rrze-webteam/rrze-logs"
+
+#. Author of the plugin
+msgid "RRZE-Webteam"
+msgstr "RRZE-Webteam"
+
+#. Author URI of the plugin
+msgid "https://blogs.fau.de/webworking/"
+msgstr "RRZE-Webteam"
