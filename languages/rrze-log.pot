@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-05-13 14:53+0000\n"
+"POT-Creation-Date: 2019-05-13 15:02+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -71,7 +71,9 @@ msgid "RRZE Log"
 msgstr ""
 
 #. Description of the plugin
-msgid "Log functions."
+msgid ""
+"The plugin allows you to log certain actions of the plugins and themes in a "
+"log file, which are or may be necessary for further investigations."
 msgstr ""
 
 #. URI of the plugin
@@ -79,7 +81,7 @@ msgid "https://gitlab.rrze.fau.de/rrze-webteam/rrze-logs"
 msgstr ""
 
 #. Author of the plugin
-msgid "RRZE-Webteam"
+msgid "RRZE Webteam"
 msgstr ""
 
 #. Author URI of the plugin
