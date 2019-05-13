@@ -23,7 +23,7 @@ Dashboard / Einstellungen / Protokoll
 
 ### Beispiele
 
-Ein Beispiel für die Protokollierung könnte so aussehen:
+Der Code, der in einem Plugin hinzugefügt wird, um die Protokollierung zu aktivieren, könnte folgendes sein:
 
 ```
 do_action('rrze.log.error', ['plugin' =>'cms-basis', 'wp-error' => $wp_error]);
