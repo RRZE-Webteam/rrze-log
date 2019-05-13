@@ -1,136 +1,134 @@
 <?php
 
-/**
- * Plugin Name:     Log
- * Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-logs
- * Description:     Log-Funktionen.
- * Version:         1.6.0
- * Author:          RRZE-Webteam
- * Author URI:      https://blogs.fau.de/webworking/
- * License:         GNU General Public License v2
- * License URI:     http://www.gnu.org/licenses/gpl-2.0.html
- * Domain Path:     /languages
- * Text Domain:     rrze-log
- * Network:         true
- */
+/*
+Plugin Name:     RRZE Log
+Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-logs
+Description:     Log functions.
+Version:         1.6.0
+Author:          RRZE-Webteam
+Author URI:      https://blogs.fau.de/webworking/
+License:         GNU General Public License v2
+License URI:     http://www.gnu.org/licenses/gpl-2.0.html
+Domain Path:     /languages
+Text Domain:     rrze-log
+Network:         true
+*/
 
 namespace RRZE\Log;
 
-use RRZE\Log\Main;
-
 defined('ABSPATH') || exit;
 
+use RRZE\Log\Main;
+
 const RRZE_PHP_VERSION = '7.1';
-const RRZE_WP_VERSION = '4.9';
+const RRZE_WP_VERSION = '5.2';
 
-define('RRZELOG_DIR', WP_CONTENT_DIR . '/log/rrzelog');
+const RRZE_PLUGIN_FILE = __FILE__;
 
-register_activation_hook(__FILE__, 'RRZE\Log\activation');
-register_deactivation_hook(__FILE__, 'RRZE\Log\deactivation');
+const RRZELOG_DIR = WP_CONTENT_DIR . '/log/rrzelog';
 
-add_action('plugins_loaded', 'RRZE\Log\loaded');
+spl_autoload_register(function ($class) {
+    $prefix = __NAMESPACE__;
+    $base_dir = __DIR__ . '/includes/';
 
-add_filter('pre_update_option_active_plugins', 'RRZE\Log\loaded_first');
-add_filter('pre_update_site_option_active_sitewide_plugins', 'RRZE\Log\loaded_first');
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) !== 0) {
+        return;
+    }
 
-/*
- * Einbindung der Sprachdateien.
- * @return void
+    $relative_class = substr($class, $len);
+    $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
+
+    if (file_exists($file)) {
+        require $file;
+    }
+});
+
+register_activation_hook(__FILE__, __NAMESPACE__ . '\activation');
+
+add_action('plugins_loaded', __NAMESPACE__ . '\loaded');
+
+add_filter('pre_update_option_active_plugins', __NAMESPACE__ . '\loaded_first');
+add_filter('pre_update_site_option_active_sitewide_plugins', __NAMESPACE__ . '\loaded_first');
+
+/**
+ * [load_textdomain description]
  */
 function load_textdomain()
 {
     load_plugin_textdomain('rrze-log', false, sprintf('%s/languages/', dirname(plugin_basename(__FILE__))));
 }
 
-/*
- * Wird durchgeführt, nachdem das Plugin aktiviert wurde.
- * @return void
- */
-function activation()
-{
-    // Sprachdateien werden eingebunden.
-    load_textdomain();
-
-    // Überprüft die minimal erforderliche PHP- u. WP-Version.
-    system_requirements();
-
-    // Ab hier können die Funktionen hinzugefügt werden,
-    // die bei der Aktivierung des Plugins aufgerufen werden müssen.
-    // Bspw. wp_schedule_event, flush_rewrite_rules, etc.
-}
-
-/*
- * Wird durchgeführt, nachdem das Plugin deaktiviert wurde.
- * @return void
- */
-function deactivation()
-{
-    // Hier können die Funktionen hinzugefügt werden, die
-    // bei der Deaktivierung des Plugins aufgerufen werden müssen.
-    // Bspw. wp_clear_scheduled_hook, flush_rewrite_rules, etc.
-}
-
-/*
- * Überprüft die minimal erforderliche PHP- u. WP-Version.
- * @return void
+/**
+ * [system_requirements description]
+ * @return string [description]
  */
 function system_requirements()
 {
     $error = '';
-
     if (version_compare(PHP_VERSION, RRZE_PHP_VERSION, '<')) {
-        $error = sprintf(__('Your server is running PHP version %s. Please upgrade at least to PHP version %s.', 'rrze-log'), PHP_VERSION, RRZE_PHP_VERSION);
+        $error = sprintf(
+            __('The server is running PHP version %1$s. The Plugin requires at least PHP version %2$s.', 'rrze-log'),
+            PHP_VERSION,
+            RRZE_PHP_VERSION
+        );
+    } elseif (version_compare($GLOBALS['wp_version'], RRZE_WP_VERSION, '<')) {
+        $error = sprintf(
+            __('The server is running WordPress version %1$s. The Plugin requires at least WordPress version %2$s.', 'rrze-log'),
+            $GLOBALS['wp_version'],
+            RRZE_WP_VERSION
+        );
     }
+    return $error;
+}
 
-    if (version_compare($GLOBALS['wp_version'], RRZE_WP_VERSION, '<')) {
-        $error = sprintf(__('Your Wordpress version is %s. Please upgrade at least to Wordpress version %s.', 'rrze-log'), $GLOBALS['wp_version'], RRZE_WP_VERSION);
-    }
+/**
+ * [activation description]
+ */
+function activation()
+{
+    load_textdomain();
 
-    // Wenn die Überprüfung fehlschlägt, dann wird das Plugin automatisch deaktiviert.
-    if (!empty($error)) {
+    if ($error = system_requirements()) {
         deactivate_plugins(plugin_basename(__FILE__), false, true);
         wp_die($error);
     }
 }
 
-/*
- * Wird durchgeführt, nachdem das WP-Grundsystem hochgefahren
- * und alle Plugins eingebunden wurden.
- * @return void
- */
-function loaded()
-{
-    // Sprachdateien werden eingebunden.
-    load_textdomain();
-    
-    // Automatische Laden von Klassen.
-    autoload();
-}
-
-/*
- * Automatische Laden von Klassen.
- * @return void
- */
-function autoload()
-{
-    require 'autoload.php';
-    return new Main(plugin_basename(__FILE__));
-}
-
-/*
- * Stellt sicher, dass das Plugin immer als erstes geladen wird.
- * @param array
- * @return array
+/**
+ * Ensures that the plugin is always loaded first.
+ * @param  array  $active_plugins [description]
+ * @return array                 [description]
  */
 function loaded_first(array $active_plugins)
 {
     $basename = plugin_basename(__FILE__);
     $key = array_search($basename, $active_plugins);
- 
+
     if (false !== $key) {
         array_splice($active_plugins, $key, 1);
         array_unshift($active_plugins, $basename);
     }
- 
+
     return $active_plugins;
+}
+
+/**
+ * [loaded description]
+ */
+function loaded()
+{
+    load_textdomain();
+
+    if ($error = system_requirements()) {
+        include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        $plugin_data = get_plugin_data(__FILE__);
+        $plugin_name = $plugin_data['Name'];
+        $tag = is_network_admin() ? 'network_admin_notices' : 'admin_notices';
+        add_action($tag, function () use ($plugin_name, $error) {
+            printf('<div class="notice notice-error"><p>%1$s: %2$s</p></div>', esc_html($plugin_name), esc_html($error));
+        });
+    } else {
+        new Main();
+    }
 }
