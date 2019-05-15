@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-05-13 15:02+0000\n"
-"PO-Revision-Date: 2019-05-13 15:03+0000\n"
+"POT-Creation-Date: 2019-05-15 12:10+0000\n"
+"PO-Revision-Date: 2019-05-15 12:14+0000\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch (Sie)\n"
 "Language: de_DE_formal\n"
@@ -33,8 +33,8 @@ msgstr ""
 "Auf dem Server läuft WordPress Version %1$s. Das Plugin benötigt mindestens "
 "WordPress Version %2$s."
 
-#: includes/Settings.php:30 includes/Settings.php:128 includes/Settings.php:129
-#: includes/Settings.php:140
+#: includes/Settings.php:30 includes/Settings.php:96 includes/Settings.php:97
+#: includes/Settings.php:108
 msgid "Log"
 msgstr "Protokoll"
 
@@ -42,29 +42,56 @@ msgstr "Protokoll"
 msgid "Log Settings"
 msgstr "Log Settings"
 
-#: includes/Settings.php:52 includes/Settings.php:157
+#: includes/Settings.php:52 includes/Settings.php:123
 msgid "Enable Log"
 msgstr "Protokoll aktivieren"
 
-#: includes/Settings.php:53 includes/Settings.php:158
+#: includes/Settings.php:53 includes/Settings.php:124
 msgid "Error Level"
 msgstr "Fehlerstufe"
 
-#: includes/Settings.php:85
+#: includes/Settings.php:54 includes/Settings.php:125
+msgid "Archives count"
+msgstr "Anzahl der Archive"
+
+#: includes/Settings.php:55 includes/Settings.php:126
+msgid "Archive interval"
+msgstr "Archivierungsintervall"
+
+#: includes/Settings.php:67
 msgid "Overview"
 msgstr "Übersicht"
 
-#: includes/Settings.php:89
+#: includes/Settings.php:71
 msgid "For more information:"
 msgstr "Für weitere Informationen:"
 
-#: includes/Settings.php:89
+#: includes/Settings.php:71
 msgid "RRZE Webteam on Github"
 msgstr "RRZE Webteam auf Github"
 
-#: includes/Settings.php:146
+#: includes/Settings.php:113
 msgid "Saves Changes"
 msgstr "Änderungen speichern"
+
+#: includes/Settings.php:157
+msgid ""
+"How many archived log files can be created before to start deleting the "
+"oldest ones."
+msgstr ""
+"Wie viele archivierte Protokolldateien können vorher erstellt werden, um mit "
+"dem Löschen der ältesten zu beginnen."
+
+#: includes/Settings.php:166
+msgctxt "rrzelog-rotatetime"
+msgid "Day"
+msgid_plural "Days"
+msgstr[0] "Tag"
+msgstr[1] "Tage"
+
+#: includes/Settings.php:168
+msgid "How often to archive log files."
+msgstr "Wie oft werden Protokolldateien archiviert."
 
 #: includes/Main.php:53 includes/Main.php:73
 msgid "Settings"

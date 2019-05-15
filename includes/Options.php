@@ -22,8 +22,7 @@ class Options
             'enabled' => '0',
             'threshold' => '2',
             'rotatemax' => '1',
-            'rotatetime' => DAY_IN_SECONDS,
-            'rotatestamp' => '0'
+            'rotatetime' => DAY_IN_SECONDS
         ];
 
         return $options;
