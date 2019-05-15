@@ -161,15 +161,17 @@ class Log
         }
 
         $prefix = in_array($level, ['ERROR', 'WARNING', 'NOTICE']) ? 'error' : strtolower($level);
-        $timestamp = current_time('timestamp', 1);
+        $currentTimeGmt = current_time('timestamp', 1);
         $file = sprintf('%1$s%2$s.log', $this->logPath, $prefix);
 
-        $rotateResult = $this->rotate->prepare($file);
-        if (!$rotateResult || is_wp_error($rotateResult)) {
-            return false;
+        $filemtimeOptionName = sprintf('%1$s_%2$s', $this->optionName, $prefix);
+
+        if ($currentTimeGmt - abs(get_site_option($filemtimeOptionName)) > $this->options->rotatetime) {
+            $result = $this->rotate->prepare($file);
         }
 
         $line = '';
+        $newFile = false;
 
         if (!file_exists($file)) {
             $newFile = true;
@@ -181,7 +183,7 @@ class Log
 
         flock($fp, LOCK_EX);
 
-        $line .= $this->format($timestamp, $level, $content);
+        $line .= $this->format($currentTimeGmt, $level, $content);
 
         $bytesWritten = 0;
         for ($written = 0, $length = $this->strLen($line); $written < $length; $written += $bytesWritten) {
@@ -193,10 +195,9 @@ class Log
         flock($fp, LOCK_UN);
         fclose($fp);
 
-        if (isset($newFile) && $newFile === true) {
+        if ($newFile) {
             chmod($file, $this->filePermissions);
-            $this->options->rotatestamp = filemtime($file);
-            update_site_option($this->optionName, $this->options);
+            update_site_option($filemtimeOptionName, $currentTimeGmt);
         }
 
         return is_int($bytesWritten);

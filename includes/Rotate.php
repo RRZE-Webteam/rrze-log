@@ -26,7 +26,7 @@ class Rotate
     public function prepare($file = '')
     {
         if (!is_file($file) || !is_writable($file)) {
-            return new WP_Error('rrzelog_file', __('The log file is not writable.'. 'rrze-log'));
+            return new WP_Error('rrzelog_file', __('The log file is not writable.', 'rrze-log'));
         }
 
         return $this->make($file);
@@ -41,12 +41,8 @@ class Rotate
     {
         clearstatcache();
 
-        if (@filesize($file) > 0) {
-            return new WP_Error('rrzelog_filesize', __('The log file size could not be determined.'. 'rrze-log'));
-        }
-
-        if (time() - $this->options->rotatestamp <= $this->options->rotatetime) {
-            return false;
+        if (!absint(filesize($file))) {
+            return new WP_Error('rrzelog_filesize', __('The log file size could not be determined.', 'rrze-log'));
         }
 
         $fileInfo = pathinfo($file);
@@ -75,7 +71,7 @@ class Rotate
         $newFile = str_replace('*', '1', $glob);
 
         if (!rename($file, $newFile)) {
-            return new WP_Error('rrzelog_rename', __('The log file could not be renamed.'. 'rrze-log'));
+            return new WP_Error('rrzelog_rename', __('The log file could not be renamed.', 'rrze-log'));
         }
 
         return true;
