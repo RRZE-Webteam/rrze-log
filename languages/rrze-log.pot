@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-05-13 15:02+0000\n"
+"POT-Creation-Date: 2019-05-15 12:10+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -29,8 +29,8 @@ msgid ""
 "WordPress version %2$s."
 msgstr ""
 
-#: includes/Settings.php:30 includes/Settings.php:128 includes/Settings.php:129
-#: includes/Settings.php:140
+#: includes/Settings.php:30 includes/Settings.php:96 includes/Settings.php:97
+#: includes/Settings.php:108
 msgid "Log"
 msgstr ""
 
@@ -38,28 +38,53 @@ msgstr ""
 msgid "Log Settings"
 msgstr ""
 
-#: includes/Settings.php:52 includes/Settings.php:157
+#: includes/Settings.php:52 includes/Settings.php:123
 msgid "Enable Log"
 msgstr ""
 
-#: includes/Settings.php:53 includes/Settings.php:158
+#: includes/Settings.php:53 includes/Settings.php:124
 msgid "Error Level"
 msgstr ""
 
-#: includes/Settings.php:85
+#: includes/Settings.php:54 includes/Settings.php:125
+msgid "Archives count"
+msgstr ""
+
+#: includes/Settings.php:55 includes/Settings.php:126
+msgid "Archive interval"
+msgstr ""
+
+#: includes/Settings.php:67
 msgid "Overview"
 msgstr ""
 
-#: includes/Settings.php:89
+#: includes/Settings.php:71
 msgid "For more information:"
 msgstr ""
 
-#: includes/Settings.php:89
+#: includes/Settings.php:71
 msgid "RRZE Webteam on Github"
 msgstr ""
 
-#: includes/Settings.php:146
+#: includes/Settings.php:113
 msgid "Saves Changes"
+msgstr ""
+
+#: includes/Settings.php:157
+msgid ""
+"How many archived log files can be created before to start deleting the "
+"oldest ones."
+msgstr ""
+
+#: includes/Settings.php:166
+msgctxt "rrzelog-rotatetime"
+msgid "Day"
+msgid_plural "Days"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/Settings.php:168
+msgid "How often to archive log files."
 msgstr ""
 
 #: includes/Main.php:53 includes/Main.php:73
