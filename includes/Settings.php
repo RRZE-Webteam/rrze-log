@@ -47,30 +47,12 @@ class Settings
 
     public function adminSettingsSections()
     {
-        register_setting('rrzelog_options', $this->optionName, [$this, 'optionsValidate']);
+        register_setting('rrzelog_options', $this->optionName, [$this, 'validateOptions']);
         add_settings_section('rrzelog_section', false, '__return_false', 'rrzelog_options');
         add_settings_field('rrzelog-enable', __('Enable Log', 'rrze-log'), [$this, 'enabledField'], 'rrzelog_options', 'rrzelog_section');
         add_settings_field('rrzelog-threshold', __('Error Level', 'rrze-log'), [$this, 'thresholdField'], 'rrzelog_options', 'rrzelog_section');
-    }
-
-    public function optionsValidate($input)
-    {
-        $input['enabled'] = !empty($input['enabled']) ? 1 : 0;
-        $input_threshold = !empty($input['threshold']) ? (array) $input['threshold'] : [];
-
-        $this->options->threshold = 0;
-
-        $levels = $this->log->getErrorLevels();
-
-        foreach ($levels as $level => $bitmask) {
-            if (isset($input_threshold[$level])) {
-                $this->set_threshold($bitmask);
-            }
-        }
-
-        $input['threshold'] = $this->options->threshold;
-
-        return $input;
+        add_settings_field('rrzelog-rotatemax', __('Archives count', 'rrze-log'), [$this, 'rotatemaxField'], 'rrzelog_options', 'rrzelog_section');
+        add_settings_field('rrzelog-rotatetime', __('Archive interval', 'rrze-log'), [$this, 'rotatetimeField'], 'rrzelog_options', 'rrzelog_section');
     }
 
     public function adminHelpMenu()
@@ -102,22 +84,8 @@ class Settings
     public function networkSettingsMenu()
     {
         if (isset($_POST['_wpnonce']) &&  wp_verify_nonce($_POST['_wpnonce'], 'rrzelog_network-options') && current_user_can('manage_network_options')) {
-            if (isset($_POST['rrzelog-site-submit'])) {
-                $this->options->enabled = !empty($_POST[$this->optionName]['enabled']) ? 1 : 0;
-                $input_threshold = !empty($_POST[$this->optionName]['threshold']) ? (array) $_POST[$this->optionName]['threshold'] : [];
-
-                $this->options->threshold = 0;
-
-                $levels = $this->log->getErrorLevels();
-
-                foreach ($levels as $level => $bitmask) {
-                    if (isset($input_threshold[$level])) {
-                        $this->set_threshold($bitmask);
-                    }
-                }
-
-                update_site_option($this->optionName, $this->options);
-
+            if (isset($_POST['rrzelog-site-submit']) && isset($_POST[$this->optionName])) {
+                $this->validateOptions($_POST[$this->optionName]);
                 wp_redirect(add_query_arg(['page' => 'rrzelog-network', 'update' => 'updated'], network_admin_url('settings.php')));
                 exit;
             }
@@ -140,11 +108,9 @@ class Settings
             <h2><?php echo esc_html(__('Log', 'rrze-log')); ?></h2>
 
             <form method="post">
-                <?php
-                settings_fields('rrzelog_network');
-        do_settings_sections('rrzelog_network');
-        submit_button(esc_html__('Saves Changes', 'rrze-log'), 'primary', 'rrzelog-site-submit')
-                ?>
+                <?php settings_fields('rrzelog_network'); ?>
+                <?php do_settings_sections('rrzelog_network'); ?>
+                <?php submit_button(esc_html__('Saves Changes', 'rrze-log'), 'primary', 'rrzelog-site-submit'); ?>
             </form>
 
         </div>
@@ -156,6 +122,8 @@ class Settings
         add_settings_section('rrzelog_section', false, '__return_false', 'rrzelog_network');
         add_settings_field('rrzelog-enable', __('Enable Log', 'rrze-log'), [$this, 'enabledField'], 'rrzelog_network', 'rrzelog_section');
         add_settings_field('rrzelog-threshold', __('Error Level', 'rrze-log'), [$this, 'thresholdField'], 'rrzelog_network', 'rrzelog_section');
+        add_settings_field('rrzelog-rotatemax', __('Archives count', 'rrze-log'), [$this, 'rotatemaxField'], 'rrzelog_network', 'rrzelog_section');
+        add_settings_field('rrzelog-rotatetime', __('Archive interval', 'rrze-log'), [$this, 'rotatetimeField'], 'rrzelog_network', 'rrzelog_section');
     }
 
     public function enabledField()
@@ -172,9 +140,32 @@ class Settings
         $levels = $this->log->getErrorLevels(); ?>
         <label for="rrzelog-threshold">
             <?php foreach ($levels as $level => $bitmask) :?>
+            <?php if ($level == 'DEBUG' && (!defined('WP_DEBUG') || !WP_DEBUG)) : continue;
+        endif; ?>
             <input type="checkbox" id="<?php printf('rrzelog-level-%s', strtolower($level)); ?>" name="<?php printf('%s[threshold][%s]', $this->optionName, $level); ?>" value="1"<?php checked($this->getThreshold($bitmask), 1); ?>> <?php echo $level; ?> </br>
             <?php endforeach; ?>
         </label>
+        <?php
+    }
+
+    public function rotatemaxField()
+    {
+        ?>
+        <label for="rrzelog-rotatemax">
+            <input type="number" min="1" step="1" name="<?php printf('%s[rotatemax]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->rotatemax) ?>" class="small-text">
+        </label>
+        <p class="description"><?php _e('How many archived log files can be created before to start deleting the oldest ones.', 'rrze-log'); ?></p>
+        <?php
+    }
+
+    public function rotatetimeField()
+    {
+        $days = absint($this->options->rotatetime / DAY_IN_SECONDS); ?>
+        <label for="rrzelog-rotatetime">
+            <input type="number" min="1" step="1" name="<?php printf('%s[rotatetime]', $this->optionName); ?>" value="<?php echo esc_attr($days) ?>" class="small-text">
+            <?php echo esc_html(_nx('Day', 'Days', $days, 'rrzelog-rotatetime', 'rrze-log')) ?>
+        </label>
+        <p class="description"><?php _e('How often to archive log files.', 'rrze-log'); ?></p>
         <?php
     }
 
@@ -183,8 +174,38 @@ class Settings
         return ($this->options->threshold & (1 << $bitmask)) != 0;
     }
 
-    protected function set_threshold($bitmask, $new = true)
+    protected function setThreshold($bitmask, $new = true)
     {
         $this->options->threshold = ($this->options->threshold & ~(1 << $bitmask)) | ($new << $bitmask);
+    }
+
+    public function validateOptions($input)
+    {
+        $input['enabled'] = !empty($input['enabled']) ? 1 : 0;
+        $inputThreshold = !empty($input['threshold']) ? (array) $input['threshold'] : [];
+
+        $this->options->threshold = 0;
+
+        $levels = $this->log->getErrorLevels();
+
+        foreach ($levels as $level => $bitmask) {
+            if ($level == 'DEBUG' && (!defined('WP_DEBUG') || !WP_DEBUG)) {
+                continue;
+            }
+            if (isset($inputThreshold[$level])) {
+                $this->setThreshold($bitmask);
+            }
+        }
+
+        $input['threshold'] = $this->options->threshold;
+
+        $input['rotatemax'] = !empty($input['rotatemax']) && absint($input['rotatemax']) ? absint($input['rotatemax']) : 1;
+        $input['rotatetime'] = !empty($input['rotatetime']) && absint($input['rotatetime']) ? absint($input['rotatetime']) * DAY_IN_SECONDS : DAY_IN_SECONDS;
+
+        if (is_multisite()) {
+            update_site_option($this->optionName, $input);
+        } else {
+            return $input;
+        }
     }
 }
