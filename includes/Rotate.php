@@ -4,6 +4,7 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
+use WP_Error;
 use RRZE\Log\Options;
 
 class Rotate
