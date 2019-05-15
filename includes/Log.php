@@ -166,7 +166,7 @@ class Log
 
         $filemtimeOptionName = sprintf('%1$s_%2$s', $this->optionName, $prefix);
 
-        if ($currentTimeGmt - abs(get_site_option($filemtimeOptionName)) > $this->options->rotatetime) {
+        if ($currentTimeGmt - absint(get_site_option($filemtimeOptionName)) > $this->options->rotatetime) {
             $result = $this->rotate->prepare($file);
         }
 
