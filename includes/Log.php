@@ -3,6 +3,7 @@
 namespace RRZE\Log;
 
 use RRZE\Log\Options;
+use RRZE\Log\Rotate;
 
 defined('ABSPATH') || exit;
 
@@ -64,21 +65,9 @@ class Log
 
     /**
      * [protected description]
-     * @var integer
+     * @var object
      */
-    protected $rotatemax;
-
-    /**
-     * [protected description]
-     * @var integer
-     */
-    protected $rotatetime;
-
-    /**
-     * [protected description]
-     * @var integer
-     */
-    protected $rotatestamp;
+    protected $rotate;
 
     /**
      * [__construct description]
@@ -105,9 +94,7 @@ class Log
 
         $this->threshold = absint($this->options->threshold);
 
-        $this->rotatemax = absint($this->options->rotatemax);
-        $this->rotatetime = absint($this->options->rotatetime);
-        $this->rotatestamp = absint($this->options->rotatestamp);
+        $this->rotate = new Rotate();
     }
 
     /**
@@ -177,12 +164,15 @@ class Log
         $timestamp = current_time('timestamp', 1);
         $file = sprintf('%1$s%2$s.log', $this->logPath, $prefix);
 
-        $this->rotate($file);
+        $rotateResult = $this->rotate->prepare($file);
+        if (!$rotateResult || is_wp_error($rotateResult)) {
+            return false;
+        }
 
         $line = '';
 
         if (!file_exists($file)) {
-            $newfile = true;
+            $newFile = true;
         }
 
         if (!$fp = @fopen($file, 'ab')) {
@@ -193,8 +183,9 @@ class Log
 
         $line .= $this->format($timestamp, $level, $content);
 
-        for ($written = 0, $length = $this->strLen($line); $written < $length; $written += $result) {
-            if (($result = fwrite($fp, $this->subStr($line, $written))) === false) {
+        $bytesWritten = 0;
+        for ($written = 0, $length = $this->strLen($line); $written < $length; $written += $bytesWritten) {
+            if (($bytesWritten = fwrite($fp, $this->subStr($line, $written))) === false) {
                 break;
             }
         }
@@ -202,14 +193,13 @@ class Log
         flock($fp, LOCK_UN);
         fclose($fp);
 
-        if (isset($newfile) && $newfile === true) {
+        if (isset($newFile) && $newFile === true) {
             chmod($file, $this->filePermissions);
             $this->options->rotatestamp = filemtime($file);
-            $this->rotatestamp = absint($this->options->rotatestamp);
             update_site_option($this->optionName, $this->options);
         }
 
-        return is_int($result);
+        return is_int($bytesWritten);
     }
 
     /**
@@ -318,52 +308,4 @@ class Log
         return ($this->threshold & (1 << $bitmask)) != 0;
     }
 
-    /**
-     * [rotate description]
-     * @param  resource $file [description]
-     * @return boolean       [description]
-     */
-    protected function rotate($file = '')
-    {
-        clearstatcache();
-
-        if (is_file($file) && is_writable($file)) {
-            if (filesize($file) > 0) {
-                if (time() - $this->rotatestamp <= $this->rotatetime) {
-                    return false;
-                }
-
-                $fileInfo = pathinfo($file);
-                $glob = $fileInfo['dirname'].'/'.$fileInfo['filename'];
-
-                if (!empty($fileInfo['extension'])) {
-                    $glob .= '.'.$fileInfo['extension'];
-                }
-
-                $glob .= '.*';
-
-                $curFiles = glob($glob);
-
-                $n_curFiles = count($curFiles);
-
-                for ($n = $n_curFiles; $n > 0; $n--) {
-                    if (file_exists(str_replace('*', $n, $glob))) {
-                        if ($this->rotatemax > 0 && $n >= $this->rotatemax) {
-                            unlink(str_replace('*', $n, $glob));
-                        } else {
-                            rename(str_replace('*', $n, $glob), str_replace('*', $n + 1, $glob));
-                        }
-                    }
-                }
-
-                $newFile = str_replace('*', '1', $glob);
-
-                return rename($file, $newFile);
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
 }
