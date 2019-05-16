@@ -4,6 +4,8 @@ namespace RRZE\Log;
 
 use RRZE\Log\Options;
 use RRZE\Log\Rotate;
+use RRZE\Log\File\Flock;
+use RRZE\Log\File\FlockException;
 
 defined('ABSPATH') || exit;
 
@@ -32,6 +34,12 @@ class Log
      * @var integer
      */
     protected $threshold;
+
+    /**
+     * [protected description]
+     * @var integer
+     */
+    protected $currentTimeGmt;
 
     /**
      * [protected description]
@@ -86,13 +94,11 @@ class Log
 
         $this->currentBlogId = get_current_blog_id();
 
-        if (is_multisite()) {
-            $this->logPath = RRZELOG_DIR . DIRECTORY_SEPARATOR . $this->currentBlogId . DIRECTORY_SEPARATOR;
-        } else {
-            $this->logPath = RRZELOG_DIR . DIRECTORY_SEPARATOR;
-        }
+        $this->logPath = RRZELOG_DIR . DIRECTORY_SEPARATOR;
 
         $this->threshold = absint($this->options->threshold);
+
+        $this->currentTimeGmt = current_time('timestamp', 1);
 
         $this->rotate = new Rotate();
     }
@@ -161,13 +167,12 @@ class Log
         }
 
         $prefix = in_array($level, ['ERROR', 'WARNING', 'NOTICE']) ? 'error' : strtolower($level);
-        $currentTimeGmt = current_time('timestamp', 1);
         $file = sprintf('%1$s%2$s.log', $this->logPath, $prefix);
 
         $filemtimeOptionName = sprintf('%1$s_%2$s', $this->optionName, $prefix);
 
-        if ($currentTimeGmt - absint(get_site_option($filemtimeOptionName)) > $this->options->rotatetime) {
-            $result = $this->rotate->prepare($file);
+        if ($this->currentTimeGmt - absint(get_site_option($filemtimeOptionName)) > $this->options->rotatetime) {
+            $this->rotate->prepare($file);
         }
 
         $line = '';
@@ -177,13 +182,36 @@ class Log
             $newFile = true;
         }
 
-        if (!$fp = @fopen($file, 'ab')) {
+        $flock = new Flock($file);
+
+        try {
+            $fp = $flock->acquire()->fp;
+            $bytesWritten = $this->writeLine($fp, $level, $content);
+            $flock->release();
+        } catch (FlockException $e) {
             return false;
         }
 
-        flock($fp, LOCK_EX);
+        if ($newFile) {
+            chmod($file, $this->filePermissions);
+            update_site_option($filemtimeOptionName, $this->currentTimeGmt);
+        }
 
-        $line .= $this->format($currentTimeGmt, $level, $content);
+        return is_int($bytesWritten);
+    }
+
+    /**
+     * [writeLine description]
+     * @param  resource $fp      [description]
+     * @param  string $level   [description]
+     * @param  array $content [description]
+     * @return integer          [description]
+     */
+    protected function writeLine($fp, $level, $content)
+    {
+        $date = sprintf('%s UTC', date('Y-m-d H:i:s', $this->currentTimeGmt));
+        $line = json_encode(['date' => $date, 'blog_id' => $this->currentBlogId, 'level' => $level, 'content' => $content]) . PHP_EOL;
+        $line .= $level == 'DEBUG' ? print_r($content, true) . PHP_EOL : '';
 
         $bytesWritten = 0;
         for ($written = 0, $length = $this->strLen($line); $written < $length; $written += $bytesWritten) {
@@ -191,16 +219,7 @@ class Log
                 break;
             }
         }
-
-        flock($fp, LOCK_UN);
-        fclose($fp);
-
-        if ($newFile) {
-            chmod($file, $this->filePermissions);
-            update_site_option($filemtimeOptionName, $currentTimeGmt);
-        }
-
-        return is_int($bytesWritten);
+        return $bytesWritten;
     }
 
     /**
@@ -248,23 +267,6 @@ class Log
     }
 
     /**
-     * [format description]
-     * @param  integer $timestamp [description]
-     * @param  integer $level     [description]
-     * @param  array $content   [description]
-     * @return string            [description]
-     */
-    protected function format($timestamp, $level, $content)
-    {
-        $date = sprintf('%s UTC', date('Y-m-d H:i:s', $timestamp));
-        $line = json_encode(['date' => $date, 'blog_id' => $this->currentBlogId, 'level' => $level, 'content' => $content]) . PHP_EOL;
-        if ($level == 'DEBUG') {
-            $line .= print_r($content, true) . PHP_EOL;
-        }
-        return $line;
-    }
-
-    /**
      * [strLen description]
      * @param  string $str [description]
      * @return boolean      [description]
@@ -308,5 +310,4 @@ class Log
     {
         return ($this->threshold & (1 << $bitmask)) != 0;
     }
-
 }
