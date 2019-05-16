@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-05-15 12:10+0000\n"
+"POT-Creation-Date: 2019-05-16 10:45+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -89,6 +89,23 @@ msgstr ""
 
 #: includes/Main.php:53 includes/Main.php:73
 msgid "Settings"
+msgstr ""
+
+#: includes/Rotate.php:29
+msgid "The log file is not writable."
+msgstr ""
+
+#: includes/Rotate.php:45
+msgid "The log file size could not be determined."
+msgstr ""
+
+#: includes/Rotate.php:74
+msgid "The log file could not be renamed."
+msgstr ""
+
+#: includes/File/Flock.php:58
+#, php-format
+msgid "Could not get lock on %s"
 msgstr ""
 
 #. Name of the plugin
