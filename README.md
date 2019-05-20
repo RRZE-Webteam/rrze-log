@@ -56,6 +56,8 @@ try {
 
 ### Anmerkungen
 
-- Die Protokolldateien werden im Verzeichnis WP_CONTENT / log / rrzelog abgelegt
-- Die Protokollierung mittels rrze.log.error, rrze.log.warning und rrze.log.notice werden in derselben Datei gespeichert (error.{YY-MM-DD}.log)
-- Die Protokollierung mittels rrze.log.debug ist nur möglich, wenn die Konstante WP_DEBUG auf true gesetzt ist
+- Die Protokolldateien werden im Verzeichnis "WP_CONTENT/log/rrzelog" abgelegt
+- Das Format der Protokollierung ist JSON
+- Die Protokollierung mittels 'rrze.log.error', 'rrze.log.warning' und 'rrze.log.notice' werden in derselben "error.log" Datei gespeichert
+- Die Protokollierung mittels 'rrze.log.info' wird in der "info.log" Datei gespeichert
+- Die Protokollierung mittels 'rrze.log.debug' wird in der "debug.log" Datei gespeichert und ist nur möglich, wenn die Konstante WP_DEBUG auf true gesetzt ist
