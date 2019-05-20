@@ -175,7 +175,6 @@ class Log
             $this->rotate->prepare($file);
         }
 
-        $line = '';
         $newFile = false;
 
         if (!file_exists($file)) {
@@ -209,16 +208,33 @@ class Log
      */
     protected function writeLine($fp, $level, $content)
     {
-        $date = sprintf('%s UTC', date('Y-m-d H:i:s', $this->currentTimeGmt));
-        $line = json_encode(['date' => $date, 'blog_id' => $this->currentBlogId, 'level' => $level, 'content' => $content]) . PHP_EOL;
-        $line .= $level == 'DEBUG' ? print_r($content, true) . PHP_EOL : '';
+        $logLine = '';
+
+        $logMeta =
+        [
+            'date' => sprintf('%s UTC', date('Y-m-d H:i:s', $this->currentTimeGmt)),
+            'blog_id' => $this->currentBlogId,
+            'level' => $level
+        ];
+
+        $logContent = [
+            'content' => $content
+        ];
+
+        if ($level != 'DEBUG') {
+            $logLine .= json_encode(array_merge($logMeta, $logContent)) . PHP_EOL;
+        } else {
+            $logLine .= print_r($logMeta, true) . PHP_EOL;
+            $logLine .= print_r($logContent, true) . PHP_EOL;
+        }
 
         $bytesWritten = 0;
-        for ($written = 0, $length = $this->strLen($line); $written < $length; $written += $bytesWritten) {
-            if (($bytesWritten = fwrite($fp, $this->subStr($line, $written))) === false) {
+        for ($written = 0, $length = $this->strLen($logLine); $written < $length; $written += $bytesWritten) {
+            if (($bytesWritten = fwrite($fp, $this->subStr($logLine, $written))) === false) {
                 break;
             }
         }
+        
         return $bytesWritten;
     }
 
