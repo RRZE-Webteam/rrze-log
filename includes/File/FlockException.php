@@ -4,6 +4,6 @@ namespace RRZE\Log\File;
 
 use Exception;
 
-class FloockException extends Exception
+class FlockException extends Exception
 {
 }
