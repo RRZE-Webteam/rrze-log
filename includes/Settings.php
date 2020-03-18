@@ -9,20 +9,31 @@ use RRZE\Log\Log;
 
 class Settings
 {
+    /**
+     * [protected description]
+     * @var string
+     */    
+    protected $pluginFile;
+
     protected $options;
 
     protected $option_name;
 
     protected $adminSettingsPage;
 
-    public $log;
+    protected $log;
 
-    public function __construct()
+    public function __construct($pluginFile)
     {
+        $this->pluginFile = $pluginFile;
         $this->optionName = Options::getOptionName();
         $this->options = Options::getOptions();
+    }
 
-        $this->log = new Log();
+    public function onLoaded()
+    {
+        $this->log = new Log($this->pluginFile);
+        $this->log->onLoaded();
     }
 
     public function adminSettingsMenu()

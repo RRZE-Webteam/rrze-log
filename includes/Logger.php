@@ -2,19 +2,18 @@
 
 namespace RRZE\Log;
 
+defined('ABSPATH') || exit;
+
 use RRZE\Log\Options;
-use RRZE\Log\Rotate;
 use RRZE\Log\File\Flock;
 use RRZE\Log\File\FlockException;
 
-defined('ABSPATH') || exit;
-
-class Log
+class Logger
 {
     /**
      * [protected description]
      * @var string
-     */    
+     */
     protected $pluginFile;
 
     /**
@@ -37,9 +36,9 @@ class Log
 
     /**
      * [protected description]
-     * @var integer
+     * @var string
      */
-    protected $threshold;
+    protected $logFile;
 
     /**
      * [protected description]
@@ -93,7 +92,7 @@ class Log
     {
         $this->pluginFile = $pluginFile;
         $this->optionName = Options::getOptionName();
-        $this->options = Options::getOptions();        
+        $this->options = Options::getOptions();
     }
 
     /**
@@ -111,105 +110,82 @@ class Log
         $this->currentBlogId = get_current_blog_id();
 
         $this->logPath = plugin_dir_path($this->pluginFile) . static::LOG_DIR . DIRECTORY_SEPARATOR;
-
-        $this->threshold = absint($this->options->threshold);
+        $this->logFile = sprintf('%1$s%2$s.log', $this->logPath, date('Y-m-d'));
 
         $this->currentTimeGmt = current_time('timestamp', 1);
 
-        $this->rotate = new Rotate();
+        //$this->parser();
+    }
+    
+    public function error($message = '', $context = [])
+    {
+        $this->log('ERROR', $message, $context);
     }
 
-    /**
-     * [writeError description]
-     * @param  array  $content [description]
-     */
-    public function writeError($content = [])
+    public function warning($message = '', $context = [])
     {
-        $this->write('ERROR', $content);
+        $this->log('WARNING', $message, $context);
     }
 
-    /**
-     * [writeWarning description]
-     * @param  array  $content [description]
-     */
-    public function writeWarning($content = [])
+    public function notice($message = '', $context = [])
     {
-        $this->write('WARNING', $content);
+        $this->log('NOTICE', $message, $context);
+    }
+    
+    public function info($message = '', $context = [])
+    {
+        $this->log('INFO', $message, $context);
+    }
+    
+    public function debug($message = '', $context = [])
+    {
+        $this->log('DEBUG', $message, $context);
     }
 
-    /**
-     * [writeNotice description]
-     * @param  array  $content [description]
-     */
-    public function writeNotice($content = [])
+    protected function log(string $level, string $message, array $context)
     {
-        $this->write('NOTICE', $content);
-    }
+        $data = [
+            'datetime' => sprintf('%s UTC', date('Y-m-d H:i:s', $this->currentTimeGmt)),
+            'blog_id' => $this->currentBlogId,
+            'level' => $level,
+            'message' => $message,
+            'context' => $context,
+        ];
 
-    /**
-     * [writeInfo description]
-     * @param  array  $content [description]
-     */
-    public function writeInfo($content = [])
-    {
-        $this->write('INFO', $content);
-    }
-
-    /**
-     * [writeDebug description]
-     * @param  array  $content [description]
-     */
-    public function writeDebug($content = [])
-    {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            $this->write('DEBUG', $content);
-        }
+        $this->write($data);
     }
 
     /**
      * [write description]
-     * @param  integer $level   [description]
-     * @param  array $content [description]
+     * @param  array $data [description]
      * @return boolean          [description]
      */
-    protected function write($level, $content)
+    protected function write(array $data)
     {
         if (!$this->isLogPathWritable()) {
             return false;
         }
-
-        if (!isset($this->levels[$level]) || !$this->getThreshold($this->levels[$level])) {
-            return false;
-        }
-
-        $prefix = in_array($level, ['ERROR', 'WARNING', 'NOTICE']) ? 'error' : strtolower($level);
-        $file = sprintf('%1$s%2$s.log', $this->logPath, $prefix);
-
-        $filemtimeOptionName = sprintf('%1$s_%2$s', $this->optionName, $prefix);
-
-        if ($this->currentTimeGmt - absint(get_site_option($filemtimeOptionName)) > $this->options->rotatetime) {
-            $this->rotate->prepare($file);
-        }
+        
+        $this->unlinkMaxLogFiles();
 
         $newFile = false;
 
-        if (!file_exists($file)) {
+        if (!file_exists($this->logFile)) {
             $newFile = true;
         }
 
-        $flock = new Flock($file);
+        $flock = new Flock($this->logFile);
 
         try {
             $fp = $flock->acquire()->fp;
-            $bytesWritten = $this->writeLine($fp, $level, $content);
+            $bytesWritten = $this->writeLine($fp, $data);
             $flock->release();
         } catch (FlockException $e) {
             return false;
         }
 
         if ($newFile) {
-            chmod($file, $this->filePermissions);
-            update_site_option($filemtimeOptionName, $this->currentTimeGmt);
+            chmod($this->logFile, $this->filePermissions);
         }
 
         return is_int($bytesWritten);
@@ -219,33 +195,16 @@ class Log
      * [writeLine description]
      * @param  resource $fp      [description]
      * @param  string $level   [description]
-     * @param  array $content [description]
+     * @param  array $data [description]
      * @return integer          [description]
      */
-    protected function writeLine($fp, $level, $content)
+    protected function writeLine($fp, $data)
     {
-        $logLine = '';
-
-        $logMeta =
-        [
-            'date' => sprintf('%s UTC', date('Y-m-d H:i:s', $this->currentTimeGmt)),
-            'blog_id' => $this->currentBlogId,
-            'level' => $level
-        ];
-
-        $logContent = [
-            'content' => $content
-        ];
-
-        if ($level != 'DEBUG') {
-            $logLine .= json_encode(array_merge($logMeta, $logContent)) . PHP_EOL;
-        } else {
-            $logLine .= print_r(array_merge($logMeta, $logContent), true) . PHP_EOL;
-        }
+        $logData = json_encode($data) . PHP_EOL;
 
         $bytesWritten = 0;
-        for ($written = 0, $length = $this->strLen($logLine); $written < $length; $written += $bytesWritten) {
-            if (($bytesWritten = fwrite($fp, $this->subStr($logLine, $written))) === false) {
+        for ($written = 0, $length = $this->strLen($logData); $written < $length; $written += $bytesWritten) {
+            if (($bytesWritten = fwrite($fp, $this->subStr($logData, $written))) === false) {
                 break;
             }
         }
@@ -323,22 +282,40 @@ class Log
         return isset($length) ? substr($str, $start, $length) : substr($str, $start);
     }
 
-    /**
-     * [getErrorLevels description]
-     * @return array [description]
-     */
-    public function getErrorLevels()
+    protected function unlinkMaxLogFiles()
     {
-        return $this->levels;
+        $logFiles = [];
+        foreach (new \DirectoryIterator($this->logPath) as $file) {
+            if ($file->isFile()) {
+                $logFiles[$this->logPath . $file->getFilename()] = $file->getMTime();
+            }
+        }
+
+        if (count($logFiles) <= $this->options->maxLogFiles) {
+            return;
+        }
+        arsort($logFiles);
+        $count = 1;
+        foreach ($logFiles as $file => $time) {
+            if (($count > $this->options->maxLogFiles) && ($this->logFile != $file)) {
+                @unlink($file);
+            }
+            $count++;
+        }
+    }
+        
+    protected function parser() {
+        $logParser = new LogParser($this->logFile);
+        return $logParser->iterate();
     }
 
-    /**
-     * [getThreshold description]
-     * @param  integer $bitmask [description]
-     * @return boolean          [description]
-     */
-    protected function getThreshold($bitmask)
+    protected function getTotalLines()
     {
-        return ($this->threshold & (1 << $bitmask)) != 0;
+        if (!file_exists($this->logFile)) {
+            return;
+        }
+        $file = new \SplFileObject($this->logFile);
+        $file->seek($file->getSize());
+        return $file->key();
     }
 }

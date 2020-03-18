@@ -1,0 +1,16 @@
+{
+    "name": "rrze/rrze-log",
+    "version": "2.0.0",
+    "description": "The plugin allows you to log certain actions of the plugins and themes in a log file, which are or may be necessary for further investigations.",
+    "type": "wordpress-plugin",
+    "license": "GNU General Public License v2",
+    "require": {
+        "php": "^7.4",
+        "psr/log": "^1.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "RRZE\\Log\\": "includes/"
+        }
+    }
+}
