@@ -17,6 +17,12 @@ class Main
 
     /**
      * [protected description]
+     * @var string
+     */
+    protected $optionName;
+
+    /**
+     * [protected description]
      * @var object
      */
     protected $options;
@@ -30,16 +36,17 @@ class Main
     public function __construct($pluginFile)
     {
         $this->pluginFile = $pluginFile;
+        $this->optionName = Options::getOptionName();
         $this->options = Options::getOptions();
     }
 
     public function onLoaded()
     {
+        $settings = new Settings($this->pluginFile, $this->optionName, $this->options);
+        $settings->onLoaded();
+
         $this->logger = new Logger($this->pluginFile, $this->options);
         $this->logger->onLoaded();
-
-        //$settings = new Settings($this->pluginFile);
-        //$settings->onLoaded();
 
         add_action('rrze.log.error', [$this, 'logError']);
         add_action('rrze.log.warning', [$this, 'logWarning']);

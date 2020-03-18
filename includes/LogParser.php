@@ -8,16 +8,31 @@ use WP_Error;
 
 class LogParser
 {
-    protected $error = false;
+    protected $error = null;
 
-    protected $file;
+    protected $file = null;
+
+    protected $offset;
+
+    protected $count;
+
+    protected $totalLines = 0;
  
-    public function __construct($file, $mode = 'r')
+    public function __construct($filename, $offset = 0, $count = -1)
     {
-        if (!file_exists($file)) {
+        $this->offset = $offset;
+        $this->count = $count;
+
+        if (!file_exists($filename)) {
             $this->error = new WP_Error('rrze_log_file', __('Log file not found.', 'rrze-log'));
         } else {
-            $this->file = new \SplFileObject($file, $mode);
+            $this->file = new \SplFileObject($filename);
+            $this->file->setFlags(
+                \SplFileObject::READ_AHEAD |
+                \SplFileObject::SKIP_EMPTY
+            );
+            $this->file->seek($this->file->getSize());
+            $this->totalLines = $this->file->key();
         }
     }
  
@@ -36,7 +51,11 @@ class LogParser
         if (is_wp_error($this->error)) {
             return $this->error;
         }
+        return new \LimitIterator($this->iterateFile(), $this->offset, $this->count);
+    }
 
-        return new \NoRewindIterator($this->iterateFile());
+    public function getTotalLines()
+    {
+        return $this->totalLines;
     }
 }

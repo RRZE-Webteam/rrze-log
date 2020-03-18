@@ -105,16 +105,15 @@ class Logger
             return false;
         }
 
+        $this->logPath = plugin_dir_path($this->pluginFile) . static::LOG_DIR . DIRECTORY_SEPARATOR;
+        $this->logFile = sprintf('%1$s%2$s.log', $this->logPath, date('Y-m-d'));
+
         isset($this->funcOverload) || $this->funcOverload = (extension_loaded('mbstring') && ini_get('mbstring.func_overload'));
 
         $this->currentBlogId = get_current_blog_id();
 
-        $this->logPath = plugin_dir_path($this->pluginFile) . static::LOG_DIR . DIRECTORY_SEPARATOR;
-        $this->logFile = sprintf('%1$s%2$s.log', $this->logPath, date('Y-m-d'));
-
         $this->currentTimeGmt = current_time('timestamp', 1);
-
-        //$this->parser();
+        //\RRZE\Dev\dLog($this->parser());
     }
     
     public function error($message = '', $context = [])
@@ -303,10 +302,15 @@ class Logger
             $count++;
         }
     }
-        
-    protected function parser() {
+
+    protected function parser()
+    {
         $logParser = new LogParser($this->logFile);
-        return $logParser->iterate();
+        $output = [];
+        foreach ($logParser->iterate() as $value) {
+            $output[] = $value;
+        }
+        return $output;
     }
 
     protected function getTotalLines()
