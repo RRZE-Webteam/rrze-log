@@ -31,27 +31,34 @@ class LogParser
                 \SplFileObject::READ_AHEAD |
                 \SplFileObject::SKIP_EMPTY
             );
-            $this->file->seek($this->file->getSize());
-            $this->totalLines = $this->file->key();
         }
     }
  
     protected function iterateFile()
     {
-        $count = 0;
         while (!$this->file->eof()) {
-            yield $this->file->fgets();
-            $count++;
+            $line = $this->file->fgets();
+            yield $line;
+            $this->totalLines++;
         }
-        return $count;
     }
  
     public function iterate()
     {
+        return new \NoRewindIterator($this->iterateFile());
+    }
+
+    public function getItems($key = '', $search = '')
+    {
         if (is_wp_error($this->error)) {
             return $this->error;
         }
-        return new \LimitIterator($this->iterateFile(), $this->offset, $this->count);
+        $lines = [];
+        foreach ($this->iterateFile() as $line) {
+            $lines[] = $line;
+        }
+        $lines = new \ArrayIterator($lines);
+        return new \LimitIterator($lines, $this->offset, $this->count);
     }
 
     public function getTotalLines()

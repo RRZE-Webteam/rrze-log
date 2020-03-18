@@ -152,11 +152,12 @@ class ListTable extends WP_List_Table
         
         $logParser = new LogParser($logFile, (($currentPage - 1) * $perPage), $perPage);
         $this->items = [];
-        foreach ($logParser->iterate() as $value) {
-            $this->items[] = json_decode($value);
+        foreach ($logParser->getItems() as $key => $value) {
+            $this->items[] = json_decode($value, true);
         }
-        $totalItems = $logParser->getTotalLines();
 
+        $totalItems = $logParser->getTotalLines();
+        \RRZE\Dev\dLog($totalItems);
         $this->set_pagination_args(
             [
                 'total_items' => $totalItems, // Total number of items
