@@ -30,7 +30,7 @@ class Controller
     {
         $this->pluginFile = $pluginFile;
     }
-    
+
     public function logPageScreenOptions()
     {
         $option = 'per_page';
@@ -57,7 +57,7 @@ class Controller
         //\RRZE\Dev\dLog($data);
         $this->show('index/index', $data);
     }
-    
+
     protected function show($view, $data = [])
     {
         if (!current_user_can('update_plugins') || !current_user_can('update_themes')) {

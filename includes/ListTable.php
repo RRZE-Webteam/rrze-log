@@ -29,12 +29,13 @@ class ListTable extends WP_List_Table
      * @var array
      */
     const LEVELS = ['ERROR', 'WARNING', 'NOTICE', 'INFO'];
-    
+
     public function __construct($pluginFile)
     {
         global $status, $page;
 
         $this->pluginFile = $pluginFile;
+        $this->items = [];
 
         parent::__construct([
             'singular' => 'log',
@@ -53,25 +54,12 @@ class ListTable extends WP_List_Table
     {
         switch ($columnName) {
             case 'level':
-            case 'blog_id':
                 return isset($item[$columnName]) ? $item[$columnName] : '';
+            case 'blog_id':
+                return isset($item[$columnName]) && absint($item[$columnName]) ? get_site_url($item[$columnName]) : '';
             default:
                 return 'hello';
         }
-    }
-
-    /**
-     * [column_cb description]
-     * @param  array $item [description]
-     * @return string       [description]
-     */
-    public function column_cb($item)
-    {
-        return sprintf(
-            '<input type="checkbox" name="%1$s[]" value="%2$s">',
-            $this->_args['singular'],
-            $item['__id']
-        );
     }
 
     /**
@@ -82,10 +70,9 @@ class ListTable extends WP_List_Table
     public function column_level($item)
     {
         $page = $_REQUEST['page'];
-        $id = $item['__id'];
 
         $actions = [
-            'edit' => sprintf('<a href="?page=%1$s&action=%2$s&id=%3$s">%4$s</a>', $page, 'edit', $id, __('Edit', 'rrze-log'))
+            //'edit' => sprintf('<a href="?page=%1$s&action=%2$s&id=%3$s">%4$s</a>', $page, 'edit', $id, __('Edit', 'rrze-log'))
         ];
 
         return sprintf(
@@ -95,6 +82,14 @@ class ListTable extends WP_List_Table
         );
     }
 
+    public function column_datetime($item) {
+        return sprintf(
+            '<span title="%1$s">%2$s</span>',
+            get_date_from_gmt($item['datetime'], __('Y/m/d') . ' G:i:s.u'),
+            get_date_from_gmt($item['datetime'], __('Y/m/d') . ' H:i:s')
+        );
+	}
+
     /**
      * [get_columns description]
      * @return array [description]
@@ -102,9 +97,9 @@ class ListTable extends WP_List_Table
     public function get_columns()
     {
         return [
-            'cb' => '<input type="checkbox">',
             'level' => __('Level', 'rrze-log'),
-            'blog_id' => __('Blog', 'rrze-log')
+            'blog_id' => __('Blog', 'rrze-log'),
+            'datetime' => __('Date', 'rrze-log')
         ];
     }
 
@@ -117,10 +112,7 @@ class ListTable extends WP_List_Table
         //Retrieve $customvar for use in query to get items.
         $customvar = (isset($_REQUEST['customvar']) ? $_REQUEST['customvar'] : 'all');
 
-        $fields = '__id,level,blog_id';
-        $level = isset($_GET['level']) && in_array($_GET['level'], static::LEVELS) ? $_GET['level'] : '';
-        
-        $this->process_bulk_action();
+        $level = isset($_REQUEST['level']) && in_array($_REQUEST['level'], static::LEVELS) ? $_REQUEST['level'] : '';
 
         $columns = $this->get_columns();
         $hidden = [];
@@ -130,34 +122,24 @@ class ListTable extends WP_List_Table
 
         $perPage = $this->get_items_per_page('rrze_log_per_page', 20);
         $currentPage = $this->get_pagenum();
-        
-        //$this->items = $db->select('__id,level,blog_id')->where('content.plugin', 'LIKE', 'rrze-log')->limit($perPage, ($currentPage - 1) * $perPage)->results();
-        //$totalItems = $db->where('content.plugin', 'LIKE', 'rrze-log')->count();
-        /**
-        if ($level) {
-            $this->items = $this->db->where('level', 'LIKE', $level)
-                ->limit($perPage, (($currentPage - 1) * $perPage))
-                ->results();
-            $totalItems = $this->db->where('level', 'LIKE', $level)->count();
-        } else {
-            $this->items = $this->db->select($fields)
-                ->limit($perPage, (($currentPage - 1) * $perPage))
-                ->results();
-            $totalItems = $this->db->count();
-        }
-        */
-        
+
         $logPath = plugin_dir_path($this->pluginFile) . Logger::LOG_DIR . DIRECTORY_SEPARATOR;
         $logFile = sprintf('%1$s%2$s.log', $logPath, date('Y-m-d'));
-        
-        $logParser = new LogParser($logFile, (($currentPage - 1) * $perPage), $perPage);
-        $this->items = [];
+
+        $search = [];
+        if ($level) {
+            $search[] = '"level":"' . $level . '"';
+        }
+        $logParser = new LogParser($logFile, $search, (($currentPage - 1) * $perPage), $perPage);
+        if (is_wp_error($logParser)) {
+            return;
+        }
         foreach ($logParser->getItems() as $key => $value) {
             $this->items[] = json_decode($value, true);
         }
 
         $totalItems = $logParser->getTotalLines();
-        \RRZE\Dev\dLog($totalItems);
+
         $this->set_pagination_args(
             [
                 'total_items' => $totalItems, // Total number of items
@@ -191,7 +173,7 @@ class ListTable extends WP_List_Table
 
     protected function levelsDropdown()
     {
-        $levelFilter = isset($_GET['level']) ? $_GET['level'] : ''; ?>
+        $levelFilter = isset($_REQUEST['level']) ? $_REQUEST['level'] : ''; ?>
         <select id="levels-filter" name="level">
             <option value=""><?php _e('All levels'); ?></option>
             <?php foreach (static::LEVELS as $level) :
@@ -204,7 +186,7 @@ class ListTable extends WP_List_Table
 
     protected function pluginsDropdown()
     {
-        $pluginFilter = isset($_GET['plugin']) ? $_GET['plugin'] : '';
+        $pluginFilter = isset($_REQUEST['plugin']) ? $_REQUEST['plugin'] : '';
         $plugins = $this->db->select('content.plugin')
             ->where('content.plugin', '!=', '')
             ->results();
@@ -229,7 +211,7 @@ class ListTable extends WP_List_Table
         $tmpAry = [];
         $i = 0;
         $keyAry = [];
-   
+
         foreach ($ary as $val) {
             if (!in_array($val[$key], $keyAry)) {
                 $keyAry[$i] = $val[$key];

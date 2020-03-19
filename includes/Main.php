@@ -112,7 +112,7 @@ class Main
             $this->logger->debug($content['message'], $content['context']);
         }
     }
-    
+
     protected function sanitizeContent($content)
     {
         $message = '';
@@ -137,7 +137,7 @@ class Main
     }
 
     protected function objectToArray($objectOrArray)
-    {    
+    {
         // if is_json -> decode :
         if (is_string($objectOrArray) && $this->isJson($objectOrArray)) {
             $objectOrArray = json_decode($objectOrArray);
@@ -166,17 +166,9 @@ class Main
         }
         return $output;
     }
-    
+
     protected function test()
     {
-        $ary = [
-            'one' => 1,
-            'two' => 2
-        ];
-        $obj = new \stdClass;
-        $obj->one = 1;
-        $obj->two = 2;
-
         $logType = [
             'rrze.log.error',
             'rrze.log.debug',
@@ -184,9 +176,51 @@ class Main
             'rrze.log.notice',
             'rrze.log.info'
         ];
+        $types = [
+            'plugin' => 'rrze-log',
+            'theme' => 'fau-einrichtungen',
+            'theme' => 'blue-edgy',
+            'plugin' => 'rrze-calendar',
+            'plugin' => 'cms-workflow'
+        ];
+        $typeKey = array_rand($types);
+        $typeName = $types[$typeKey];
+        $ary = [
+            'wordOne' => $this->randomWord(rand(4, 6)),
+            'wordTwo' => $this->randomWord(rand(4, 6))
+        ];
+        $obj = new \stdClass;
+        $obj->wordOne = $this->randomWord(rand(4, 6));
+        $obj->wordTwo = $this->randomWord(rand(4, 6));
 
-        do_action($logType[rand(0, 4)], ['message' => 'Hello World!', 'plugin' =>'rrze-log', 'ary' => $ary, 'obj' => $obj]);
+        do_action($logType[rand(0, 4)], ['message' => $this->randomText(), $typeKey => $typeName, 'ary' => $ary, 'obj' => $obj]);
+    }
 
-        //\RRZE\Dev\dLog($result);
+    protected function randomText()
+    {
+        $text = [];
+        $limit = rand(3, 6);
+        for ($i = 1; $i <= $limit; $i++) {
+            $length = rand(4, 6);
+            $text[] = $this->randomWord($length);
+        }
+        return implode(' ', $text) . '.';
+    }
+
+    protected function randomWord($length = 6)
+    {
+        $word = '';
+        $vowels = ["a","e","i","o","u"];
+        $consonants = [
+            'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm',
+            'n', 'p', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z'
+        ];
+        $max = $length/2;
+        for ($i = 1; $i <= $max; $i++)
+        {
+            $word .= $consonants[rand(0,19)];
+            $word .= $vowels[rand(0,4)];
+        }
+        return $word;
     }
 }

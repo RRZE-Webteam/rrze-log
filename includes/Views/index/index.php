@@ -3,7 +3,7 @@
     <?php _e('Logs', 'rrze-log'); ?>
 </h2>
 
-<form method="get">
+<form method="post">
     <input type="hidden" name="page" value="<?php echo $_REQUEST['page'] ?>">
     <?php $data['listTable']->search_box(__('Search', 'rrze-log'), 's'); ?>
 </form>

@@ -42,12 +42,6 @@ class Logger
 
     /**
      * [protected description]
-     * @var integer
-     */
-    protected $currentTimeGmt;
-
-    /**
-     * [protected description]
      * @var integer|boolean
      */
     protected $enabled;
@@ -111,11 +105,8 @@ class Logger
         isset($this->funcOverload) || $this->funcOverload = (extension_loaded('mbstring') && ini_get('mbstring.func_overload'));
 
         $this->currentBlogId = get_current_blog_id();
-
-        $this->currentTimeGmt = current_time('timestamp', 1);
-        //\RRZE\Dev\dLog($this->parser());
     }
-    
+
     public function error($message = '', $context = [])
     {
         $this->log('ERROR', $message, $context);
@@ -130,12 +121,12 @@ class Logger
     {
         $this->log('NOTICE', $message, $context);
     }
-    
+
     public function info($message = '', $context = [])
     {
         $this->log('INFO', $message, $context);
     }
-    
+
     public function debug($message = '', $context = [])
     {
         $this->log('DEBUG', $message, $context);
@@ -144,7 +135,7 @@ class Logger
     protected function log(string $level, string $message, array $context)
     {
         $data = [
-            'datetime' => sprintf('%s UTC', date('Y-m-d H:i:s', $this->currentTimeGmt)),
+            'datetime' => $this->getDateTime(),
             'blog_id' => $this->currentBlogId,
             'level' => $level,
             'message' => $message,
@@ -164,7 +155,7 @@ class Logger
         if (!$this->isLogPathWritable()) {
             return false;
         }
-        
+
         $this->unlinkMaxLogFiles();
 
         $newFile = false;
@@ -207,7 +198,7 @@ class Logger
                 break;
             }
         }
-        
+
         return $bytesWritten;
     }
 
@@ -303,23 +294,11 @@ class Logger
         }
     }
 
-    protected function parser()
+    protected function getDateTime()
     {
-        $logParser = new LogParser($this->logFile);
-        $output = [];
-        foreach ($logParser->iterate() as $value) {
-            $output[] = $value;
-        }
-        return $output;
-    }
-
-    protected function getTotalLines()
-    {
-        if (!file_exists($this->logFile)) {
-            return;
-        }
-        $file = new \SplFileObject($this->logFile);
-        $file->seek($file->getSize());
-        return $file->key();
+        $currentTime = microtime(true);
+        $microTime = sprintf("%06d", ($currentTime - floor($currentTime)) * 1000000);
+        $dateTime = new \DateTime(date('Y-m-d H:i:s.' . $microTime, $currentTime));
+        return $dateTime->format('Y-m-d G:i:s.u');
     }
 }

@@ -12,16 +12,19 @@ class LogParser
 
     protected $file = null;
 
+    protected $search;
+
     protected $offset;
 
     protected $count;
 
     protected $totalLines = 0;
- 
-    public function __construct($filename, $offset = 0, $count = -1)
+
+    public function __construct($filename, $search = [], $offset = 0, $count = -1)
     {
         $this->offset = $offset;
         $this->count = $count;
+        $this->search = $search;
 
         if (!file_exists($filename)) {
             $this->error = new WP_Error('rrze_log_file', __('Log file not found.', 'rrze-log'));
@@ -33,16 +36,27 @@ class LogParser
             );
         }
     }
- 
+
     protected function iterateFile()
     {
         while (!$this->file->eof()) {
             $line = $this->file->fgets();
-            yield $line;
-            $this->totalLines++;
+            if (!empty($line) && (!$this->search || $this->search($line))) {
+                yield $line;
+                $this->totalLines++;
+            }
         }
     }
- 
+
+    protected function search($haystack) {
+        foreach ($this->search as $str) {
+            if(strpos($haystack, $str) !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function iterate()
     {
         return new \NoRewindIterator($this->iterateFile());
@@ -57,8 +71,13 @@ class LogParser
         foreach ($this->iterateFile() as $line) {
             $lines[] = $line;
         }
-        $lines = new \ArrayIterator($lines);
-        return new \LimitIterator($lines, $this->offset, $this->count);
+        if (count($lines) >= $this->offset) {
+            krsort($lines);
+            $limitIterator = new \LimitIterator(new \ArrayIterator($lines), $this->offset, $this->count);
+        } else {
+            $limitIterator = new \LimitIterator(new \ArrayIterator([]));
+        }
+        return $limitIterator;
     }
 
     public function getTotalLines()
