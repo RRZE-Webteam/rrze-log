@@ -4,208 +4,252 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-use RRZE\Log\Options;
-use RRZE\Log\Log;
-
 class Settings
 {
+    /**
+     * [protected description]
+     * @var string
+     */
+    protected $pluginFile;
+
+    /**
+     * [protected description]
+     * @var string
+     */
+    protected $optionName;
+
+    /**
+     * [protected description]
+     * @var object
+     */
     protected $options;
 
-    protected $option_name;
+    /**
+     * [protected description]
+     * @var object
+     */
+    protected $listTable;
 
-    protected $adminSettingsPage;
+    /**
+     * [protected description]
+     * @var array
+     */
+    protected $messages = [];
 
-    public $log;
-
-    public function __construct()
+    /**
+     * [__construct description]
+     * @param string $pluginFile [description]
+     * @param string $optionName [description]
+     * @param string $options    [description]
+     */
+    public function __construct($pluginFile, $optionName, $options)
     {
-        $this->optionName = Options::getOptionName();
-        $this->options = Options::getOptions();
-
-        $this->log = new Log();
+        $this->pluginFile = $pluginFile;
+        $this->optionName = $optionName;
+        $this->options = $options;
     }
 
-    public function adminSettingsMenu()
+    /**
+     * [onLoaded description]
+     */
+    public function onLoaded()
     {
-        $this->adminSettingsPage = add_options_page(__('Log', 'rrze-log'), __('Log', 'rrze-log'), 'manage_options', 'rrzelog', [$this, 'adminSettingsPage']);
-        //add_action('load-' . $this->adminSettingsPage, [$this, 'adminHelpMenu']);
+        add_action('network_admin_menu', [$this, 'networkAdminMenu']);
+        add_action('network_admin_menu', [$this, 'settingsSection']);
+        add_action('network_admin_menu', [$this, 'settingsUpdate']);
+
+        add_filter('set-screen-option', [$this, 'setScreenOption'], 10, 3);
     }
 
-    public function adminSettingsPage()
+    /**
+     * [networkAdminMenu description]
+     */
+    public function networkAdminMenu()
     {
-        ?>
-        <div class="wrap">
-            <h2><?php echo __('Log Settings', 'rrze-log'); ?></h2>
-            <form method="post" action="options.php">
-            <?php settings_fields('rrzelog_options'); ?>
-            <?php do_settings_sections('rrzelog_options'); ?>
-            <?php submit_button(); ?>
-            </form>
-        </div>
-        <?php
-    }
-
-    public function adminSettingsSections()
-    {
-        register_setting('rrzelog_options', $this->optionName, [$this, 'validateOptions']);
-        add_settings_section('rrzelog_section', false, '__return_false', 'rrzelog_options');
-        add_settings_field('rrzelog-enable', __('Enable Log', 'rrze-log'), [$this, 'enabledField'], 'rrzelog_options', 'rrzelog_section');
-        add_settings_field('rrzelog-threshold', __('Error Level', 'rrze-log'), [$this, 'thresholdField'], 'rrzelog_options', 'rrzelog_section');
-        add_settings_field('rrzelog-rotatemax', __('Archives count', 'rrze-log'), [$this, 'rotatemaxField'], 'rrzelog_options', 'rrzelog_section');
-        add_settings_field('rrzelog-rotatetime', __('Archive interval', 'rrze-log'), [$this, 'rotatetimeField'], 'rrzelog_options', 'rrzelog_section');
-    }
-
-    public function adminHelpMenu()
-    {
-        $content = [
-            '<p></p>',
-        ];
-
-
-        $help_tab = [
-            'id' => $this->adminSettingsPage,
-            'title' => __('Overview', 'rrze-log'),
-            'content' => implode(PHP_EOL, $content),
-        ];
-
-        $help_sidebar = sprintf('<p><strong>%1$s:</strong></p><p><a href="http://blogs.fau.de/webworking">RRZE-Webworking</a></p><p><a href="https://github.com/RRZE-Webteam">%2$s</a></p>', __('For more information:', 'rrze-log'), __('RRZE Webteam on Github', 'rrze-log'));
-
-        $screen = get_current_screen();
-
-        if ($screen->id != $this->adminSettingsPage) {
-            return;
-        }
-
-        $screen->add_help_tab($help_tab);
-
-        $screen->set_help_sidebar($help_sidebar);
-    }
-
-    public function networkSettingsMenu()
-    {
-        if (isset($_POST['_wpnonce']) &&  wp_verify_nonce($_POST['_wpnonce'], 'rrzelog_network-options') && current_user_can('manage_network_options')) {
-            if (isset($_POST['rrzelog-site-submit']) && isset($_POST[$this->optionName])) {
-                $this->validateOptions($_POST[$this->optionName]);
-                wp_redirect(add_query_arg(['page' => 'rrzelog-network', 'update' => 'updated'], network_admin_url('settings.php')));
-                exit;
-            }
-        }
-
-        add_submenu_page(
-            'settings.php',
+        $logPage = add_menu_page(
             __('Log', 'rrze-log'),
             __('Log', 'rrze-log'),
-            'manage_network_options',
-            'rrzelog-network',
-            [$this, 'networkPage']
+            'manage_options',
+            'rrze-log',
+            [$this, 'logPage'],
+            'dashicons-list-view'
         );
+
+        $settingsPage = add_submenu_page(
+            'rrze-log',
+            __('Settings', 'rrze-updater'),
+            __('Settings', 'rrze-updater'),
+            'manage_options',
+            'rrze-log-settings',
+            [$this, 'settingsPage']
+        );
+
+        add_action("load-$logPage", [$this, 'screenOptions']);
+        $this->listTable = new ListTable();
     }
 
-    public function networkPage()
+    /**
+     * [settingsPage description]
+     */
+    public function settingsPage()
     {
-        ?>
+        global $title; ?>
         <div class="wrap">
-            <h2><?php echo esc_html(__('Log', 'rrze-log')); ?></h2>
-
+            <h1><?php echo esc_html($title); ?></h1>
             <form method="post">
-                <?php settings_fields('rrzelog_network'); ?>
-                <?php do_settings_sections('rrzelog_network'); ?>
-                <?php submit_button(esc_html__('Saves Changes', 'rrze-log'), 'primary', 'rrzelog-site-submit'); ?>
+            <?php do_settings_sections('rrze-log-settings'); ?>
+            <?php settings_fields('rrze-log-settings'); ?>
+            <?php submit_button(__('Save Changes', 'rrze-settings'), 'primary', 'rrze-log-settings-submit-primary'); ?>
             </form>
-
         </div>
         <?php
     }
 
-    public function networkSettingsSections()
+    /**
+     * [settingsSection description]
+     */
+    public function settingsSection()
     {
-        add_settings_section('rrzelog_section', false, '__return_false', 'rrzelog_network');
-        add_settings_field('rrzelog-enable', __('Enable Log', 'rrze-log'), [$this, 'enabledField'], 'rrzelog_network', 'rrzelog_section');
-        add_settings_field('rrzelog-threshold', __('Error Level', 'rrze-log'), [$this, 'thresholdField'], 'rrzelog_network', 'rrzelog_section');
-        add_settings_field('rrzelog-rotatemax', __('Archives count', 'rrze-log'), [$this, 'rotatemaxField'], 'rrzelog_network', 'rrzelog_section');
-        add_settings_field('rrzelog-rotatetime', __('Archive interval', 'rrze-log'), [$this, 'rotatetimeField'], 'rrzelog_network', 'rrzelog_section');
+        add_settings_section('rrze-log-settings', false, '__return_false', 'rrze-log-settings');
+        add_settings_field('rrze-log-enabled', __('Enable Log', 'rrze-log'), [$this, 'enabledField'], 'rrze-log-settings', 'rrze-log-settings');
+        add_settings_field('rrze-log-logTTL', __('Time to live', 'rrze-log'), [$this, 'logTTLField'], 'rrze-log-settings', 'rrze-log-settings');
     }
 
+    /**
+     * [enabledField description]
+     */
     public function enabledField()
     {
         ?>
         <label>
-            <input type="checkbox" id="rrzelog-enabled" name="<?php printf('%s[enabled]', $this->optionName); ?>" value="1"<?php checked($this->options->enabled, 1); ?>>
+            <input type="checkbox" id="rrze-log-enabled" name="<?php printf('%s[enabled]', $this->optionName); ?>" value="1"<?php checked($this->options->enabled, 1); ?>>
         </label>
         <?php
     }
 
-    public function thresholdField()
-    {
-        $levels = $this->log->getErrorLevels(); ?>
-        <label for="rrzelog-threshold">
-            <?php foreach ($levels as $level => $bitmask) :?>
-            <?php if ($level == 'DEBUG' && (!defined('WP_DEBUG') || !WP_DEBUG)) : continue;
-        endif; ?>
-            <input type="checkbox" id="<?php printf('rrzelog-level-%s', strtolower($level)); ?>" name="<?php printf('%s[threshold][%s]', $this->optionName, $level); ?>" value="1"<?php checked($this->getThreshold($bitmask), 1); ?>> <?php echo $level; ?> </br>
-            <?php endforeach; ?>
-        </label>
-        <?php
-    }
-
-    public function rotatemaxField()
+    /**
+     * [logTTLField description]
+     */
+    public function logTTLField()
     {
         ?>
-        <label for="rrzelog-rotatemax">
-            <input type="number" min="1" step="1" name="<?php printf('%s[rotatemax]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->rotatemax) ?>" class="small-text">
+        <label for="rrze-log-ttl">
+            <input type="number" min="1" step="1" name="<?php printf('%s[logTTL]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->logTTL) ?>" class="small-text">
         </label>
-        <p class="description"><?php _e('How many archived log files can be created before to start deleting the oldest ones.', 'rrze-log'); ?></p>
+        <p class="description"><?php _e('How many days can the log file remain on disk before it is removed.', 'rrze-log'); ?></p>
         <?php
     }
 
-    public function rotatetimeField()
-    {
-        $days = absint($this->options->rotatetime / DAY_IN_SECONDS); ?>
-        <label for="rrzelog-rotatetime">
-            <input type="number" min="1" step="1" name="<?php printf('%s[rotatetime]', $this->optionName); ?>" value="<?php echo esc_attr($days) ?>" class="small-text">
-            <?php echo esc_html(_nx('Day', 'Days', $days, 'rrzelog-rotatetime', 'rrze-log')) ?>
-        </label>
-        <p class="description"><?php _e('How often to archive log files.', 'rrze-log'); ?></p>
-        <?php
-    }
 
-    protected function getThreshold($bitmask)
-    {
-        return ($this->options->threshold & (1 << $bitmask)) != 0;
-    }
-
-    protected function setThreshold($bitmask, $new = true)
-    {
-        $this->options->threshold = ($this->options->threshold & ~(1 << $bitmask)) | ($new << $bitmask);
-    }
-
-    public function validateOptions($input)
+    /**
+     * [optionsValidate description]
+     * @param  array $input [description]
+     * @return array        [description]
+     */
+    public function optionsValidate($input)
     {
         $input['enabled'] = !empty($input['enabled']) ? 1 : 0;
-        $inputThreshold = !empty($input['threshold']) ? (array) $input['threshold'] : [];
+        $input['logTTL'] = !empty($input['logTT']) && absint($input['logTTL']) ? absint($input['logTTL']) : $this->options->logTTL;
 
-        $this->options->threshold = 0;
+        $this->options = (object) wp_parse_args($input, (array) $this->options);
+        return (array) $this->options;
+    }
 
-        $levels = $this->log->getErrorLevels();
+    /**
+     * [settingsUpdate description]
+     */
+    public function settingsUpdate()
+    {
+        if (is_network_admin() && isset($_POST['rrze-log-settings-submit-primary'])) {
+            check_admin_referer('rrze-log-settings-options');
+            $input = isset($_POST[$this->optionName]) ? $_POST[$this->optionName] : [];
+            update_site_option($this->optionName, $this->optionsValidate($input));
+            $this->options = Options::getOptions();
+            add_action('network_admin_notices', [$this, 'settingsUpdateNotice']);
+        }
+    }
 
-        foreach ($levels as $level => $bitmask) {
-            if ($level == 'DEBUG' && (!defined('WP_DEBUG') || !WP_DEBUG)) {
-                continue;
-            }
-            if (isset($inputThreshold[$level])) {
-                $this->setThreshold($bitmask);
-            }
+    /**
+     * [settingsUpdateNotice description]
+     */
+    public function settingsUpdateNotice()
+    {
+        $class = 'notice updated';
+        $message = __("Settings saved.", 'rrze-settings');
+
+        printf('<div class="%1s"><p>%2s</p></div>', esc_attr($class), esc_html($message));
+    }
+
+    /**
+     * [setScreenOption description]
+     * @param string $status [description]
+     * @param string $option [description]
+     * @param string $value  [description]
+     * @return string        [description]
+     */
+    public function setScreenOption($status, $option, $value)
+    {
+        if ('rrze_log_per_page' == $option) {
+            return $value;
+        }
+        return $status;
+    }
+
+    /**
+     * [screenOptions description]
+     */
+    public function screenOptions()
+    {
+        $option = 'per_page';
+        $args = [
+            'label' => __('Number of items per page:', 'rrze-log'),
+            'default' => 20,
+            'option' => 'rrze_log_per_page'
+        ];
+
+        add_screen_option($option, $args);
+    }
+
+    /**
+     * [logPage description]
+     */
+    public function logPage()
+    {
+        wp_enqueue_style('rrze-log-list-table');
+        wp_enqueue_script('rrze-log-list-table');
+
+        $this->listTable->prepare_items();
+
+        $action = isset($_GET['action']) ? $_GET['action'] : 'index';
+
+        $s = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
+        $level = isset($_REQUEST['level']) && in_array($_REQUEST['level'], Logger::LEVELS) ? $_REQUEST['level'] : '';
+        $logFile = isset($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
+
+        $data = [
+            'action' => $action,
+            's' => $s,
+            'level' => $level,
+            'logfile' => $logFile,
+            'listTable' => $this->listTable
+        ];
+
+        $this->show('list-table', $data);
+    }
+
+    /**
+     * [show description]
+     * @param  string $view [description]
+     * @param  array  $data [description]
+     */
+    protected function show($view, $data = [])
+    {
+        if (!current_user_can('update_plugins') || !current_user_can('update_themes')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
         }
 
-        $input['threshold'] = $this->options->threshold;
-
-        $input['rotatemax'] = !empty($input['rotatemax']) && absint($input['rotatemax']) ? absint($input['rotatemax']) : 1;
-        $input['rotatetime'] = !empty($input['rotatetime']) && absint($input['rotatetime']) ? absint($input['rotatetime']) * DAY_IN_SECONDS : DAY_IN_SECONDS;
-
-        if (is_multisite()) {
-            update_site_option($this->optionName, $input);
-        } else {
-            return $input;
-        }
+        $data['messages'] = $this->messages;
+        
+        include 'Views/base.php';
     }
 }

@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-05-16 10:45+0000\n"
+"POT-Creation-Date: 2020-03-22 20:36+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -15,97 +15,85 @@ msgstr ""
 "X-Generator: Loco https://localise.biz/\n"
 "X-Loco-Version: 2.2.2; wp-5.2"
 
-#: rrze-log.php:71
+#: rrze-log.php:67
 #, php-format
 msgid ""
 "The server is running PHP version %1$s. The Plugin requires at least PHP "
 "version %2$s."
 msgstr ""
 
-#: rrze-log.php:77
+#: rrze-log.php:69
 #, php-format
 msgid ""
 "The server is running WordPress version %1$s. The Plugin requires at least "
 "WordPress version %2$s."
 msgstr ""
 
-#: includes/Settings.php:30 includes/Settings.php:96 includes/Settings.php:97
-#: includes/Settings.php:108
+#: rrze-log.php:71
+msgid "The WordPress instance must be multisite."
+msgstr ""
+
+#: rrze-log.php:86 rrze-log.php:122
+#, php-format
+msgid "Plugins: %1$s: %2$s"
+msgstr ""
+
+#: includes/Settings.php:70 includes/Settings.php:71
 msgid "Log"
 msgstr ""
 
-#: includes/Settings.php:38
-msgid "Log Settings"
-msgstr ""
-
-#: includes/Settings.php:52 includes/Settings.php:123
+#: includes/Settings.php:114
 msgid "Enable Log"
 msgstr ""
 
-#: includes/Settings.php:53 includes/Settings.php:124
-msgid "Error Level"
+#: includes/Settings.php:115
+msgid "Time to live"
 msgstr ""
 
-#: includes/Settings.php:54 includes/Settings.php:125
-msgid "Archives count"
+#: includes/Settings.php:139
+msgid "How many days can the log file remain on disk before it is removed."
 msgstr ""
 
-#: includes/Settings.php:55 includes/Settings.php:126
-msgid "Archive interval"
+#: includes/Settings.php:205
+msgid "Number of items per page:"
 msgstr ""
 
-#: includes/Settings.php:67
-msgid "Overview"
+#: includes/Settings.php:248
+msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 
-#: includes/Settings.php:71
-msgid "For more information:"
+#: includes/ListTable.php:73
+msgid "Level"
 msgstr ""
 
-#: includes/Settings.php:71
-msgid "RRZE Webteam on Github"
+#: includes/ListTable.php:74
+msgid "Website"
 msgstr ""
 
-#: includes/Settings.php:113
-msgid "Saves Changes"
+#: includes/ListTable.php:75
+msgid "Message"
 msgstr ""
 
-#: includes/Settings.php:157
-msgid ""
-"How many archived log files can be created before to start deleting the "
-"oldest ones."
+#: includes/ListTable.php:76
+msgid "Date"
 msgstr ""
 
-#: includes/Settings.php:166
-msgctxt "rrzelog-rotatetime"
-msgid "Day"
-msgid_plural "Days"
-msgstr[0] ""
-msgstr[1] ""
-
-#: includes/Settings.php:168
-msgid "How often to archive log files."
+#: includes/LogParser.php:61
+msgid "Log file not found."
 msgstr ""
 
-#: includes/Main.php:53 includes/Main.php:73
-msgid "Settings"
-msgstr ""
-
-#: includes/Rotate.php:29
-msgid "The log file is not writable."
-msgstr ""
-
-#: includes/Rotate.php:45
-msgid "The log file size could not be determined."
-msgstr ""
-
-#: includes/Rotate.php:74
-msgid "The log file could not be renamed."
-msgstr ""
-
-#: includes/File/Flock.php:58
+#: includes/File/Flock.php:54
 #, php-format
 msgid "Could not get lock on %s"
+msgstr ""
+
+#: includes/Views/list-table.php:8
+msgid "Logs"
+msgstr ""
+
+#: includes/Views/base.php:13
+#, php-format
+msgid "Error: %s"
 msgstr ""
 
 #. Name of the plugin
@@ -119,7 +107,7 @@ msgid ""
 msgstr ""
 
 #. URI of the plugin
-msgid "https://gitlab.rrze.fau.de/rrze-webteam/rrze-logs"
+msgid "https://gitlab.rrze.fau.de/rrze-webteam/rrze-log"
 msgstr ""
 
 #. Author of the plugin

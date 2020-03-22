@@ -20,9 +20,7 @@ class Options
     {
         $options = [
             'enabled' => '0',
-            'threshold' => '2',
-            'rotatemax' => '1',
-            'rotatetime' => DAY_IN_SECONDS
+            'logTTL' => 7 // in days
         ];
 
         return $options;

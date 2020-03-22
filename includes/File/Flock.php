@@ -2,31 +2,29 @@
 
 namespace RRZE\Log\File;
 
-use RRZE\Log\File\FlockException;
-
 class Flock
 {
     /**
-     * Whether or not we currently have a locked file.
+     * [protected description]
      * @var boolean
      */
     protected $locked;
 
     /**
-     * The resource being wrapped by this lock.
+     * [public description]
      * @var resource
      */
     public $fp;
 
     /**
-     * The path to the file to lock.
+     * [protected description]
      * @var string
      */
     protected $filePath;
 
     /**
      * [__construct description]
-     * @param string $filePath Path to file
+     * @param string $filePath [description]
      */
     public function __construct($filePath)
     {
@@ -36,8 +34,7 @@ class Flock
     }
 
     /**
-     * Release the lock on the file (if it is still locked).
-     * @return void
+     * [__destruct description]
      */
     public function __destruct()
     {
@@ -45,9 +42,8 @@ class Flock
     }
 
     /**
-     * Acquire a lock on the file.
-     * @return object $this, for chaining
-     * @throws \RRZE\Log\File\FlockException If lock could not be acquired
+     * [acquire description]
+     * @return object $this
      */
     public function acquire()
     {
@@ -65,8 +61,8 @@ class Flock
     }
 
     /**
-     * Release the lock on the file.
-     * @return object $this for chaining
+     * [release description]
+     * @return object $this
      */
     public function release()
     {

@@ -26,7 +26,14 @@ Dashboard / Einstellungen / Protokoll
 Der Code, der in einem Plugin hinzugefügt wird, um die Protokollierung zu aktivieren, könnte folgendes sein:
 
 ```
-do_action('rrze.log.error', ['plugin' =>'cms-basis', 'wp-error' => $wp_error]);
+// Die Ausgabe verwendet das Standardformat {$value1 $value2 ...})
+do_action('rrze.log.error', ['plugin' =>'cms-basis', 'wp-error' => $wp_error->get_error_message()]);
+
+// Die Ausgabe ist nicht formatiert
+do_action('rrze.log.error', 'Ein WP-Fehler ist aufgetreten.', ['plugin' =>'cms-basis', 'wp-error' => $wp_error->get_error_message()]);
+
+// Mit eine formatierten Ausgabe
+do_action('rrze.log.error', 'Plugin: {plugin} WP-Fehler: {wp-error}', ['plugin' =>'cms-basis', 'wp-error' => $wp_error->get_error_message()]);
 ```
 
 Ein weiterer Anwendungsfall ist die Protokollierung einer Exception, die während der Ausführung von Code ausgelöst wird.
@@ -36,7 +43,7 @@ try {
     // (Code)
 } catch(\Exception $exception) {
     // Die Exception protokollieren, indem man sie direkt an RRZE Log übergeben.
-    do_action('rrze.log.warning', ['Exception' => $exception]);
+    do_action('rrze.log.warning', ['exception' => $exception]);
 
     if (defined('WP_DEBUG') && WP_DEBUG) {
         throw $exception;
@@ -51,13 +58,10 @@ try {
 'rrze.log.warning'
 'rrze.log.notice'
 'rrze.log.info'
-'rrze.log.debug'
 ```
 
 ### Anmerkungen
 
-- Die Protokolldateien werden im Verzeichnis "WP_CONTENT/log/rrzelog" abgelegt
-- Das Datensatzformat ist JSON, mit Ausnahme des Debug-Modus, bei dem das Format von der Funktion print_r() erzeugt wird.
-- Die Protokollierung mittels 'rrze.log.error', 'rrze.log.warning' und 'rrze.log.notice' werden in derselben "error.log" Datei gespeichert
-- Die Protokollierung mittels 'rrze.log.info' wird in der "info.log" Datei gespeichert
-- Die Protokollierung mittels 'rrze.log.debug' (Debug-Modus) wird in der "debug.log" Datei gespeichert und ist nur möglich, wenn die Konstante WP_DEBUG auf true gesetzt ist
+- Die Protokolldateien werden im Verzeichnis WP_CONTENT.'/log/rrze-log' abgelegt
+- Das Dateinamenformat ist "yyy-mm-dd.log"
+- Das Datensatzformat ist JSON
