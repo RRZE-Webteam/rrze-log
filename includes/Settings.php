@@ -4,6 +4,8 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
+use RRZE\Log\ListTable;
+
 class Settings
 {
     /**
@@ -85,7 +87,6 @@ class Settings
         );
 
         add_action("load-$logPage", [$this, 'screenOptions']);
-        $this->listTable = new ListTable();
     }
 
     /**
@@ -208,6 +209,7 @@ class Settings
         ];
 
         add_screen_option($option, $args);
+        $this->listTable = new ListTable();
     }
 
     /**
@@ -249,7 +251,7 @@ class Settings
         }
 
         $data['messages'] = $this->messages;
-        
+
         include 'Views/base.php';
     }
 }

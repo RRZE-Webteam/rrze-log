@@ -5,7 +5,7 @@ namespace RRZE\Log;
 defined('ABSPATH') || exit;
 
 use RRZE\Log\Settings;
-use RRZE\Log\Log;
+use RRZE\Log\Logger;
 
 class Main
 {
@@ -59,7 +59,7 @@ class Main
             return;
         }
 
-        $this->logger = new Logger();
+        $this->logger = new Logger($this->options);
         $this->logger->onLoaded();
 
         add_action('rrze.log.error', [$this, 'logError'], 10, 2);
