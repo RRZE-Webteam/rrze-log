@@ -20,5 +20,4 @@ endforeach;
 
 include $view . '.php';
 ?>
-        <hr>
 </div>
