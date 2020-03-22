@@ -1,4 +1,9 @@
-<?php defined('ABSPATH') || exit; ?>
+<?php
+
+namespace RRZE\Log;
+
+defined('ABSPATH') || exit;
+?>
 <div class="wrap">
 <?php
 foreach ($data['messages'] as $message) :

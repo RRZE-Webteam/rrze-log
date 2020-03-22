@@ -8,18 +8,49 @@ use WP_Error;
 
 class LogParser
 {
+    /**
+     * [protected description]
+     * @var [type]
+     */
     protected $error = null;
 
+    /**
+     * [protected description]
+     * @var [type]
+     */
     protected $file = null;
 
+    /**
+     * [protected description]
+     * @var array
+     */
     protected $search;
 
+    /**
+     * [protected description]
+     * @var integer
+     */
     protected $offset;
 
+    /**
+     * [protected description]
+     * @var integer
+     */
     protected $count;
 
+    /**
+     * [protected description]
+     * @var integer
+     */
     protected $totalLines = 0;
 
+    /**
+     * [__construct description]
+     * @param string  $filename [description]
+     * @param array   $search   [description]
+     * @param integer $offset   [description]
+     * @param integer $count    [description]
+     */
     public function __construct($filename, $search = [], $offset = 0, $count = -1)
     {
         $this->offset = $offset;
@@ -37,6 +68,9 @@ class LogParser
         }
     }
 
+    /**
+     * [iterateFile description]
+     */
     protected function iterateFile()
     {
         while (!$this->file->eof()) {
@@ -48,19 +82,24 @@ class LogParser
         }
     }
 
+    /**
+     * [search description]
+     * @param  string $haystack [description]
+     * @return boolean           [description]
+     */
     protected function search($haystack) {
         $find = true;
-        foreach ($this->search as $str) {
-            if (is_array($str) && !empty($str)) {
-                foreach ($str as $v) {
-                    if(strpos($haystack, $v) === false) {
+        foreach ($this->search as $needle) {
+            if (is_array($needle) && !empty($needle)) {
+                foreach ($needle as $str) {
+                    if(strpos($haystack, $str) === false) {
                         $find = $find && false;
                     } else {
                         $find = $find && true;
                     }
                 }
             } else {
-                if(strpos($haystack, $str) === false) {
+                if(strpos($haystack, $needle) === false) {
                     $find = $find && false;
                 }
             }
@@ -68,11 +107,21 @@ class LogParser
         return $find;
     }
 
+    /**
+     * [iterate description]
+     * @return object \NoRewindIterator()
+     */
     public function iterate()
     {
         return new \NoRewindIterator($this->iterateFile());
     }
 
+    /**
+     * [getItems description]
+     * @param  string $key    [description]
+     * @param  string $search [description]
+     * @return object         \LimitIterator()
+     */
     public function getItems($key = '', $search = '')
     {
         if (is_wp_error($this->error)) {
@@ -91,6 +140,10 @@ class LogParser
         return $limitIterator;
     }
 
+    /**
+     * [getTotalLines description]
+     * @return integer [description]
+     */
     public function getTotalLines()
     {
         return $this->totalLines;

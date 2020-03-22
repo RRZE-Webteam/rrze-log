@@ -1,4 +1,9 @@
-<?php defined('ABSPATH') || exit; ?>
+<?php
+
+namespace RRZE\Log;
+
+defined('ABSPATH') || exit;
+?>
 <h2>
     <?php _e('Logs', 'rrze-log'); ?>
 </h2>

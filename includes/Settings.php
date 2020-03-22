@@ -36,6 +36,12 @@ class Settings
      */
     protected $messages = [];
 
+    /**
+     * [__construct description]
+     * @param string $pluginFile [description]
+     * @param string $optionName [description]
+     * @param string $options    [description]
+     */
     public function __construct($pluginFile, $optionName, $options)
     {
         $this->pluginFile = $pluginFile;
@@ -45,7 +51,6 @@ class Settings
 
     /**
      * [onLoaded description]
-     * @return void
      */
     public function onLoaded()
     {
@@ -58,7 +63,6 @@ class Settings
 
     /**
      * [networkAdminMenu description]
-     * @return void
      */
     public function networkAdminMenu()
     {
@@ -86,7 +90,6 @@ class Settings
 
     /**
      * [settingsPage description]
-     * @return void
      */
     public function settingsPage()
     {
@@ -102,6 +105,9 @@ class Settings
         <?php
     }
 
+    /**
+     * [settingsSection description]
+     */
     public function settingsSection()
     {
         add_settings_section('rrze-log-settings', false, '__return_false', 'rrze-log-settings');
@@ -109,6 +115,9 @@ class Settings
         add_settings_field('rrze-log-logTTL', __('Time to live', 'rrze-log'), [$this, 'logTTLField'], 'rrze-log-settings', 'rrze-log-settings');
     }
 
+    /**
+     * [enabledField description]
+     */
     public function enabledField()
     {
         ?>
@@ -118,6 +127,9 @@ class Settings
         <?php
     }
 
+    /**
+     * [logTTLField description]
+     */
     public function logTTLField()
     {
         ?>
@@ -145,7 +157,6 @@ class Settings
 
     /**
      * [settingsUpdate description]
-     * @return void
      */
     public function settingsUpdate()
     {
@@ -160,7 +171,6 @@ class Settings
 
     /**
      * [settingsUpdateNotice description]
-     * @return void
      */
     public function settingsUpdateNotice()
     {
@@ -185,6 +195,9 @@ class Settings
         return $status;
     }
 
+    /**
+     * [screenOptions description]
+     */
     public function screenOptions()
     {
         $option = 'per_page';
@@ -197,6 +210,9 @@ class Settings
         add_screen_option($option, $args);
     }
 
+    /**
+     * [logPage description]
+     */
     public function logPage()
     {
         wp_enqueue_style('rrze-log-list-table');
@@ -221,6 +237,11 @@ class Settings
         $this->show('list-table', $data);
     }
 
+    /**
+     * [show description]
+     * @param  string $view [description]
+     * @param  array  $data [description]
+     */
     protected function show($view, $data = [])
     {
         if (!current_user_can('update_plugins') || !current_user_can('update_themes')) {
@@ -228,7 +249,7 @@ class Settings
         }
 
         $data['messages'] = $this->messages;
-
-        return include 'Views/base.php';
+        
+        include 'Views/base.php';
     }
 }

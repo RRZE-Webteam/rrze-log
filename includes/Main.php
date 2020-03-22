@@ -33,6 +33,10 @@ class Main
      */
     protected $logger;
 
+    /**
+     * [__construct description]
+     * @param string $pluginFile [description]
+     */
     public function __construct($pluginFile)
     {
         $this->pluginFile = $pluginFile;
@@ -40,6 +44,10 @@ class Main
         $this->options = Options::getOptions();
     }
 
+    /**
+     * [onLoaded description]
+     * @return void
+     */
     public function onLoaded()
     {
         add_action('admin_enqueue_scripts', [$this, 'adminEnqueueScripts']);
@@ -58,13 +66,11 @@ class Main
         add_action('rrze.log.warning', [$this, 'logWarning'], 10, 2);
         add_action('rrze.log.notice', [$this, 'logNotice'], 10, 2);
         add_action('rrze.log.info', [$this, 'logInfo'], 10, 2);
-
-        //Test
-        $this->test();
     }
 
     /**
      * [logError description]
+     * @param  mixed $message [description]
      * @param  array  $context [description]
      */
     public function logError($message, $context = [])
@@ -76,6 +82,7 @@ class Main
 
     /**
      * [logWarning description]
+     * @param  mixed $message [description]
      * @param  array  $context [description]
      */
     public function logWarning($message, $context = [])
@@ -87,6 +94,7 @@ class Main
 
     /**
      * [logNotice description]
+     * @param  mixed $message [description]
      * @param  array  $context [description]
      */
     public function logNotice($message, $context = [])
@@ -98,6 +106,7 @@ class Main
 
     /**
      * [logInfo description]
+     * @param  mixed $message [description]
      * @param  array  $context [description]
      */
     public function logInfo($message, $context = [])
@@ -107,6 +116,12 @@ class Main
         }
     }
 
+    /**
+     * [sanitizeArgs description]
+     * @param  mixed $message [description]
+     * @param  array  $context [description]
+     * @return array          [description]
+     */
     protected function sanitizeArgs($message, $context)
     {
         if (empty($message)) {
@@ -133,6 +148,12 @@ class Main
         ];
     }
 
+    /**
+     * [interpolate description]
+     * @param  string $message [description]
+     * @param  array  $context [description]
+     * @return string          [description]
+     */
     protected function interpolate($message, array $context)
     {
         $replace = [];
@@ -152,64 +173,4 @@ class Main
         wp_register_script('rrze-log-list-table', plugins_url('assets/js/list-table.min.js', plugin_basename($this->pluginFile)));
     }
 
-    protected function test()
-    {
-        $logType = [
-            'rrze.log.error',
-            'rrze.log.debug',
-            'rrze.log.warning',
-            'rrze.log.notice',
-            'rrze.log.info'
-        ];
-        $types = [
-            'plugin' => 'rrze-log',
-            'theme' => 'fau-einrichtungen',
-            'theme' => 'blue-edgy',
-            'plugin' => 'rrze-calendar',
-            'plugin' => 'cms-workflow'
-        ];
-        $typeKey = array_rand($types);
-        $typeName = $types[$typeKey];
-        $ary = [
-            'wordOne' => $this->randomWord(rand(4, 6)),
-            'wordTwo' => $this->randomWord(rand(4, 6))
-        ];
-        $obj = new \stdClass;
-        $obj->wordOne = $this->randomWord(rand(4, 6));
-        $obj->wordTwo = $this->randomWord(rand(4, 6));
-
-        for ($i = 1; $i <= 100; $i++) {
-            do_action($logType[rand(0, 4)], $this->randomText(), [$typeKey => $typeName, 'ary' => $ary, 'obj' => $obj]);
-            do_action($logType[rand(0, 4)], '(only message) ' . $this->randomText());
-            do_action($logType[rand(0, 4)], [$typeKey => $typeName, 'ary' => $ary, 'obj' => $obj]);
-        }
-    }
-
-    protected function randomText()
-    {
-        $text = [];
-        $limit = rand(3, 6);
-        for ($i = 1; $i <= $limit; $i++) {
-            $length = rand(4, 6);
-            $text[] = $this->randomWord($length);
-        }
-        return implode(' ', $text);
-    }
-
-    protected function randomWord($length = 6)
-    {
-        $word = '';
-        $vowels = ["a","e","i","o","u"];
-        $consonants = [
-            'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm',
-            'n', 'p', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z'
-        ];
-        $max = $length/2;
-        for ($i = 1; $i <= $max; $i++)
-        {
-            $word .= $consonants[rand(0,19)];
-            $word .= $vowels[rand(0,4)];
-        }
-        return $word;
-    }
 }

@@ -4,7 +4,6 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-use RRZE\Log\Options;
 use RRZE\Log\File\Flock;
 use RRZE\Log\File\FlockException;
 
@@ -91,26 +90,52 @@ class Logger
         $this->siteUrl = get_site_url();
     }
 
+    /**
+     * [error description]
+     * @param  string $message [description]
+     * @param  array  $context [description]
+     */
     public function error(string $message, array $context)
     {
         $this->log('ERROR', $message, $context);
     }
 
+    /**
+     * [warning description]
+     * @param  string $message [description]
+     * @param  array  $context [description]
+     */
     public function warning(string $message, array $context)
     {
         $this->log('WARNING', $message, $context);
     }
 
+    /**
+     * [notice description]
+     * @param  string $message [description]
+     * @param  array  $context [description]
+     */
     public function notice(string $message, array $context)
     {
         $this->log('NOTICE', $message, $context);
     }
 
+    /**
+     * [info description]
+     * @param  string $message [description]
+     * @param  array  $context [description]
+     */
     public function info(string $message, array $context)
     {
         $this->log('INFO', $message, $context);
     }
 
+    /**
+     * [log description]
+     * @param  string $level   [description]
+     * @param  string $message [description]
+     * @param  array  $context [description]
+     */
     protected function log(string $level, string $message, array $context)
     {
         $this->logFile = sprintf('%1$s%2$s.log', $this->logPath, date('Y-m-d'));
@@ -253,6 +278,9 @@ class Logger
         return isset($length) ? substr($str, $start, $length) : substr($str, $start);
     }
 
+    /**
+     * [unlinkOldLogFiles description]
+     */
     protected function unlinkOldLogFiles()
     {
         foreach (new \DirectoryIterator($this->logPath) as $file) {
@@ -262,6 +290,10 @@ class Logger
         }
     }
 
+    /**
+     * [getDateTime description]
+     * @return string [description]
+     */
     protected function getDateTime()
     {
         $currentTime = microtime(true);

@@ -50,7 +50,6 @@ add_filter('pre_update_site_option_active_sitewide_plugins', __NAMESPACE__ . '\l
 
 /**
  * [loadTextdomain description]
- * @return void
  */
 function loadTextdomain()
 {
@@ -77,7 +76,6 @@ function systemRequirements()
 
 /**
  * [activation description]
- * @return void
  */
 function activation()
 {
@@ -129,7 +127,7 @@ function loadedFirst(array $activePlugins)
          });
          return;
      }
-     
+
      $main = new Main(__FILE__);
      $main->onLoaded();
  }

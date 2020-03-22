@@ -80,7 +80,6 @@ class ListTable extends WP_List_Table
     /**
      * [single_row description]
      * @param  array $item [description]
-     * @return void
      */
     public function single_row($item) {
         echo '<tr class="data">';
@@ -94,7 +93,6 @@ class ListTable extends WP_List_Table
 
     /**
      * [prepare_items description]
-     * @return void
      */
     public function prepare_items()
     {
@@ -141,7 +139,6 @@ class ListTable extends WP_List_Table
     /**
      * [extra_tablenav description]
      * @param  string $which [description]
-     * @return void
      */
     protected function extra_tablenav($which)
     {
@@ -167,7 +164,6 @@ class ListTable extends WP_List_Table
 
     /**
      * [levelsDropdown description]
-     * @return [void
      */
     protected function levelsDropdown()
     {
@@ -184,7 +180,6 @@ class ListTable extends WP_List_Table
 
     /**
      * [logFilesDropdown description]
-     * @return void
      */
     protected function logFilesDropdown()
     {
@@ -209,6 +204,11 @@ class ListTable extends WP_List_Table
         <?php
     }
 
+    /**
+     * [verifyLogfileFormat description]
+     * @param  string $date [description]
+     * @return boolean       [description]
+     */
     protected function verifyLogfileFormat($date)
     {
         $dt = \DateTime::createFromFormat("Y-m-d", $date);
