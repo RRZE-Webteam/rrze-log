@@ -49,12 +49,23 @@ class LogParser
     }
 
     protected function search($haystack) {
+        $find = true;
         foreach ($this->search as $str) {
-            if(strpos($haystack, $str) !== false) {
-                return true;
+            if (is_array($str) && !empty($str)) {
+                foreach ($str as $v) {
+                    if(strpos($haystack, $v) === false) {
+                        $find = $find && false;
+                    } else {
+                        $find = $find && true;
+                    }
+                }
+            } else {
+                if(strpos($haystack, $str) === false) {
+                    $find = $find && false;
+                }
             }
         }
-        return false;
+        return $find;
     }
 
     public function iterate()

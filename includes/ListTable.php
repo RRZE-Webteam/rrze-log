@@ -4,7 +4,6 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-use RRZE\Log\DB;
 use WP_List_Table;
 
 /**
@@ -16,25 +15,16 @@ class ListTable extends WP_List_Table
      * [protected description]
      * @var string
      */
-    protected $pluginFile;
+    protected $logPath;
 
     /**
-     * [protected description]
-     * @var object
+     * [__construct description]
      */
-    protected $db;
-
-    /**
-     * [protected description]
-     * @var array
-     */
-    const LEVELS = ['ERROR', 'WARNING', 'NOTICE', 'INFO'];
-
-    public function __construct($pluginFile)
+    public function __construct()
     {
         global $status, $page;
 
-        $this->pluginFile = $pluginFile;
+        $this->logPath = Logger::LOG_DIR . DIRECTORY_SEPARATOR;
         $this->items = [];
 
         parent::__construct([
@@ -53,35 +43,18 @@ class ListTable extends WP_List_Table
     public function column_default($item, $columnName)
     {
         switch ($columnName) {
-            case 'level':
-                return isset($item[$columnName]) ? $item[$columnName] : '';
-            case 'blog_id':
-                return isset($item[$columnName]) && absint($item[$columnName]) ? get_site_url($item[$columnName]) : '';
+            case 'siteurl':
+                return isset($item[$columnName]) ? parse_url($item[$columnName], PHP_URL_HOST) . parse_url($item[$columnName], PHP_URL_PATH) : '';
             default:
-                return 'hello';
+                return isset($item[$columnName]) ? $item[$columnName] : '';
         }
     }
 
     /**
-     * Display row actions
+     * [column_date description]
      * @param  array $item [description]
      * @return string       [description]
      */
-    public function column_level($item)
-    {
-        $page = $_REQUEST['page'];
-
-        $actions = [
-            //'edit' => sprintf('<a href="?page=%1$s&action=%2$s&id=%3$s">%4$s</a>', $page, 'edit', $id, __('Edit', 'rrze-log'))
-        ];
-
-        return sprintf(
-            '%1$s %2$s',
-            $item['level'],
-            $this->row_actions($actions)
-        );
-    }
-
     public function column_datetime($item) {
         return sprintf(
             '<span title="%1$s">%2$s</span>',
@@ -98,9 +71,25 @@ class ListTable extends WP_List_Table
     {
         return [
             'level' => __('Level', 'rrze-log'),
-            'blog_id' => __('Blog', 'rrze-log'),
+            'siteurl' => __('Website', 'rrze-log'),
+            'message' => __('Message', 'rrze-log'),
             'datetime' => __('Date', 'rrze-log')
         ];
+    }
+
+    /**
+     * [single_row description]
+     * @param  array $item [description]
+     * @return void
+     */
+    public function single_row($item) {
+        echo '<tr class="data">';
+        $this->single_row_columns( $item );
+        echo '</tr>';
+        printf('<tr class="metadata metadata-hidden"> <td colspan=%d>', count($this->get_columns()));
+        printf('<pre>%1$s</pre>', print_r($item, true));
+        echo '</td> </tr>';
+        echo '<tr class="hidden"> </tr>';
     }
 
     /**
@@ -109,10 +98,9 @@ class ListTable extends WP_List_Table
      */
     public function prepare_items()
     {
-        //Retrieve $customvar for use in query to get items.
-        $customvar = (isset($_REQUEST['customvar']) ? $_REQUEST['customvar'] : 'all');
-
-        $level = isset($_REQUEST['level']) && in_array($_REQUEST['level'], static::LEVELS) ? $_REQUEST['level'] : '';
+        $s = !empty($_REQUEST['s']) ? array_map('trim', explode(' ', trim($_REQUEST['s']))) : '';
+        $level = !empty($_REQUEST['level']) && in_array($_REQUEST['level'], Logger::LEVELS) ? $_REQUEST['level'] : '';
+        $logFile = isset($_REQUEST['logfile']) && $this->verifyLogfileFormat($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
 
         $columns = $this->get_columns();
         $hidden = [];
@@ -123,19 +111,20 @@ class ListTable extends WP_List_Table
         $perPage = $this->get_items_per_page('rrze_log_per_page', 20);
         $currentPage = $this->get_pagenum();
 
-        $logPath = plugin_dir_path($this->pluginFile) . Logger::LOG_DIR . DIRECTORY_SEPARATOR;
-        $logFile = sprintf('%1$s%2$s.log', $logPath, date('Y-m-d'));
+        $logFile = sprintf('%1$s%2$s.log', $this->logPath, $logFile);
 
         $search = [];
+        if ($s) {
+            $search[] = $s;
+        }
         if ($level) {
             $search[] = '"level":"' . $level . '"';
         }
         $logParser = new LogParser($logFile, $search, (($currentPage - 1) * $perPage), $perPage);
-        if (is_wp_error($logParser)) {
-            return;
-        }
-        foreach ($logParser->getItems() as $key => $value) {
-            $this->items[] = json_decode($value, true);
+        if (!is_wp_error($logParser)) {
+            foreach ($logParser->getItems() as $value) {
+                $this->items[] = json_decode($value, true);
+            }
         }
 
         $totalItems = $logParser->getTotalLines();
@@ -149,6 +138,11 @@ class ListTable extends WP_List_Table
         );
     }
 
+    /**
+     * [extra_tablenav description]
+     * @param  string $which [description]
+     * @return void
+     */
     protected function extra_tablenav($which)
     {
         ?>
@@ -158,7 +152,7 @@ class ListTable extends WP_List_Table
             ob_start();
 
             $this->levelsDropdown();
-            //$this->pluginsDropdown();
+            $this->logFilesDropdown();
 
             $output = ob_get_clean();
 
@@ -171,12 +165,16 @@ class ListTable extends WP_List_Table
 		<?php
     }
 
+    /**
+     * [levelsDropdown description]
+     * @return [void
+     */
     protected function levelsDropdown()
     {
         $levelFilter = isset($_REQUEST['level']) ? $_REQUEST['level'] : ''; ?>
         <select id="levels-filter" name="level">
             <option value=""><?php _e('All levels'); ?></option>
-            <?php foreach (static::LEVELS as $level) :
+            <?php foreach (Logger::LEVELS as $level) :
                 $selected = $levelFilter == $level ? ' selected = "selected"' : ''; ?>
             <option value="<?php echo $level; ?>"<?php echo $selected; ?>><?php echo $level; ?></option>
             <?php endforeach; ?>
@@ -184,41 +182,36 @@ class ListTable extends WP_List_Table
         <?php
     }
 
-    protected function pluginsDropdown()
+    /**
+     * [logFilesDropdown description]
+     * @return void
+     */
+    protected function logFilesDropdown()
     {
-        $pluginFilter = isset($_REQUEST['plugin']) ? $_REQUEST['plugin'] : '';
-        $plugins = $this->db->select('content.plugin')
-            ->where('content.plugin', '!=', '')
-            ->results();
+        $logFilesFilter = isset($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
+        $logFiles = [];
+        foreach (new \DirectoryIterator($this->logPath) as $file) {
+            if ($file->isFile()) {
+                $logFiles[$file->getFilename()] = $file->getBasename('.' . $file->getExtension());
+            }
+        }
 
-        $key = 'content.plugin';
-        $plugins = $this->arryUnique($plugins, $key);
-        if (empty($plugins)) {
+        if (count($logFiles) < 2) {
             return;
-        } ?>
-        <select id="plugins-filter" name="plugin">
-            <option value=""><?php _e('All plugins'); ?></option>
-            <?php foreach ($plugins as $plugin) :
-                $selected = $pluginFilter == $plugin[$key] ? ' selected = "selected"' : ''; ?>
-            <option value="<?php echo $plugin[$key]; ?>"<?php echo $selected; ?>><?php echo $plugin[$key]; ?></option>
+        }
+        krsort($logFiles); ?>
+        <select id="logfiles-filter" name="logfile">
+            <?php foreach ($logFiles as $logfile) :
+                $selected = $logFilesFilter == $logfile ? ' selected = "selected"' : ''; ?>
+            <option value="<?php echo $logfile; ?>"<?php echo $selected; ?>><?php echo $logfile; ?></option>
             <?php endforeach; ?>
         </select>
         <?php
     }
 
-    protected function arryUnique($ary, $key)
+    protected function verifyLogfileFormat($date)
     {
-        $tmpAry = [];
-        $i = 0;
-        $keyAry = [];
-
-        foreach ($ary as $val) {
-            if (!in_array($val[$key], $keyAry)) {
-                $keyAry[$i] = $val[$key];
-                $tmpAry[$i] = $val;
-            }
-            $i++;
-        }
-        return $tmpAry;
+        $dt = \DateTime::createFromFormat("Y-m-d", $date);
+        return $dt !== false && !array_sum($dt::getLastErrors());
     }
 }

@@ -12,12 +12,6 @@ class Logger
 {
     /**
      * [protected description]
-     * @var string
-     */
-    protected $pluginFile;
-
-    /**
-     * [protected description]
      * @var object
      */
     protected $options;
@@ -56,7 +50,7 @@ class Logger
      * [protected description]
      * @var integer
      */
-    protected $currentBlogId;
+    protected $siteUrl;
 
     /**
      * [protected description]
@@ -65,26 +59,22 @@ class Logger
     protected $filePermissions = 0644;
 
     /**
-     * [protected description]
-     * @var array
-     */
-    protected $levels = ['ERROR' => 1, 'WARNING' => 2, 'NOTICE' => 4, 'INFO' => 8, 'DEBUG' => 16];
-
-    /**
-     * [protected description]
-     * @var object
-     */
-    protected $rotate;
-
-    /**
      * [LOG_DIR description]
      * @var string
      */
-    const LOG_DIR = '__log';
+    const LOG_DIR = WP_CONTENT_DIR . '/log/rrze-log';
 
-    public function __construct($pluginFile)
+    /**
+     * [protected description]
+     * @var array
+     */
+    const LEVELS = ['ERROR', 'WARNING', 'NOTICE', 'INFO'];
+
+    /**
+     * [__construct description]
+     */
+    public function __construct()
     {
-        $this->pluginFile = $pluginFile;
         $this->optionName = Options::getOptionName();
         $this->options = Options::getOptions();
     }
@@ -94,55 +84,46 @@ class Logger
      */
     public function onLoaded()
     {
-        $this->enabled = $this->options->enabled;
-        if (!$this->enabled) {
-            return false;
-        }
-
-        $this->logPath = plugin_dir_path($this->pluginFile) . static::LOG_DIR . DIRECTORY_SEPARATOR;
-        $this->logFile = sprintf('%1$s%2$s.log', $this->logPath, date('Y-m-d'));
+        $this->logPath = static::LOG_DIR . DIRECTORY_SEPARATOR;
 
         isset($this->funcOverload) || $this->funcOverload = (extension_loaded('mbstring') && ini_get('mbstring.func_overload'));
 
-        $this->currentBlogId = get_current_blog_id();
+        $this->siteUrl = get_site_url();
     }
 
-    public function error($message = '', $context = [])
+    public function error(string $message, array $context)
     {
         $this->log('ERROR', $message, $context);
     }
 
-    public function warning($message = '', $context = [])
+    public function warning(string $message, array $context)
     {
         $this->log('WARNING', $message, $context);
     }
 
-    public function notice($message = '', $context = [])
+    public function notice(string $message, array $context)
     {
         $this->log('NOTICE', $message, $context);
     }
 
-    public function info($message = '', $context = [])
+    public function info(string $message, array $context)
     {
         $this->log('INFO', $message, $context);
     }
 
-    public function debug($message = '', $context = [])
-    {
-        $this->log('DEBUG', $message, $context);
-    }
-
     protected function log(string $level, string $message, array $context)
     {
+        $this->logFile = sprintf('%1$s%2$s.log', $this->logPath, date('Y-m-d'));
+
         $data = [
             'datetime' => $this->getDateTime(),
-            'blog_id' => $this->currentBlogId,
+            'siteurl' => $this->siteUrl,
             'level' => $level,
             'message' => $message,
             'context' => $context,
         ];
 
-        $this->write($data);
+        $this->write($data, $level);
     }
 
     /**
@@ -156,7 +137,7 @@ class Logger
             return false;
         }
 
-        $this->unlinkMaxLogFiles();
+        $this->unlinkOldLogFiles();
 
         $newFile = false;
 
@@ -272,25 +253,12 @@ class Logger
         return isset($length) ? substr($str, $start, $length) : substr($str, $start);
     }
 
-    protected function unlinkMaxLogFiles()
+    protected function unlinkOldLogFiles()
     {
-        $logFiles = [];
         foreach (new \DirectoryIterator($this->logPath) as $file) {
-            if ($file->isFile()) {
-                $logFiles[$this->logPath . $file->getFilename()] = $file->getMTime();
+            if ($file->isFile() && (time() - $file->getMTime() > $this->options->logTTL * DAY_IN_SECONDS)) {
+                @unlink($this->logPath . $file->getFilename());
             }
-        }
-
-        if (count($logFiles) <= $this->options->maxLogFiles) {
-            return;
-        }
-        arsort($logFiles);
-        $count = 1;
-        foreach ($logFiles as $file => $time) {
-            if (($count > $this->options->maxLogFiles) && ($this->logFile != $file)) {
-                @unlink($file);
-            }
-            $count++;
         }
     }
 

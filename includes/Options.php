@@ -20,7 +20,7 @@ class Options
     {
         $options = [
             'enabled' => '0',
-            'maxLogFiles' => 2     
+            'logTTL' => 7 // in days
         ];
 
         return $options;

@@ -47,7 +47,6 @@ class Flock
     /**
      * Acquire a lock on the file.
      * @return object $this, for chaining
-     * @throws \RRZE\Log\File\FlockException If lock could not be acquired
      */
     public function acquire()
     {

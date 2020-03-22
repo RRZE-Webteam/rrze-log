@@ -42,17 +42,22 @@ class Main
 
     public function onLoaded()
     {
+        add_action('admin_enqueue_scripts', [$this, 'adminEnqueueScripts']);
+
         $settings = new Settings($this->pluginFile, $this->optionName, $this->options);
         $settings->onLoaded();
 
-        $this->logger = new Logger($this->pluginFile, $this->options);
+        if (!$this->options->enabled) {
+            return;
+        }
+
+        $this->logger = new Logger();
         $this->logger->onLoaded();
 
-        add_action('rrze.log.error', [$this, 'logError']);
-        add_action('rrze.log.warning', [$this, 'logWarning']);
-        add_action('rrze.log.notice', [$this, 'logNotice']);
-        add_action('rrze.log.info', [$this, 'logInfo']);
-        add_action('rrze.log.debug', [$this, 'logDebug']);
+        add_action('rrze.log.error', [$this, 'logError'], 10, 2);
+        add_action('rrze.log.warning', [$this, 'logWarning'], 10, 2);
+        add_action('rrze.log.notice', [$this, 'logNotice'], 10, 2);
+        add_action('rrze.log.info', [$this, 'logInfo'], 10, 2);
 
         //Test
         $this->test();
@@ -60,111 +65,91 @@ class Main
 
     /**
      * [logError description]
-     * @param  array  $content [description]
+     * @param  array  $context [description]
      */
-    public function logError($content = [])
+    public function logError($message, $context = [])
     {
-        if ($content = $this->sanitizeContent($content)) {
+        if ($content = $this->sanitizeArgs($message, $context)) {
             $this->logger->error($content['message'], $content['context']);
         }
     }
 
     /**
      * [logWarning description]
-     * @param  array  $content [description]
+     * @param  array  $context [description]
      */
-    public function logWarning($content)
+    public function logWarning($message, $context = [])
     {
-        if ($content = $this->sanitizeContent($content)) {
+        if ($content = $this->sanitizeArgs($message, $context)) {
             $this->logger->warning($content['message'], $content['context']);
         }
     }
 
     /**
      * [logNotice description]
-     * @param  array  $content [description]
+     * @param  array  $context [description]
      */
-    public function logNotice($content = [])
+    public function logNotice($message, $context = [])
     {
-        if ($content = $this->sanitizeContent($content)) {
+        if ($content = $this->sanitizeArgs($message, $context)) {
             $this->logger->notice($content['message'], $content['context']);
         }
     }
 
     /**
      * [logInfo description]
-     * @param  array  $content [description]
+     * @param  array  $context [description]
      */
-    public function logInfo($content = [])
+    public function logInfo($message, $context = [])
     {
-        if ($content = $this->sanitizeContent($content)) {
+        if ($content = $this->sanitizeArgs($message, $context)) {
             $this->logger->info($content['message'], $content['context']);
         }
     }
 
-    /**
-     * [logDebug description]
-     * @param  array  $content [description]
-     */
-    public function logDebug($content = [])
+    protected function sanitizeArgs($message, $context)
     {
-        if (defined('WP_DEBUG') && WP_DEBUG && ($content = $this->sanitizeContent($content))) {
-            $this->logger->debug($content['message'], $content['context']);
-        }
-    }
-
-    protected function sanitizeContent($content)
-    {
-        $message = '';
-        if (!is_array($content)) {
+        if (empty($message)) {
             return false;
         }
-        if (isset($content['message'])) {
-            $message = $content['message'];
-            unset($content['message']);
+
+        if (is_string($message) && empty($context)) {
+            $context = [];
+        } elseif (is_array($message) && empty($context)) {
+            $context = $message;
+            $message = '';
         }
+
+        if (!is_array($context)) {
+            return false;
+        }
+
+        $message = !$message && $context ? '{' . implode('} {', array_keys($context)) . '}' : $message;
+        $message = $context ? $this->interpolate($message, $context) : $message;
+
         return [
-            'message' => $message,
-            'context' => $this->objectToArray($content)
+            'message' => trim($message),
+            'context' => $context
         ];
     }
 
-    protected function isJson($string)
+    protected function interpolate($message, array $context)
     {
-        // php 5.3 or newer needed;
-        json_decode($string);
-        return (json_last_error() == JSON_ERROR_NONE);
+        $replace = [];
+        foreach ($context as $key => $value) {
+            if (!is_array($value) && (!is_object($value) || method_exists($value, '__toString'))) {
+                $replace['{' . $key . '}'] = sprintf('%1$s: %2$s', $key, $value);
+            } else {
+                $replace['{' . $key . '}'] = '';
+            }
+        }
+        return strtr($message, $replace);
     }
 
-    protected function objectToArray($objectOrArray)
+    public function adminEnqueueScripts()
     {
-        // if is_json -> decode :
-        if (is_string($objectOrArray) && $this->isJson($objectOrArray)) {
-            $objectOrArray = json_decode($objectOrArray);
-        }
-
-        // if object -> convert to array :
-        if (is_object($objectOrArray)) {
-            $objectOrArray = (array) $objectOrArray;
-        }
-
-        // if not array -> just convert to array :
-        if (!is_array($objectOrArray)) {
-            return (array) $objectOrArray;
-;
-        }
-
-        // if empty array -> return [] :
-        if (count($objectOrArray) == 0) {
-            return [];
-        }
-
-        // repeat tasks for each item :
-        $output = [];
-        foreach ($objectOrArray as $key => $o_a) {
-            $output[$key] = $this->objectToArray($o_a);
-        }
-        return $output;
+        wp_register_style('rrze-log-list-table', plugins_url('assets/css/list-table.min.css', plugin_basename($this->pluginFile)));
+        wp_register_script('rrze-log-list-table', plugins_url('assets/js/list-table.min.js', plugin_basename($this->pluginFile)));
     }
 
     protected function test()
@@ -193,7 +178,11 @@ class Main
         $obj->wordOne = $this->randomWord(rand(4, 6));
         $obj->wordTwo = $this->randomWord(rand(4, 6));
 
-        do_action($logType[rand(0, 4)], ['message' => $this->randomText(), $typeKey => $typeName, 'ary' => $ary, 'obj' => $obj]);
+        for ($i = 1; $i <= 100; $i++) {
+            do_action($logType[rand(0, 4)], $this->randomText(), [$typeKey => $typeName, 'ary' => $ary, 'obj' => $obj]);
+            do_action($logType[rand(0, 4)], '(only message) ' . $this->randomText());
+            do_action($logType[rand(0, 4)], [$typeKey => $typeName, 'ary' => $ary, 'obj' => $obj]);
+        }
     }
 
     protected function randomText()
@@ -204,7 +193,7 @@ class Main
             $length = rand(4, 6);
             $text[] = $this->randomWord($length);
         }
-        return implode(' ', $text) . '.';
+        return implode(' ', $text);
     }
 
     protected function randomWord($length = 6)
