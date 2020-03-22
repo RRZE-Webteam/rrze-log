@@ -3,11 +3,19 @@
 }
 
 .fixed .metadata-hidden {
-  display: none;
+    display: none;
 }
 
 .fixed .metadata-visible {
-  display: block;
+    display: block;
+}
+
+.fixed .column-level {
+    width: 11%;
+}
+
+.fixed .column-message {
+    width: 60%;
 }
 
 .fixed .column-datetime {
@@ -15,6 +23,7 @@
 }
 
 .fixed .column-datetime span[title] {
+    -webkit-text-decoration: dotted underline;
     text-decoration: dotted underline;
 }
 
