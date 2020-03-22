@@ -68,7 +68,7 @@ function systemRequirements()
     } elseif (version_compare($GLOBALS['wp_version'], RRZE_WP_VERSION, '<')) {
         $error = sprintf(__('The server is running WordPress version %1$s. The Plugin requires at least WordPress version %2$s.', 'rrze-log'), $GLOBALS['wp_version'], RRZE_WP_VERSION);
     } elseif (!is_multisite()) {
-        $error = __('The WordPress instance is not a MultiSite.', 'rrze-log');
+        $error = __('The WordPress instance must be multisite.', 'rrze-log');
     }
 
     return $error;
