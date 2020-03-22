@@ -19,12 +19,6 @@ class Logger
      * [protected description]
      * @var string
      */
-    protected $optionName;
-
-    /**
-     * [protected description]
-     * @var string
-     */
     protected $logPath;
 
     /**
@@ -72,10 +66,9 @@ class Logger
     /**
      * [__construct description]
      */
-    public function __construct()
+    public function __construct($options)
     {
-        $this->optionName = Options::getOptionName();
-        $this->options = Options::getOptions();
+        $this->options = $options;
     }
 
     /**

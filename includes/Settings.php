@@ -4,6 +4,8 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
+use RRZE\Log\ListTable;
+
 class Settings
 {
     /**
@@ -249,7 +251,7 @@ class Settings
         }
 
         $data['messages'] = $this->messages;
-        
+
         include 'Views/base.php';
     }
 }

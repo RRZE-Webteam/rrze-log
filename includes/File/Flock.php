@@ -2,6 +2,10 @@
 
 namespace RRZE\Log\File;
 
+defined('ABSPATH') || exit;
+
+use RRZE\Log\File\FlockException;
+
 class Flock
 {
     /**

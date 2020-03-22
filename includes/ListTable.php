@@ -4,6 +4,8 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
+use RRZE\Log\Logger;
+use RRZE\Log\LogParser;
 use WP_List_Table;
 
 /**
