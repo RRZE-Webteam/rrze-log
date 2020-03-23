@@ -39,6 +39,9 @@ Es ist ein Array, das mit dem Wert (String) des Parameters $message interpoliere
 ### Beispiele
 
 ```
+// Nur ein Text ohne Verwendung des Parameters $context
+do_action('rrze.log.info', 'Alles funktioniert perfekt.');
+
 // Der Wert des Parameters $message ist ein Array und
 // der Parameter $context wird ignoriert
 do_action('rrze.log.error', ['plugin' =>'cms-basis', 'wp-error' => $wp_error->get_error_message()]);
