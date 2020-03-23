@@ -20,7 +20,7 @@ do_action( string $logHook, mixed $message [, array $context] )
 ```
 ### Parameter-Liste
 
-`$logHook`
+**$logHook**
 
 Vorhandene Protokollierungs-Hooks:
 - 'rrze.log.error'
@@ -28,14 +28,13 @@ Vorhandene Protokollierungs-Hooks:
 - 'rrze.log.notice'
 - 'rrze.log.info'
 
-`$message`
+**$message**
 
-- Es kann ein Text oder eine Array sein. Wenn es sich um ein Array handelt, wird der Parameter `$context` ignoriert.
+Es kann ein Text oder eine Array sein. Wenn es sich um ein Array handelt, wird der Parameter $context ignoriert.
 
-`$context`
+**$context**
 
 Es ist ein Array, das mit dem Wert (String) des Parameters $message interpolieren kann.
-
 
 ### Beispiele
 
