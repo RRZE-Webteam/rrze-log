@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-24 09:43+0000\n"
-"PO-Revision-Date: 2020-03-24 09:43+0000\n"
+"POT-Creation-Date: 2020-03-24 14:43+0000\n"
+"PO-Revision-Date: 2020-03-24 14:44+0000\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch\n"
 "Language: de_DE\n"
@@ -70,8 +70,8 @@ msgstr ""
 "Sie haben nicht genügend Berechtigungen, um auf diese Seite zuzugreifen."
 
 #: includes/ListTable.php:75
-msgid "Level"
-msgstr "Level"
+msgid "Error level"
+msgstr "Fehlerstufe"
 
 #: includes/ListTable.php:76
 msgid "Website"
@@ -84,6 +84,10 @@ msgstr "Nachricht"
 #: includes/ListTable.php:78
 msgid "Date"
 msgstr "Datum"
+
+#: includes/ListTable.php:174
+msgid "All error levels"
+msgstr "Alle Fehlerstufen"
 
 #: includes/LogParser.php:61
 msgid "Log file not found."
