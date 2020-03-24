@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-24 09:43+0000\n"
+"POT-Creation-Date: 2020-03-24 14:43+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -64,7 +64,7 @@ msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 
 #: includes/ListTable.php:75
-msgid "Level"
+msgid "Error level"
 msgstr ""
 
 #: includes/ListTable.php:76
@@ -77,6 +77,10 @@ msgstr ""
 
 #: includes/ListTable.php:78
 msgid "Date"
+msgstr ""
+
+#: includes/ListTable.php:174
+msgid "All error levels"
 msgstr ""
 
 #: includes/LogParser.php:61
