@@ -189,7 +189,10 @@ class ListTable extends WP_List_Table
         $logFiles = [];
         foreach (new \DirectoryIterator($this->logPath) as $file) {
             if ($file->isFile()) {
-                $logFiles[$file->getFilename()] = $file->getBasename('.' . $file->getExtension());
+                $logfile = $file->getBasename('.' . $file->getExtension());
+                if ($this->verifyLogfileFormat($logfile)) {
+                    $logFiles[$logfile] = $logfile;
+                }
             }
         }
 
