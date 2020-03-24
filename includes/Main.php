@@ -169,8 +169,19 @@ class Main
 
     public function adminEnqueueScripts()
     {
-        wp_register_style('rrze-log-list-table', plugins_url('assets/css/list-table.min.css', plugin_basename($this->pluginFile)));
-        wp_register_script('rrze-log-list-table', plugins_url('assets/js/list-table.min.js', plugin_basename($this->pluginFile)));
+        $stylePath = 'assets/css/list-table.min.css';
+        wp_register_style(
+            'rrze-log-list-table',
+            plugins_url($stylePath, $this->pluginFile),
+            [],
+            filemtime(plugin_dir_path($this->pluginFile) . $stylePath)
+        );
+        $scriptPath = 'assets/js/list-table.min.js';
+        wp_register_script(
+            'rrze-log-list-table',
+            plugins_url($scriptPath, $this->pluginFile),
+            ['jquery'],
+            filemtime(plugin_dir_path($this->pluginFile) . $scriptPath)
+        );
     }
-
 }

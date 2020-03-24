@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-22 20:36+0000\n"
+"POT-Creation-Date: 2020-03-24 09:43+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -38,43 +38,44 @@ msgstr ""
 msgid "Plugins: %1$s: %2$s"
 msgstr ""
 
-#: includes/Settings.php:70 includes/Settings.php:71
+#: includes/Settings.php:72 includes/Settings.php:73
+#: includes/Views/list-table.php:8
 msgid "Log"
 msgstr ""
 
-#: includes/Settings.php:114
+#: includes/Settings.php:115
 msgid "Enable Log"
 msgstr ""
 
-#: includes/Settings.php:115
+#: includes/Settings.php:116
 msgid "Time to live"
 msgstr ""
 
-#: includes/Settings.php:139
+#: includes/Settings.php:140
 msgid "How many days can the log file remain on disk before it is removed."
 msgstr ""
 
-#: includes/Settings.php:205
+#: includes/Settings.php:206
 msgid "Number of items per page:"
 msgstr ""
 
-#: includes/Settings.php:248
+#: includes/Settings.php:250
 msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 
-#: includes/ListTable.php:73
+#: includes/ListTable.php:75
 msgid "Level"
 msgstr ""
 
-#: includes/ListTable.php:74
+#: includes/ListTable.php:76
 msgid "Website"
 msgstr ""
 
-#: includes/ListTable.php:75
+#: includes/ListTable.php:77
 msgid "Message"
 msgstr ""
 
-#: includes/ListTable.php:76
+#: includes/ListTable.php:78
 msgid "Date"
 msgstr ""
 
@@ -82,13 +83,9 @@ msgstr ""
 msgid "Log file not found."
 msgstr ""
 
-#: includes/File/Flock.php:54
+#: includes/File/Flock.php:58
 #, php-format
 msgid "Could not get lock on %s"
-msgstr ""
-
-#: includes/Views/list-table.php:8
-msgid "Logs"
 msgstr ""
 
 #: includes/Views/base.php:13

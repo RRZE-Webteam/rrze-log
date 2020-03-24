@@ -5,7 +5,7 @@ namespace RRZE\Log;
 defined('ABSPATH') || exit;
 ?>
 <h2>
-    <?php _e('Logs', 'rrze-log'); ?>
+    <?php _e('Log', 'rrze-log'); ?>
 </h2>
 
 <form method="get">
