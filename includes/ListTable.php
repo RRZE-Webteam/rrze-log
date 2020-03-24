@@ -72,7 +72,7 @@ class ListTable extends WP_List_Table
     public function get_columns()
     {
         return [
-            'level' => __('Level', 'rrze-log'),
+            'level' => __('Error level', 'rrze-log'),
             'siteurl' => __('Website', 'rrze-log'),
             'message' => __('Message', 'rrze-log'),
             'datetime' => __('Date', 'rrze-log')
@@ -171,7 +171,7 @@ class ListTable extends WP_List_Table
     {
         $levelFilter = isset($_REQUEST['level']) ? $_REQUEST['level'] : ''; ?>
         <select id="levels-filter" name="level">
-            <option value=""><?php _e('All levels'); ?></option>
+            <option value=""><?php _e('All error levels', 'rrze-log'); ?></option>
             <?php foreach (Logger::LEVELS as $level) :
                 $selected = $levelFilter == $level ? ' selected = "selected"' : ''; ?>
             <option value="<?php echo $level; ?>"<?php echo $selected; ?>><?php echo $level; ?></option>
