@@ -39,14 +39,16 @@ Es ist ein Array, das mit dem Wert (String) des Parameters $message interpoliere
 ### Beispiele
 
 ```
-// Nur ein Text ohne Verwendung des Parameters $context
+// Der Wert des Parameters $message ist ein Text.
+// Der Wert des Parameters $context wird nicht eingegeben.
 do_action('rrze.log.info', 'Alles funktioniert perfekt.');
 
-// Der Wert des Parameters $message ist ein Array und
-// der Parameter $context wird ignoriert
+// Der Wert des Parameters $message ist ein Array.
+// Der Wert des Parameters $context wird ignoriert.
 do_action('rrze.log.error', ['plugin' =>'cms-basis', 'wp-error' => $wp_error->get_error_message()]);
 
-// Der Wert des Parameters $message ist Klartext
+// Der Wert des Parameters $message ist ein Text.
+// Der Wert des Parameters $context wird eingegeben.
 do_action('rrze.log.error', 'Ein WP-Fehler ist aufgetreten.', ['plugin' =>'cms-basis', 'wp-error' => $wp_error->get_error_message()]);
 
 // Der Wert des Parameters $message ist eine formatierte Zeichenfolge,
