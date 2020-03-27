@@ -159,7 +159,7 @@ class Main
         $replace = [];
         foreach ($context as $key => $value) {
             if (!is_array($value) && (!is_object($value) || method_exists($value, '__toString'))) {
-                $replace['{' . $key . '}'] = sprintf('%1$s: %2$s', $key, $value);
+                $replace['{' . $key . '}'] = $value;
             } else {
                 $replace['{' . $key . '}'] = '';
             }
