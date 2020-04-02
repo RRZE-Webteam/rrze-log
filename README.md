@@ -4,12 +4,12 @@ RRZE Log
 WordPress-Plugin
 ----------------
 
-Das Plugin erlaubt es, bestimmte Aktionen der Plugins und Themes in einer Logdatei zu protokollieren, die für weitere Untersuchungen notwendig sind oder sein können.
+Das Plugin erlaubt es, bestimmte Aktionen der Plugins und Themes in einer Logdatei zu protokollieren, die für weitere Untersuchungen notwendig sind oder sein können. Das Plugin funktioniert nur in einer WP-Multisite-Installation.
 
 ### Einstellungsmenü (Multisite)
 
 ```
-Netzwerkverwaltung / Einstellungen / Protokoll
+Netzwerkverwaltung / Protokoll
 ```
 
 ### Beschreibung
@@ -22,7 +22,7 @@ do_action( string $logHook, mixed $message [, array $context] )
 
 **$logHook**
 
-Vorhandene Protokollierungs-Hooks:
+Der Name des Hooks, der die entsprechende Fehlerstufe protokolliert. Vorhandene Hooks sind:
 - 'rrze.log.error'
 - 'rrze.log.warning'
 - 'rrze.log.notice'
