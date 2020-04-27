@@ -44,11 +44,11 @@ class Settings
      * @param string $optionName [description]
      * @param string $options    [description]
      */
-    public function __construct($pluginFile, $optionName, $options)
+    public function __construct()
     {
-        $this->pluginFile = $pluginFile;
-        $this->optionName = $optionName;
-        $this->options = $options;
+        $this->pluginFile = plugin()->getFile();
+        $this->optionName = main()->optionName;
+        $this->options = main()->options;
     }
 
     /**

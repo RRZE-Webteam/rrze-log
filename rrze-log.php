@@ -18,8 +18,6 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-use RRZE\Log\Main;
-
 const RRZE_PHP_VERSION = '7.4';
 const RRZE_WP_VERSION = '5.3';
 
@@ -105,6 +103,30 @@ function loadedFirst(array $activePlugins)
 }
 
 /**
+ * [plugin description]
+ */
+function plugin()
+{
+	static $instance;
+	if (null === $instance) {
+		$instance = new Plugin(__FILE__);
+	}
+	return $instance;
+}
+
+/**
+ * [main description]
+ */
+function main()
+{
+	static $instance;
+	if (null === $instance) {
+		$instance = new Main(plugin());
+	}
+	return $instance;
+}
+
+/**
  * [loaded description]
  * @return void
  */
@@ -128,6 +150,6 @@ function loadedFirst(array $activePlugins)
          return;
      }
 
-     $main = new Main(__FILE__);
-     $main->onLoaded();
+     plugin()->onLoaded();
+     main()->onLoaded();
  }

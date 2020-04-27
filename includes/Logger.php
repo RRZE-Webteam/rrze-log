@@ -52,12 +52,6 @@ class Logger
     protected $filePermissions = 0644;
 
     /**
-     * [LOG_DIR description]
-     * @var string
-     */
-    const LOG_DIR = WP_CONTENT_DIR . '/log/rrze-log';
-
-    /**
      * [protected description]
      * @var array
      */
@@ -66,9 +60,10 @@ class Logger
     /**
      * [__construct description]
      */
-    public function __construct($options)
+    public function __construct()
     {
-        $this->options = $options;
+        $this->options = main()->options;
+        $this->logPath = main()->logPath;
     }
 
     /**
@@ -76,8 +71,6 @@ class Logger
      */
     public function onLoaded()
     {
-        $this->logPath = static::LOG_DIR . DIRECTORY_SEPARATOR;
-
         isset($this->funcOverload) || $this->funcOverload = (extension_loaded('mbstring') && ini_get('mbstring.func_overload'));
 
         $this->siteUrl = get_site_url();
@@ -131,7 +124,7 @@ class Logger
      */
     protected function log(string $level, string $message, array $context)
     {
-        $this->logFile = sprintf('%1$s%2$s.log', $this->logPath, date('Y-m-d'));
+        $this->logFile = sprintf('%1$s%2$s.log', main()->logPath, date('Y-m-d'));
 
         $data = [
             'datetime' => $this->getDateTime(),
@@ -207,12 +200,9 @@ class Logger
      */
     protected function isLogPathWritable()
     {
-        file_exists($this->logPath) || wp_mkdir_p($this->logPath);
-
-        if (!is_dir($this->logPath) || !$this->isWritable($this->logPath)) {
+        if (!is_dir(main()->logPath) || !$this->isWritable(main()->logPath)) {
             return false;
         }
-
         return true;
     }
 
@@ -276,9 +266,9 @@ class Logger
      */
     protected function unlinkOldLogFiles()
     {
-        foreach (new \DirectoryIterator($this->logPath) as $file) {
+        foreach (new \DirectoryIterator(main()->logPath) as $file) {
             if ($file->isFile() && (time() - $file->getMTime() > $this->options->logTTL * DAY_IN_SECONDS)) {
-                @unlink($this->logPath . $file->getFilename());
+                @unlink(main()->logPath . $file->getFilename());
             }
         }
     }
