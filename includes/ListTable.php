@@ -26,7 +26,7 @@ class ListTable extends WP_List_Table
     {
         global $status, $page;
 
-        $this->logPath = Logger::LOG_DIR . DIRECTORY_SEPARATOR;
+        $this->logPath = main()->logPath;
         $this->items = [];
 
         parent::__construct([
@@ -121,8 +121,9 @@ class ListTable extends WP_List_Table
             $search[] = '"level":"' . $level . '"';
         }
         $logParser = new LogParser($logFile, $search, (($currentPage - 1) * $perPage), $perPage);
-        if (!is_wp_error($logParser)) {
-            foreach ($logParser->getItems() as $value) {
+        $items = $logParser->getItems();
+        if (!is_wp_error($items)) {
+            foreach ($items as $value) {
                 $this->items[] = json_decode($value, true);
             }
         }
@@ -187,6 +188,9 @@ class ListTable extends WP_List_Table
     {
         $logFilesFilter = isset($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
         $logFiles = [];
+        if (!is_dir($this->logPath)) {
+            return;
+        }        
         foreach (new \DirectoryIterator($this->logPath) as $file) {
             if ($file->isFile()) {
                 $logfile = $file->getBasename('.' . $file->getExtension());

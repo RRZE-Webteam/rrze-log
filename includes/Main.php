@@ -11,37 +11,52 @@ class Main
 {
     /**
      * [protected description]
-     * @var string
+     * @var object
      */
-    protected $pluginFile;
+    protected $plugin;
 
     /**
      * [protected description]
      * @var string
      */
-    protected $optionName;
+    public $optionName;
 
     /**
      * [protected description]
      * @var object
      */
-    protected $options;
+    public $options;
 
     /**
      * [protected description]
      * @var string
      */
-    protected $logger;
+    public $logPath;
+
+    /**
+     * [LOG_DIR description]
+     * @var string
+     */
+    const LOG_DIR = WP_CONTENT_DIR . '/log/rrze-log';   
+
+    /**
+     * [protected description]
+     * @var string
+     */
+    protected $logger; 
 
     /**
      * [__construct description]
-     * @param string $pluginFile [description]
+     * @param object $plugin [description]
      */
-    public function __construct($pluginFile)
+    public function __construct(PluginInterface $plugin)
     {
-        $this->pluginFile = $pluginFile;
+        $this->plugin = $plugin;
+
         $this->optionName = Options::getOptionName();
         $this->options = Options::getOptions();
+
+        $this->logPath = static::LOG_DIR . DIRECTORY_SEPARATOR;
     }
 
     /**
@@ -50,16 +65,18 @@ class Main
      */
     public function onLoaded()
     {
+        file_exists($this->logPath) || wp_mkdir_p($this->logPath);
+
         add_action('admin_enqueue_scripts', [$this, 'adminEnqueueScripts']);
 
-        $settings = new Settings($this->pluginFile, $this->optionName, $this->options);
+        $settings = new Settings;
         $settings->onLoaded();
 
         if (!$this->options->enabled) {
             return;
         }
 
-        $this->logger = new Logger($this->options);
+        $this->logger = new Logger;
         $this->logger->onLoaded();
 
         add_action('rrze.log.error', [$this, 'logError'], 10, 2);
@@ -172,16 +189,16 @@ class Main
         $stylePath = 'assets/css/list-table.min.css';
         wp_register_style(
             'rrze-log-list-table',
-            plugins_url($stylePath, $this->pluginFile),
+            plugins_url($stylePath, $this->plugin->getFile()),
             [],
-            filemtime(plugin_dir_path($this->pluginFile) . $stylePath)
+            filemtime(plugin_dir_path($this->plugin->getFile()) . $stylePath)
         );
         $scriptPath = 'assets/js/list-table.min.js';
         wp_register_script(
             'rrze-log-list-table',
-            plugins_url($scriptPath, $this->pluginFile),
+            plugins_url($scriptPath, $this->plugin->getFile()),
             ['jquery'],
-            filemtime(plugin_dir_path($this->pluginFile) . $scriptPath)
+            filemtime(plugin_dir_path($this->plugin->getFile()) . $scriptPath)
         );
     }
 }

@@ -111,7 +111,7 @@ class LogParser
      * [iterate description]
      * @return object \NoRewindIterator()
      */
-    public function iterate()
+    protected function iterate()
     {
         return new \NoRewindIterator($this->iterateFile());
     }
