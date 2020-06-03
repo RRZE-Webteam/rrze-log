@@ -175,11 +175,12 @@ class Main
     {
         $replace = [];
         foreach ($context as $key => $value) {
+            $fromStr = '{' . $key . '}';
+            $toStr = '';
             if (!is_array($value) && (!is_object($value) || method_exists($value, '__toString'))) {
-                $replace['{' . $key . '}'] = $value;
-            } else {
-                $replace['{' . $key . '}'] = '';
+                $toStr = $value;
             }
+            $replace[$fromStr] = $toStr;
         }
         return strtr($message, $replace);
     }
