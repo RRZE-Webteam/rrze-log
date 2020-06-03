@@ -37,13 +37,13 @@ class Main
      * [LOG_DIR description]
      * @var string
      */
-    const LOG_DIR = WP_CONTENT_DIR . '/log/rrze-log';   
+    const LOG_DIR = WP_CONTENT_DIR . '/log/rrze-log';
 
     /**
      * [protected description]
-     * @var string
+     * @var object
      */
-    protected $logger; 
+    protected $logger;
 
     /**
      * [__construct description]
