@@ -14,19 +14,12 @@ use WP_List_Table;
 class ListTable extends WP_List_Table
 {
     /**
-     * [protected description]
-     * @var string
-     */
-    protected $logPath;
-
-    /**
      * [__construct description]
      */
     public function __construct()
     {
         global $status, $page;
 
-        $this->logPath = main()->logPath;
         $this->items = [];
 
         parent::__construct([
@@ -108,10 +101,10 @@ class ListTable extends WP_List_Table
 
         $this->_column_headers = array($columns, $hidden, $sortable);
 
-        $perPage = $this->get_items_per_page('rrze_log_per_page', 20);
+        $perPage = $this->get_items_per_page('rrze_log_per_page', 1);
         $currentPage = $this->get_pagenum();
 
-        $logFile = sprintf('%1$s%2$s.log', $this->logPath, $logFile);
+        $logFile = sprintf('%1$s%2$s.log', Constants::LOG_PATH, $logFile);
 
         $search = [];
         if ($s) {
@@ -188,10 +181,10 @@ class ListTable extends WP_List_Table
     {
         $logFilesFilter = isset($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
         $logFiles = [];
-        if (!is_dir($this->logPath)) {
+        if (!is_dir(Constants::LOG_PATH)) {
             return;
         }        
-        foreach (new \DirectoryIterator($this->logPath) as $file) {
+        foreach (new \DirectoryIterator(Constants::LOG_PATH) as $file) {
             if ($file->isFile()) {
                 $logfile = $file->getBasename('.' . $file->getExtension());
                 if ($this->verifyLogfileFormat($logfile)) {

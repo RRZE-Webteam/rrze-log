@@ -19,12 +19,6 @@ class Logger
      * [protected description]
      * @var string
      */
-    protected $logPath;
-
-    /**
-     * [protected description]
-     * @var string
-     */
     protected $logFile;
 
     /**
@@ -62,8 +56,7 @@ class Logger
      */
     public function __construct()
     {
-        $this->options = main()->options;
-        $this->logPath = main()->logPath;
+        $this->options = Options::getOptions();
     }
 
     /**
@@ -124,7 +117,7 @@ class Logger
      */
     protected function log(string $level, string $message, array $context)
     {
-        $this->logFile = sprintf('%1$s%2$s.log', main()->logPath, date('Y-m-d'));
+        $this->logFile = sprintf('%1$s%2$s.log', Constants::LOG_PATH, date('Y-m-d'));
 
         $data = [
             'datetime' => $this->getDateTime(),
@@ -200,7 +193,7 @@ class Logger
      */
     protected function isLogPathWritable()
     {
-        if (!is_dir(main()->logPath) || !$this->isWritable(main()->logPath)) {
+        if (!is_dir(Constants::LOG_PATH) || !$this->isWritable(Constants::LOG_PATH)) {
             return false;
         }
         return true;
@@ -266,9 +259,9 @@ class Logger
      */
     protected function unlinkOldLogFiles()
     {
-        foreach (new \DirectoryIterator(main()->logPath) as $file) {
+        foreach (new \DirectoryIterator(Constants::LOG_PATH) as $file) {
             if ($file->isFile() && (time() - $file->getMTime() > $this->options->logTTL * DAY_IN_SECONDS)) {
-                @unlink(main()->logPath . $file->getFilename());
+                @unlink(Constants::LOG_PATH . $file->getFilename());
             }
         }
     }

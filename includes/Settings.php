@@ -12,12 +12,6 @@ class Settings
      * [protected description]
      * @var string
      */
-    protected $pluginFile;
-
-    /**
-     * [protected description]
-     * @var string
-     */
     protected $optionName;
 
     /**
@@ -46,9 +40,8 @@ class Settings
      */
     public function __construct()
     {
-        $this->pluginFile = plugin()->getFile();
-        $this->optionName = main()->optionName;
-        $this->options = main()->options;
+        $this->optionName = Options::getOptionName();
+        $this->options = Options::getOptions();
     }
 
     /**
@@ -98,12 +91,12 @@ class Settings
         <div class="wrap">
             <h1><?php echo esc_html($title); ?></h1>
             <form method="post">
-            <?php do_settings_sections('rrze-log-settings'); ?>
-            <?php settings_fields('rrze-log-settings'); ?>
-            <?php submit_button(__('Save Changes', 'rrze-settings'), 'primary', 'rrze-log-settings-submit-primary'); ?>
+                <?php do_settings_sections('rrze-log-settings'); ?>
+                <?php settings_fields('rrze-log-settings'); ?>
+                <?php submit_button(__('Save Changes', 'rrze-settings'), 'primary', 'rrze-log-settings-submit-primary'); ?>
             </form>
         </div>
-        <?php
+    <?php
     }
 
     /**
@@ -121,11 +114,11 @@ class Settings
      */
     public function enabledField()
     {
-        ?>
+    ?>
         <label>
-            <input type="checkbox" id="rrze-log-enabled" name="<?php printf('%s[enabled]', $this->optionName); ?>" value="1"<?php checked($this->options->enabled, 1); ?>>
+            <input type="checkbox" id="rrze-log-enabled" name="<?php printf('%s[enabled]', $this->optionName); ?>" value="1" <?php checked($this->options->enabled, 1); ?>>
         </label>
-        <?php
+    <?php
     }
 
     /**
@@ -133,12 +126,12 @@ class Settings
      */
     public function logTTLField()
     {
-        ?>
+    ?>
         <label for="rrze-log-ttl">
             <input type="number" min="1" step="1" name="<?php printf('%s[logTTL]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->logTTL) ?>" class="small-text">
         </label>
         <p class="description"><?php _e('How many days can the log file remain on disk before it is removed.', 'rrze-log'); ?></p>
-        <?php
+<?php
     }
 
 

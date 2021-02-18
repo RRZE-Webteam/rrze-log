@@ -63,7 +63,7 @@ class LogParser
             $this->file = new \SplFileObject($filename);
             $this->file->setFlags(
                 \SplFileObject::READ_AHEAD |
-                \SplFileObject::SKIP_EMPTY
+                    \SplFileObject::SKIP_EMPTY
             );
         }
     }
@@ -87,19 +87,20 @@ class LogParser
      * @param  string $haystack [description]
      * @return boolean           [description]
      */
-    protected function search($haystack) {
+    protected function search($haystack)
+    {
         $find = true;
         foreach ($this->search as $needle) {
             if (is_array($needle) && !empty($needle)) {
                 foreach ($needle as $str) {
-                    if(strpos($haystack, $str) === false) {
+                    if (strpos($haystack, $str) === false) {
                         $find = $find && false;
                     } else {
                         $find = $find && true;
                     }
                 }
             } else {
-                if(strpos($haystack, $needle) === false) {
+                if (strpos($haystack, $needle) === false) {
                     $find = $find && false;
                 }
             }
