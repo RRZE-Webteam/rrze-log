@@ -1,112 +1,27 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-24 14:43+0000\n"
-"PO-Revision-Date: 2020-03-24 14:44+0000\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-log\n"
+"POT-Creation-Date: 2022-10-17T12:31:15+00:00\n"
+"PO-Revision-Date: 2022-10-17 14:32+0200\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch (Sie)\n"
-"Language: de_DE_formal\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Loco https://localise.biz/\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Poedit 3.1.1\n"
 "X-Loco-Version: 2.3.1; wp-5.3.2\n"
-"X-Loco-Template: languages/rrze-log-de_DE.po"
+"X-Loco-Template: languages/rrze-log-de_DE.po\n"
 
-#: rrze-log.php:67
-#, php-format
-msgid ""
-"The server is running PHP version %1$s. The Plugin requires at least PHP "
-"version %2$s."
-msgstr ""
-"Auf dem Server läuft PHP Version %1$s. Das Plugin benötigt mindestens PHP "
-"Version %2$s."
-
-#: rrze-log.php:69
-#, php-format
-msgid ""
-"The server is running WordPress version %1$s. The Plugin requires at least "
-"WordPress version %2$s."
-msgstr ""
-"Auf dem Server läuft WordPress Version %1$s. Das Plugin benötigt mindestens "
-"WordPress Version %2$s."
-
-#: rrze-log.php:71
-msgid "The WordPress instance must be multisite."
-msgstr "Die WordPress-Instanz muss multisite sein."
-
-#: rrze-log.php:86 rrze-log.php:122
-#, php-format
-msgid "Plugins: %1$s: %2$s"
-msgstr "Plugins: %1$s: %2$s"
-
-#: includes/Settings.php:72 includes/Settings.php:73
-#: includes/Views/list-table.php:8
-msgid "Log"
-msgstr "Protokoll"
-
-#: includes/Settings.php:115
-msgid "Enable Log"
-msgstr "Protokoll aktivieren"
-
-#: includes/Settings.php:116
-msgid "Time to live"
-msgstr "Time to live"
-
-#: includes/Settings.php:140
-msgid "How many days can the log file remain on disk before it is removed."
-msgstr ""
-"Wie viele Tage kann die Protokolldatei auf der Festplatte verbleiben, bevor "
-"sie entfernt wird?"
-
-#: includes/Settings.php:206
-msgid "Number of items per page:"
-msgstr "Einträge pro Seite:"
-
-#: includes/Settings.php:250
-msgid "You do not have sufficient permissions to access this page."
-msgstr ""
-"Sie haben nicht genügend Berechtigungen, um auf diese Seite zuzugreifen."
-
-#: includes/ListTable.php:75
-msgid "Error level"
-msgstr "Fehlerstufe"
-
-#: includes/ListTable.php:76
-msgid "Website"
-msgstr "Website"
-
-#: includes/ListTable.php:77
-msgid "Message"
-msgstr "Nachricht"
-
-#: includes/ListTable.php:78
-msgid "Date"
-msgstr "Datum"
-
-#: includes/ListTable.php:174
-msgid "All error levels"
-msgstr "Alle Fehlerstufen"
-
-#: includes/LogParser.php:61
-msgid "Log file not found."
-msgstr "Protokolldatei nicht gefunden."
-
-#: includes/File/Flock.php:58
-#, php-format
-msgid "Could not get lock on %s"
-msgstr "Konnte die Sperre auf %s nicht erhalten."
-
-#: includes/Views/base.php:13
-#, php-format
-msgid "Error: %s"
-msgstr "Fehler: %s"
-
-#. Name of the plugin
+#. Plugin Name of the plugin
 msgid "RRZE Log"
 msgstr "RRZE Protokoll"
+
+#. Plugin URI of the plugin
+msgid "https://gitlab.rrze.fau.de/rrze-webteam/rrze-log"
+msgstr "https://gitlab.rrze.fau.de/rrze-webteam/rrze-log"
 
 #. Description of the plugin
 msgid ""
@@ -117,10 +32,6 @@ msgstr ""
 "Logdatei zu protokollieren, die für weitere Untersuchungen notwendig sind "
 "oder sein können."
 
-#. URI of the plugin
-msgid "https://gitlab.rrze.fau.de/rrze-webteam/rrze-log"
-msgstr "https://gitlab.rrze.fau.de/rrze-webteam/rrze-log"
-
 #. Author of the plugin
 msgid "RRZE Webteam"
 msgstr "RRZE-Webteam"
@@ -128,3 +39,95 @@ msgstr "RRZE-Webteam"
 #. Author URI of the plugin
 msgid "https://blogs.fau.de/webworking/"
 msgstr "RRZE-Webteam"
+
+#. translators: %s: File path name.
+#: includes/File/Flock.php:59
+msgid "Could not get lock on %s."
+msgstr "Konnte die Sperre auf %s nicht erhalten."
+
+#: includes/ListTable.php:68
+msgid "Error level"
+msgstr "Fehlerstufe"
+
+#: includes/ListTable.php:69
+msgid "Website"
+msgstr "Website"
+
+#: includes/ListTable.php:70
+msgid "Message"
+msgstr "Nachricht"
+
+#: includes/ListTable.php:71
+msgid "Date"
+msgstr "Datum"
+
+#: includes/ListTable.php:168
+msgid "All error levels"
+msgstr "Alle Fehlerstufen"
+
+#: includes/LogParser.php:61
+msgid "Log file not found."
+msgstr "Protokolldatei nicht gefunden."
+
+#: includes/Settings.php:62 includes/Settings.php:63
+#: includes/Views/list-table.php:8
+msgid "Log"
+msgstr "Protokoll"
+
+#: includes/Settings.php:105
+msgid "Enable Log"
+msgstr "Protokoll aktivieren"
+
+#: includes/Settings.php:106
+msgid "Time to live"
+msgstr "Time to live"
+
+#: includes/Settings.php:130
+msgid "How many days can the log file remain on disk before it is removed?"
+msgstr ""
+"Wie viele Tage kann die Protokolldatei auf der Festplatte verbleiben, bevor "
+"sie entfernt wird?"
+
+#: includes/Settings.php:196
+msgid "Number of items per page:"
+msgstr "Einträge pro Seite:"
+
+#: includes/Settings.php:240
+msgid "You do not have sufficient permissions to access this page."
+msgstr ""
+"Sie haben nicht genügend Berechtigungen, um auf diese Seite zuzugreifen."
+
+#. translators: %s: Error message.
+#: includes/Views/base.php:15
+msgid "Error: %s"
+msgstr "Fehler: %s"
+
+#. translators: 1: Server PHP version number, 2: Required PHP version number.
+#: rrze-log.php:71
+msgid ""
+"The server is running PHP version %1$s. The Plugin requires at least PHP "
+"version %2$s."
+msgstr ""
+"Auf dem Server läuft PHP Version %1$s. Das Plugin benötigt mindestens PHP "
+"Version %2$s."
+
+#. translators: 1: Server WordPress version number, 2: Required WordPress version number.
+#: rrze-log.php:78
+msgid ""
+"The server is running WordPress version %1$s. The Plugin requires at least "
+"WordPress version %2$s."
+msgstr ""
+"Auf dem Server läuft WordPress Version %1$s. Das Plugin benötigt mindestens "
+"WordPress Version %2$s."
+
+#: rrze-log.php:83
+msgid "The plugin is compatible only with WordPress Multisite."
+msgstr "Das Plugin ist nur mit WordPress Multisite kompatibel."
+
+#. translators: 1: The plugin name, 2: The error string.
+#: rrze-log.php:146
+msgid "Plugins: %1$s: %2$s"
+msgstr "Plugins: %1$s: %2$s"
+
+#~ msgid "The WordPress instance must be multisite."
+#~ msgstr "Die WordPress-Instanz muss multisite sein."
