@@ -201,7 +201,7 @@ class Logger
 
     /**
      * [isWritable description]
-     * @param  resource  $file [description]
+     * @param  string  $file [description]
      * @return boolean       [description]
      */
     protected function isWritable($file)
