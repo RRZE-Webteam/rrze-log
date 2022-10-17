@@ -72,6 +72,6 @@ try {
 ```
 ### Anmerkungen
 
-- Die Protokolldateien werden im Verzeichnis WP_CONTENT.'/log/rrze-log' abgelegt
+- Die Protokolldateien werden im Verzeichnis <code>WP_CONTENT_DIR . '/log/rrze-log'</code> abgelegt
 - Das Dateinamenformat ist "yyy-mm-dd.log"
 - Das Datensatzformat ist JSON
