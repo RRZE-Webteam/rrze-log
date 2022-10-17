@@ -4,7 +4,7 @@
 Plugin Name:     RRZE Log
 Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-log
 Description:     The plugin allows you to log certain actions of the plugins and themes in a log file, which are or may be necessary for further investigations.
-Version:         2.2.0
+Version:         2.3.0
 Author:          RRZE Webteam
 Author URI:      https://blogs.fau.de/webworking/
 License:         GNU General Public License v2
@@ -18,10 +18,14 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-// Autoloader (PSR-4)
+/**
+ * SPL Autoloader (PSR-4).
+ * @param string $class The fully-qualified class name.
+ * @return void
+ */
 spl_autoload_register(function ($class) {
     $prefix = __NAMESPACE__;
-    $base_dir = __DIR__ . '/includes/';
+    $baseDir = __DIR__ . '/includes/';
 
     $len = strlen($prefix);
     if (strncmp($prefix, $class, $len) !== 0) {
@@ -29,101 +33,90 @@ spl_autoload_register(function ($class) {
     }
 
     $relativeClass = substr($class, $len);
-    $file = $base_dir . str_replace('\\', '/', $relativeClass) . '.php';
+    $file = $baseDir . str_replace('\\', '/', $relativeClass) . '.php';
 
     if (file_exists($file)) {
         require $file;
     }
 });
 
+// Register plugin hooks.
 register_activation_hook(__FILE__, __NAMESPACE__ . '\activation');
 register_deactivation_hook(__FILE__, __NAMESPACE__ . '\deactivation');
+
 add_action('plugins_loaded', __NAMESPACE__ . '\loaded');
 
-add_filter('pre_update_option_active_plugins', __NAMESPACE__ . '\loadedFirst');
-add_filter('pre_update_site_option_active_sitewide_plugins', __NAMESPACE__ . '\loadedFirst');
-
 /**
- * [loadTextdomain description]
+ * Loads a plugin’s translated strings.
  */
 function loadTextdomain()
 {
-    load_plugin_textdomain('rrze-log', false, sprintf('%s/languages/', dirname(plugin_basename(__FILE__))));
+    load_plugin_textdomain('rrze-log', false, dirname(plugin_basename(__FILE__)) . '/languages');
 }
 
 /**
- * [systemRequirements description]
- * @return string [description]
+ * System requirements verification.
+ * @return string Return an error message.
  */
 function systemRequirements(): string
 {
-    loadTextdomain();
-
+    global $wp_version;
+    // Strip off any -alpha, -RC, -beta, -src suffixes.
+    list($wpVersion) = explode('-', $wp_version);
+    $phpVersion = phpversion();
     $error = '';
-    if (version_compare(PHP_VERSION, Constants::PLUGIN_PHP_VERSION, '<')) {
+    if (!is_php_version_compatible(Constants::REQUIRED_PHP_VERSION)) {
         $error = sprintf(
             /* translators: 1: Server PHP version number, 2: Required PHP version number. */
             __('The server is running PHP version %1$s. The Plugin requires at least PHP version %2$s.', 'rrze-log'),
-            PHP_VERSION,
-            Constants::PLUGIN_PHP_VERSION
+            $phpVersion,
+            Constants::REQUIRED_PHP_VERSION
         );
-    } elseif (version_compare($GLOBALS['wp_version'], Constants::PLUGIN_WP_VERSION, '<')) {
+    } elseif (!is_wp_version_compatible(Constants::REQUIRED_WP_VERSION)) {
         $error = sprintf(
             /* translators: 1: Server WordPress version number, 2: Required WordPress version number. */
             __('The server is running WordPress version %1$s. The Plugin requires at least WordPress version %2$s.', 'rrze-log'),
-            $GLOBALS['wp_version'],
-            Constants::PLUGIN_WP_VERSION
+            $wpVersion,
+            Constants::REQUIRED_WP_VERSION
         );
     } elseif (!is_multisite()) {
-        $error = __('The WordPress instance must be multisite.', 'rrze-log');
+        $error = __('The plugin is compatible only with WordPress Multisite.', 'rrze-log');
     }
     return $error;
 }
 
 /**
- * [activation description]
+ * Activation callback function.
  */
 function activation()
 {
     loadTextdomain();
-
     if ($error = systemRequirements()) {
         deactivate_plugins(plugin_basename(__FILE__));
-        wp_die(sprintf(__('Plugins: %1$s: %2$s', 'rrze-log'), plugin_basename(__FILE__), $error));
+        wp_die(
+            sprintf(
+                /* translators: 1: The plugin name, 2: The error string. */
+                __('Plugins: %1$s: %2$s', 'rrze-cmsinfo'),
+                plugin_basename(__FILE__),
+                $error
+            )
+        );
     }
 }
 
 /**
- * [deactivation description]
+ * Deactivation callback function.
  */
 function deactivation()
 {
-    //
+    // Nothing to do here.
 }
 
 /**
- * Ensures that the plugin is always loaded first.
- * @param  array  $activePlugins [description]
- * @return array                 [description]
+ * Instantiate Plugin class.
+ * @return object Plugin
  */
-function loadedFirst(array $activePlugins)
-{
-    $basename = plugin_basename(__FILE__);
-    $key = array_search($basename, $activePlugins);
-
-    if (false !== $key) {
-        array_splice($activePlugins, $key, 1);
-        array_unshift($activePlugins, $basename);
-    }
-
-    return $activePlugins;
-}
-
-/**
- * [plugin description]
- * @return object
- */
-function plugin(): object
+function plugin()
 {
     static $instance;
     if (null === $instance) {
@@ -133,14 +126,13 @@ function plugin(): object
 }
 
 /**
- * [loaded description]
+ * Execute on 'plugins_loaded' API/action.
  * @return void
  */
 function loaded()
 {
-    add_action('init', __NAMESPACE__ . '\loadTextdomain');
-    plugin()->onLoaded();
-
+    loadTextdomain();
+    plugin()->loaded();
     if ($error = systemRequirements()) {
         add_action('admin_init', function () use ($error) {
             if (current_user_can('activate_plugins')) {
@@ -151,7 +143,7 @@ function loaded()
                     printf(
                         '<div class="notice notice-error"><p>' .
                             /* translators: 1: The plugin name, 2: The error string. */
-                            __('Plugins: %1$s: %2$s', 'rrze-multilang') .
+                            __('Plugins: %1$s: %2$s', 'rrze-log') .
                             '</p></div>',
                         esc_html($pluginName),
                         esc_html($error)
@@ -161,7 +153,6 @@ function loaded()
         });
         return;
     }
-
     $main = new Main;
     $main->onLoaded();
 }
