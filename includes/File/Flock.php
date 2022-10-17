@@ -4,8 +4,6 @@ namespace RRZE\Log\File;
 
 defined('ABSPATH') || exit;
 
-use RRZE\Log\File\FlockException;
-
 class Flock
 {
     /**
@@ -55,7 +53,13 @@ class Flock
             $this->fp = @fopen($this->filePath, 'a');
 
             if (!$this->fp || !flock($this->fp, LOCK_EX | LOCK_NB)) {
-                throw new FlockException(sprintf(__('Could not get lock on %s', 'rrze-log'), $this->filePath));
+                throw new FlockException(
+                    sprintf(
+                        // /* translators: %s: File path name. */
+                        __('Could not get lock on %s.', 'rrze-log'),
+                        $this->filePath
+                    )
+                );
             } else {
                 $this->locked = true;
             }

@@ -10,7 +10,12 @@ defined('ABSPATH') || exit;
         if (is_wp_error($message)) : ?>
             <div class="error">
                 <p>
-                    <?php printf(__('Error: %s', 'rrze-log'), $message->get_error_message()); ?>
+                    <?php printf(
+                        /* translators: %s: Error message. */
+                        __('Error: %s', 'rrze-log'),
+                        $message->get_error_message()
+                    );
+                    ?>
                 </p>
             </div>
         <?php else : ?>

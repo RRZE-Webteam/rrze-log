@@ -1,0 +1,26 @@
+.fixed {
+    .data {
+        cursor: default;
+    }
+
+    .column-level {
+        width: 11%;
+    }
+
+    .column-message {
+        width: 54%;
+    }
+
+    .column-datetime {
+        width: 14%;
+
+        span[title] {
+            -webkit-text-decoration: dotted underline;
+            text-decoration: dotted underline;
+        }
+    }
+
+    .hidden {
+        display: none;
+    }
+}

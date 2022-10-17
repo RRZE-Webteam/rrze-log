@@ -9,34 +9,31 @@ use RRZE\Log\ListTable;
 class Settings
 {
     /**
-     * [protected description]
+     * Option name.
      * @var string
      */
     protected $optionName;
 
     /**
-     * [protected description]
+     * Optiona values.
      * @var object
      */
     protected $options;
 
     /**
-     * [protected description]
+     * WP_List_Table object.
      * @var object
      */
     protected $listTable;
 
     /**
-     * [protected description]
+     * List table notice messages.
      * @var array
      */
     protected $messages = [];
 
     /**
-     * [__construct description]
-     * @param string $pluginFile [description]
-     * @param string $optionName [description]
-     * @param string $options    [description]
+     * Set properties.
      */
     public function __construct()
     {
@@ -45,7 +42,7 @@ class Settings
     }
 
     /**
-     * [onLoaded description]
+     * Add hooks.
      */
     public function onLoaded()
     {
@@ -57,7 +54,7 @@ class Settings
     }
 
     /**
-     * [networkAdminMenu description]
+     * Add network admin menu.
      */
     public function networkAdminMenu()
     {
@@ -70,7 +67,7 @@ class Settings
             'dashicons-list-view'
         );
 
-        $settingsPage = add_submenu_page(
+        add_submenu_page(
             'rrze-log',
             __('Settings', 'rrze-updater'),
             __('Settings', 'rrze-updater'),
@@ -83,7 +80,7 @@ class Settings
     }
 
     /**
-     * [settingsPage description]
+     * Display settings page.
      */
     public function settingsPage()
     {
@@ -100,7 +97,7 @@ class Settings
     }
 
     /**
-     * [settingsSection description]
+     * Add settings sections.
      */
     public function settingsSection()
     {
@@ -110,7 +107,7 @@ class Settings
     }
 
     /**
-     * [enabledField description]
+     * Display enabled field.
      */
     public function enabledField()
     {
@@ -122,7 +119,7 @@ class Settings
     }
 
     /**
-     * [logTTLField description]
+     * Display logTTL field.
      */
     public function logTTLField()
     {
@@ -130,13 +127,13 @@ class Settings
         <label for="rrze-log-ttl">
             <input type="number" min="1" step="1" name="<?php printf('%s[logTTL]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->logTTL) ?>" class="small-text">
         </label>
-        <p class="description"><?php _e('How many days can the log file remain on disk before it is removed.', 'rrze-log'); ?></p>
+        <p class="description"><?php _e('How many days can the log file remain on disk before it is removed?', 'rrze-log'); ?></p>
 <?php
     }
 
 
     /**
-     * [optionsValidate description]
+     * Validate options.
      * @param  array $input [description]
      * @return array        [description]
      */
@@ -150,7 +147,7 @@ class Settings
     }
 
     /**
-     * [settingsUpdate description]
+     * Update network admin options.
      */
     public function settingsUpdate()
     {
@@ -164,7 +161,7 @@ class Settings
     }
 
     /**
-     * [settingsUpdateNotice description]
+     * Update network admin notice.
      */
     public function settingsUpdateNotice()
     {
@@ -175,7 +172,7 @@ class Settings
     }
 
     /**
-     * [setScreenOption description]
+     * Set screen options.
      * @param string $status [description]
      * @param string $option [description]
      * @param string $value  [description]
@@ -190,7 +187,7 @@ class Settings
     }
 
     /**
-     * [screenOptions description]
+     * Add screen options.
      */
     public function screenOptions()
     {
@@ -206,7 +203,7 @@ class Settings
     }
 
     /**
-     * [logPage description]
+     * Display list table page.
      */
     public function logPage()
     {
@@ -233,7 +230,7 @@ class Settings
     }
 
     /**
-     * [show description]
+     * Display list table notices.
      * @param  string $view [description]
      * @param  array  $data [description]
      */
