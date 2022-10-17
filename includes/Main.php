@@ -10,37 +10,25 @@ use RRZE\Log\Logger;
 class Main
 {
     /**
-     * [protected description]
-     * @var object
-     */
-    protected $plugin;
-
-    /**
-     * [protected description]
+     * Option name.
      * @var string
      */
     public $optionName;
 
     /**
-     * [protected description]
+     * Options values.
      * @var object
      */
     public $options;
 
     /**
-     * [protected description]
-     * @var string
-     */
-    public $logPath;
-
-    /**
-     * [protected description]
+     * Logger object.
      * @var object
      */
     protected $logger;
 
     /**
-     * [__construct description]
+     * Set properties.
      */
     public function __construct()
     {
@@ -49,8 +37,7 @@ class Main
     }
 
     /**
-     * [onLoaded description]
-     * @return void
+     * Initiate classes & add hooks.
      */
     public function onLoaded()
     {
@@ -75,9 +62,9 @@ class Main
     }
 
     /**
-     * [logError description]
-     * @param  mixed $message [description]
-     * @param  array  $context [description]
+     * ERROR log type.
+     * @param  mixed $message
+     * @param  array  $context
      */
     public function logError($message, $context = [])
     {
@@ -87,9 +74,9 @@ class Main
     }
 
     /**
-     * [logWarning description]
-     * @param  mixed $message [description]
-     * @param  array  $context [description]
+     * WARNING log type.
+     * @param  mixed $message
+     * @param  array  $context
      */
     public function logWarning($message, $context = [])
     {
@@ -99,9 +86,9 @@ class Main
     }
 
     /**
-     * [logNotice description]
-     * @param  mixed $message [description]
-     * @param  array  $context [description]
+     * NOTICE log type.
+     * @param  mixed $message
+     * @param  array  $context
      */
     public function logNotice($message, $context = [])
     {
@@ -111,9 +98,9 @@ class Main
     }
 
     /**
-     * [logInfo description]
-     * @param  mixed $message [description]
-     * @param  array  $context [description]
+     * INFO log type.
+     * @param  mixed $message
+     * @param  array  $context
      */
     public function logInfo($message, $context = [])
     {
@@ -123,10 +110,10 @@ class Main
     }
 
     /**
-     * [sanitizeArgs description]
-     * @param  mixed $message [description]
-     * @param  array  $context [description]
-     * @return array          [description]
+     * Sanitize log arguments.
+     * @param  mixed $message
+     * @param  array  $context
+     * @return array
      */
     protected function sanitizeArgs($message, $context)
     {
@@ -155,10 +142,10 @@ class Main
     }
 
     /**
-     * [interpolate description]
-     * @param  string $message [description]
-     * @param  array  $context [description]
-     * @return string          [description]
+     * Variable interpolation.
+     * @param  string $message
+     * @param  array  $context
+     * @return string
      */
     protected function interpolate($message, array $context)
     {
@@ -174,21 +161,27 @@ class Main
         return strtr($message, $replace);
     }
 
-    public function adminEnqueueScripts()
+    /**
+     * Register admin styles & scripts.
+     */
+    public function adminEnqueueScripts($hook)
     {
-        $stylePath = 'assets/css/list-table.min.css';
+        if ('toplevel_page_rrze-log' != $hook) {
+            return;
+        }
+
         wp_register_style(
             'rrze-log-list-table',
-            plugins_url($stylePath, plugin()->getFile()),
+            plugins_url('build/admin.css', plugin()->getBasename()),
             [],
-            filemtime(plugin_dir_path(plugin()->getFile()) . $stylePath)
+            plugin()->getVersion()
         );
-        $scriptPath = 'assets/js/list-table.min.js';
+
         wp_register_script(
             'rrze-log-list-table',
-            plugins_url($scriptPath, plugin()->getFile()),
+            plugins_url('build/admin.js', plugin()->getBasename()),
             ['jquery'],
-            filemtime(plugin_dir_path(plugin()->getFile()) . $scriptPath)
+            plugin()->getVersion()
         );
     }
 }
