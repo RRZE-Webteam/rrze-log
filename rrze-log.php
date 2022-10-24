@@ -4,7 +4,7 @@
 Plugin Name:     RRZE Log
 Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-log
 Description:     The plugin allows you to log certain actions of the plugins and themes in a log file, which are or may be necessary for further investigations.
-Version:         2.4.0
+Version:         2.4.1
 Author:          RRZE Webteam
 Author URI:      https://blogs.fau.de/webworking/
 License:         GNU General Public License v2
@@ -159,32 +159,17 @@ function loaded()
 
 // Move the plugin to the start of the line.
 add_filter('pre_update_option_active_plugins', __NAMESPACE__ . '\filterActivePlugins');
-add_filter('pre_update_site_option_active_sitewide_plugins', __NAMESPACE__ . '\filterActiveSitewidePlugins');
+add_filter('pre_update_site_option_active_sitewide_plugins', __NAMESPACE__ . '\filterActivePlugins');
 
 function filterActivePlugins($plugins)
 {
     if (empty($plugins)) {
         return $plugins;
     }
-    $f = preg_quote(basename(plugin()->getBaseName()), '/');
-    return array_merge(
-        preg_grep('/' . $f . '$/', $plugins),
-        preg_grep('/' . $f . '$/', $plugins, PREG_GREP_INVERT)
-    );
-}
-
-function filterActiveSitewidePlugins($plugins)
-{
-    if (empty($plugins)) {
-        return $plugins;
+    $basename = plugin()->getBaseName();
+    if ($key = array_search($basename, $plugins)) {
+        unset($plugins[$key]);
+        array_unshift($plugins, $basename);
     }
-    $f = plugin()->getBaseName();
-    if (isset($plugins[$f])) {
-        unset($plugins[$f]);
-        return array_merge([
-            $f => time(),
-        ], $plugins);
-    } else {
-        return $plugins;
-    }
+    return $plugins;
 }
