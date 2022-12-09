@@ -125,12 +125,11 @@ class Settings
     {
     ?>
         <label for="rrze-log-ttl">
-            <input type="number" min="1" step="1" name="<?php printf('%s[logTTL]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->logTTL) ?>" class="small-text">
+            <input type="number" min="1" max="365" step="1" name="<?php printf('%s[logTTL]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->logTTL) ?>" class="small-text">
         </label>
         <p class="description"><?php _e('How many days can the log file remain on disk before it is removed?', 'rrze-log'); ?></p>
-<?php
+    <?php
     }
-
 
     /**
      * Validate options.
@@ -140,7 +139,7 @@ class Settings
     public function optionsValidate($input)
     {
         $input['enabled'] = !empty($input['enabled']) ? 1 : 0;
-        $input['logTTL'] = !empty($input['logTT']) && absint($input['logTTL']) ? absint($input['logTTL']) : $this->options->logTTL;
+        $input['logTTL'] = !empty($input['logTTL']) && absint($input['logTTL']) ? absint($input['logTTL']) : $this->options->logTTL;
 
         $this->options = (object) wp_parse_args($input, (array) $this->options);
         return (array) $this->options;
