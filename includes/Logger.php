@@ -274,7 +274,7 @@ class Logger
     {
         $currentTime = microtime(true);
         $microTime = sprintf("%06d", ($currentTime - floor($currentTime)) * 1000000);
-        $dateTime = new \DateTime(date('Y-m-d H:i:s.' . $microTime, $currentTime));
+        $dateTime = new \DateTime(date('Y-m-d H:i:s.' . $microTime, intval($currentTime)));
         return $dateTime->format('Y-m-d G:i:s.u');
     }
 }
