@@ -93,14 +93,14 @@ class LogParser
         foreach ($this->search as $needle) {
             if (is_array($needle) && !empty($needle)) {
                 foreach ($needle as $str) {
-                    if (strpos($haystack, $str) === false) {
+                    if (mb_stripos($haystack, $str) === false) {
                         $find = $find && false;
                     } else {
                         $find = $find && true;
                     }
                 }
             } else {
-                if (strpos($haystack, $needle) === false) {
+                if (mb_stripos($haystack, $needle) === false) {
                     $find = $find && false;
                 }
             }
