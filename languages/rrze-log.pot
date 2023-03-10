@@ -1,17 +1,17 @@
-# Copyright (C) 2022 RRZE Webteam
+# Copyright (C) 2023 RRZE Webteam
 # This file is distributed under the GNU General Public License v2.
 msgid ""
 msgstr ""
-"Project-Id-Version: RRZE Log 2.3.0\n"
+"Project-Id-Version: RRZE Log 2.6.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-log\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2022-10-17T12:31:15+00:00\n"
+"POT-Creation-Date: 2023-03-10T12:43:05+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"X-Generator: WP-CLI 2.6.0\n"
+"X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: rrze-log\n"
 
 #. Plugin Name of the plugin
@@ -34,63 +34,99 @@ msgstr ""
 msgid "https://blogs.fau.de/webworking/"
 msgstr ""
 
+#: includes/DebugListTable.php:86
+#: includes/ListTable.php:86
+msgid "Error level"
+msgstr ""
+
+#: includes/DebugListTable.php:87
+#: includes/ListTable.php:87
+msgid "Website"
+msgstr ""
+
+#: includes/DebugListTable.php:88
+#: includes/ListTable.php:88
+msgid "Message"
+msgstr ""
+
+#: includes/DebugListTable.php:89
+#: includes/ListTable.php:89
+msgid "Date"
+msgstr ""
+
+#: includes/DebugListTable.php:188
+#: includes/ListTable.php:194
+msgid "All error levels"
+msgstr ""
+
+#: includes/DebugLogParser.php:74
+#: includes/LogParser.php:61
+msgid "Log file not found."
+msgstr ""
+
 #. translators: %s: File path name.
 #: includes/File/Flock.php:59
 msgid "Could not get lock on %s."
 msgstr ""
 
-#: includes/ListTable.php:68
-msgid "Error level"
-msgstr ""
-
-#: includes/ListTable.php:69
-msgid "Website"
-msgstr ""
-
-#: includes/ListTable.php:70
-msgid "Message"
-msgstr ""
-
-#: includes/ListTable.php:71
-msgid "Date"
-msgstr ""
-
-#: includes/ListTable.php:168
-msgid "All error levels"
-msgstr ""
-
-#: includes/LogParser.php:61
-msgid "Log file not found."
-msgstr ""
-
-#: includes/Settings.php:62
-#: includes/Settings.php:63
-#: includes/Views/list-table.php:8
+#: includes/Settings.php:70
+#: includes/Settings.php:71
+#: includes/Settings.php:103
+#: includes/Settings.php:104
+#: includes/Views/debug/list-table.php:8
+#: includes/Views/log/list-table.php:8
 msgid "Log"
 msgstr ""
 
-#: includes/Settings.php:105
+#: includes/Settings.php:114
+#: includes/Settings.php:115
+msgid "Debug Log"
+msgstr ""
+
+#: includes/Settings.php:147
 msgid "Enable Log"
 msgstr ""
 
-#: includes/Settings.php:106
+#: includes/Settings.php:148
 msgid "Time to live"
 msgstr ""
 
-#: includes/Settings.php:130
+#: includes/Settings.php:149
+msgid "Enable administration menus"
+msgstr ""
+
+#: includes/Settings.php:151
+msgid "Debug Log Access"
+msgstr ""
+
+#: includes/Settings.php:162
+msgid "Enables network-wide logging"
+msgstr ""
+
+#: includes/Settings.php:174
+msgid "Enables network wide the Log menu for administrators"
+msgstr ""
+
+#: includes/Settings.php:188
 msgid "How many days can the log file remain on disk before it is removed?"
 msgstr ""
 
 #: includes/Settings.php:196
+msgid "List of user ids with access to view the wp debug log file. Enter one website ID per line."
+msgstr ""
+
+#: includes/Settings.php:271
+#: includes/Settings.php:287
 msgid "Number of items per page:"
 msgstr ""
 
-#: includes/Settings.php:240
+#: includes/Settings.php:357
 msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 
 #. translators: %s: Error message.
-#: includes/Views/base.php:15
+#: includes/Views/debug/base.php:15
+#: includes/Views/log/base.php:15
 msgid "Error: %s"
 msgstr ""
 
