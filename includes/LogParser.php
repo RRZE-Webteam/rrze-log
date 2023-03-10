@@ -77,7 +77,6 @@ class LogParser
             $line = $this->file->fgets();
             if (!empty($line) && (!$this->search || $this->search($line))) {
                 yield $line;
-                $this->totalLines++;
             }
         }
     }
@@ -130,8 +129,16 @@ class LogParser
         }
         $lines = [];
         foreach ($this->iterateFile() as $line) {
+            if ($key && $search) {
+                $lineObj = json_decode($line);
+                $value = $lineObj->$key ?? '';
+                if ($value && untrailingslashit($value) != untrailingslashit($search)) {
+                    continue;
+                }
+            }
             $lines[] = $line;
         }
+        $this->totalLines = count($lines);
         if (count($lines) >= $this->offset) {
             krsort($lines);
             $limitIterator = new \LimitIterator(new \ArrayIterator($lines), $this->offset, $this->count);

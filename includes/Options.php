@@ -20,7 +20,9 @@ class Options
     {
         $options = [
             'enabled' => '0',
-            'logTTL' => 7 // in days
+            'logTTL' => 7, // in days
+            'adminMenu' => '0',
+            'debugLogAccess' => ''
         ];
 
         return $options;

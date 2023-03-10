@@ -23,4 +23,31 @@ class Constants
      * @var string
      */
     const LOG_PATH = WP_CONTENT_DIR . '/log/rrze-log/';
+
+    /**
+     * Log error levels.
+     * @var array
+     */
+    const LEVELS = [
+        'ERROR',
+        'WARNING',
+        'NOTICE',
+        'INFO'
+    ];
+
+    /**
+     * Debug error levels.
+     * @var array
+     */
+    const DEBUG_LEVELS = [
+        'FATAL',
+        'WARNING',
+        'NOTICE',
+        'DEPRECATED',
+        'PARSE',
+        'EXCEPTION',
+        'DATABASE',
+        'JAVASCRIPT',
+        'OTHER'
+    ];
 }

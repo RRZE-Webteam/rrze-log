@@ -10,6 +10,26 @@ defined('ABSPATH') || exit;
 class Utils
 {
     /**
+     * Check if a string is valid JSON.
+     *
+     * @param string $string
+     * @return boolean
+     */
+    public static function isJson(string $string): bool
+    {
+        json_decode($string);
+        return json_last_error() === JSON_ERROR_NONE;
+    }
+
+    public static function isDebugLog()
+    {
+        if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Log errors by writing to the debug.log file.
      */
     public static function debug($input, string $level = 'i')
@@ -17,13 +37,7 @@ class Utils
         if (!defined('WP_DEBUG') || !WP_DEBUG) {
             return;
         }
-        if (in_array(strtolower((string) WP_DEBUG_LOG), ['true', '1'], true)) {
-            $logPath = WP_CONTENT_DIR . '/debug.log';
-        } elseif (is_string(WP_DEBUG_LOG)) {
-            $logPath = WP_DEBUG_LOG;
-        } else {
-            return;
-        }
+        $logPath = plugin()->getPath() . 'debug.log';
         if (is_array($input) || is_object($input)) {
             $input = print_r($input, true);
         }

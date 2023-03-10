@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-log\n"
 "POT-Creation-Date: 2022-10-17T12:31:15+00:00\n"
-"PO-Revision-Date: 2022-10-17 14:32+0200\n"
+"PO-Revision-Date: 2023-03-10 13:49+0100\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch (Sie)\n"
 "Language: de\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 3.1.1\n"
+"X-Generator: Poedit 3.2.2\n"
 "X-Loco-Version: 2.3.1; wp-5.3.2\n"
 "X-Loco-Template: languages/rrze-log-de_DE.po\n"
 
@@ -40,65 +40,94 @@ msgstr "RRZE-Webteam"
 msgid "https://blogs.fau.de/webworking/"
 msgstr "RRZE-Webteam"
 
+#: includes/DebugListTable.php:86 includes/ListTable.php:86
+msgid "Error level"
+msgstr "Fehlerstufe"
+
+#: includes/DebugListTable.php:87 includes/ListTable.php:87
+msgid "Website"
+msgstr "Website"
+
+#: includes/DebugListTable.php:88 includes/ListTable.php:88
+msgid "Message"
+msgstr "Nachricht"
+
+#: includes/DebugListTable.php:89 includes/ListTable.php:89
+msgid "Date"
+msgstr "Datum"
+
+#: includes/DebugListTable.php:188 includes/ListTable.php:194
+msgid "All error levels"
+msgstr "Alle Fehlerstufen"
+
+#: includes/DebugLogParser.php:74 includes/LogParser.php:61
+msgid "Log file not found."
+msgstr "Protokolldatei nicht gefunden."
+
 #. translators: %s: File path name.
 #: includes/File/Flock.php:59
 msgid "Could not get lock on %s."
 msgstr "Konnte die Sperre auf %s nicht erhalten."
 
-#: includes/ListTable.php:68
-msgid "Error level"
-msgstr "Fehlerstufe"
-
-#: includes/ListTable.php:69
-msgid "Website"
-msgstr "Website"
-
-#: includes/ListTable.php:70
-msgid "Message"
-msgstr "Nachricht"
-
-#: includes/ListTable.php:71
-msgid "Date"
-msgstr "Datum"
-
-#: includes/ListTable.php:168
-msgid "All error levels"
-msgstr "Alle Fehlerstufen"
-
-#: includes/LogParser.php:61
-msgid "Log file not found."
-msgstr "Protokolldatei nicht gefunden."
-
-#: includes/Settings.php:62 includes/Settings.php:63
-#: includes/Views/list-table.php:8
+#: includes/Settings.php:70 includes/Settings.php:71 includes/Settings.php:103
+#: includes/Settings.php:104 includes/Views/debug/list-table.php:8
+#: includes/Views/log/list-table.php:8
 msgid "Log"
 msgstr "Protokoll"
 
-#: includes/Settings.php:105
+#: includes/Settings.php:114 includes/Settings.php:115
+msgid "Debug Log"
+msgstr "Debugging-Protokoll"
+
+#: includes/Settings.php:147
 msgid "Enable Log"
 msgstr "Protokoll aktivieren"
 
-#: includes/Settings.php:106
+#: includes/Settings.php:148
 msgid "Time to live"
 msgstr "Time to live"
 
-#: includes/Settings.php:130
+#: includes/Settings.php:149
+msgid "Enable administration menus"
+msgstr "Administrations-Menüs aktivieren"
+
+#: includes/Settings.php:151
+msgid "Debug Log Access"
+msgstr "Debugging-Protokoll-Zugriff"
+
+#: includes/Settings.php:162
+msgid "Enables network-wide logging"
+msgstr "Aktiviert die netzwerkweite Protokollierung"
+
+#: includes/Settings.php:174
+msgid "Enables network wide the Log menu for administrators"
+msgstr "Aktiviert netzwerkweit das Log-Menü für Administratoren"
+
+#: includes/Settings.php:188
 msgid "How many days can the log file remain on disk before it is removed?"
 msgstr ""
 "Wie viele Tage kann die Protokolldatei auf der Festplatte verbleiben, bevor "
 "sie entfernt wird?"
 
 #: includes/Settings.php:196
+msgid ""
+"List of user ids with access to view the wp debug log file. Enter one "
+"website ID per line."
+msgstr ""
+"Liste der Benutzer-IDs mit Zugriff zum Anzeigen der Debugging-"
+"Protokolldatei. Geben Sie eine Website-ID pro Zeile ein."
+
+#: includes/Settings.php:271 includes/Settings.php:287
 msgid "Number of items per page:"
 msgstr "Einträge pro Seite:"
 
-#: includes/Settings.php:240
+#: includes/Settings.php:357
 msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 "Sie haben nicht genügend Berechtigungen, um auf diese Seite zuzugreifen."
 
 #. translators: %s: Error message.
-#: includes/Views/base.php:15
+#: includes/Views/debug/base.php:15 includes/Views/log/base.php:15
 msgid "Error: %s"
 msgstr "Fehler: %s"
 
@@ -128,6 +157,3 @@ msgstr "Das Plugin ist nur mit WordPress Multisite kompatibel."
 #: rrze-log.php:146
 msgid "Plugins: %1$s: %2$s"
 msgstr "Plugins: %1$s: %2$s"
-
-#~ msgid "The WordPress instance must be multisite."
-#~ msgstr "Die WordPress-Instanz muss multisite sein."

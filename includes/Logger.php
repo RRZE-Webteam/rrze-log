@@ -46,12 +46,6 @@ class Logger
     protected $filePermissions = 0644;
 
     /**
-     * [protected description]
-     * @var array
-     */
-    const LEVELS = ['ERROR', 'WARNING', 'NOTICE', 'INFO'];
-
-    /**
      * [__construct description]
      */
     public function __construct()
@@ -66,7 +60,7 @@ class Logger
     {
         isset($this->funcOverload) || $this->funcOverload = (extension_loaded('mbstring') && ini_get('mbstring.func_overload'));
 
-        $this->siteUrl = get_site_url();
+        $this->siteUrl = site_url();
     }
 
     /**

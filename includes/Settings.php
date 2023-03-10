@@ -4,8 +4,6 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-use RRZE\Log\ListTable;
-
 class Settings
 {
     /**
@@ -25,6 +23,12 @@ class Settings
      * @var object
      */
     protected $listTable;
+
+    /**
+     * WP_List_Table object.
+     * @var object
+     */
+    protected $debugListTable;
 
     /**
      * List table notice messages.
@@ -50,6 +54,10 @@ class Settings
         add_action('network_admin_menu', [$this, 'settingsSection']);
         add_action('network_admin_menu', [$this, 'settingsUpdate']);
 
+        if ($this->options->adminMenu) {
+            add_action('admin_menu', array($this, 'adminSubMenu'));
+        }
+
         add_filter('set-screen-option', [$this, 'setScreenOption'], 10, 3);
     }
 
@@ -66,6 +74,17 @@ class Settings
             [$this, 'logPage'],
             'dashicons-list-view'
         );
+        add_action("load-$logPage", [$this, 'screenOptions']);
+
+        $debugLogPage = add_submenu_page(
+            'rrze-log',
+            __('Debug Log', 'rrze-updater'),
+            __('Debug Log', 'rrze-updater'),
+            'manage_options',
+            'rrze-log-debug',
+            [$this, 'debugLogPage']
+        );
+        add_action("load-$debugLogPage", [$this, 'debugScreenOptions']);
 
         add_submenu_page(
             'rrze-log',
@@ -75,8 +94,31 @@ class Settings
             'rrze-log-settings',
             [$this, 'settingsPage']
         );
+    }
 
+    public function adminSubMenu()
+    {
+        $logPage = add_submenu_page(
+            'tools.php',
+            __('Log', 'rrze-log'),
+            __('Log', 'rrze-log'),
+            'manage_options',
+            'rrze-log',
+            [$this, 'logPage']
+        );
         add_action("load-$logPage", [$this, 'screenOptions']);
+
+        if ($this->isUserInDebugLogAccess()) {
+            $debugLogPage = add_submenu_page(
+                'tools.php',
+                __('Debug Log', 'rrze-log'),
+                __('Debug Log', 'rrze-log'),
+                'manage_options',
+                'rrze-log-debug',
+                [$this, 'debugLogPage']
+            );
+            add_action("load-$debugLogPage", [$this, 'debugScreenOptions']);
+        }
     }
 
     /**
@@ -104,6 +146,10 @@ class Settings
         add_settings_section('rrze-log-settings', false, '__return_false', 'rrze-log-settings');
         add_settings_field('rrze-log-enabled', __('Enable Log', 'rrze-log'), [$this, 'enabledField'], 'rrze-log-settings', 'rrze-log-settings');
         add_settings_field('rrze-log-logTTL', __('Time to live', 'rrze-log'), [$this, 'logTTLField'], 'rrze-log-settings', 'rrze-log-settings');
+        add_settings_field('rrze-log-adminMenu', __('Enable administration menus', 'rrze-log'), [$this, 'adminMenuField'], 'rrze-log-settings', 'rrze-log-settings');
+        if (Utils::isDebugLog()) {
+            add_settings_field('rrze-log-debugLogAccess', __('Debug Log Access', 'rrze-log'), [$this, 'debugLogAccessField'], 'rrze-log-settings', 'rrze-log-settings');
+        }
     }
 
     /**
@@ -113,7 +159,19 @@ class Settings
     {
     ?>
         <label>
-            <input type="checkbox" id="rrze-log-enabled" name="<?php printf('%s[enabled]', $this->optionName); ?>" value="1" <?php checked($this->options->enabled, 1); ?>>
+            <input type="checkbox" id="rrze-log-enabled" name="<?php printf('%s[enabled]', $this->optionName); ?>" value="1" <?php checked($this->options->enabled, 1); ?>> <?php _e('Enables network-wide logging', 'rrze-log'); ?>
+        </label>
+    <?php
+    }
+
+    /**
+     * Display adminMenu field.
+     */
+    public function adminMenuField()
+    {
+    ?>
+        <label>
+            <input type="checkbox" id="rrze-log-admin-menu" name="<?php printf('%s[adminMenu]', $this->optionName); ?>" value="1" <?php checked($this->options->adminMenu, 1); ?>> <?php _e('Enables network wide the Log menu for administrators', 'rrze-log'); ?>
         </label>
     <?php
     }
@@ -131,6 +189,14 @@ class Settings
     <?php
     }
 
+    public function debugLogAccessField()
+    {
+    ?>
+        <textarea id="debug-log-access" cols="50" rows="5" name="<?php printf('%s[debugLogAccess]', $this->optionName); ?>"><?php echo esc_attr($this->getTextarea($this->options->debugLogAccess)) ?></textarea>
+        <p class="description"><?php _e('List of user ids with access to view the wp debug log file. Enter one website ID per line.', 'rrze-log'); ?></p>
+    <?php
+    }
+
     /**
      * Validate options.
      * @param  array $input [description]
@@ -139,7 +205,17 @@ class Settings
     public function optionsValidate($input)
     {
         $input['enabled'] = !empty($input['enabled']) ? 1 : 0;
+
         $input['logTTL'] = !empty($input['logTTL']) && absint($input['logTTL']) ? absint($input['logTTL']) : $this->options->logTTL;
+
+        $input['adminMenu'] = !empty($input['adminMenu']) ? 1 : 0;
+
+        if (Utils::isDebugLog()) {
+            $input['debugLogAccess'] = isset($input['debugLogAccess']) ? $input['debugLogAccess'] : '';
+            $debugLogAccess = $this->sanitizeTextarea($input['debugLogAccess']);
+            $debugLogAccess = !empty($debugLogAccess) ? $this->sanitizeWpLogAccess($debugLogAccess) : '';
+            $input['debugLogAccess'] = !empty($debugLogAccess) ? $debugLogAccess : '';
+        }
 
         $this->options = (object) wp_parse_args($input, (array) $this->options);
         return (array) $this->options;
@@ -202,7 +278,23 @@ class Settings
     }
 
     /**
-     * Display list table page.
+     * Add debug screen options.
+     */
+    public function debugScreenOptions()
+    {
+        $option = 'per_page';
+        $args = [
+            'label' => __('Number of items per page:', 'rrze-log'),
+            'default' => 20,
+            'option' => 'rrze_log_per_page'
+        ];
+
+        add_screen_option($option, $args);
+        $this->debugListTable = new DebugListTable();
+    }
+
+    /**
+     * Display log list table page.
      */
     public function logPage()
     {
@@ -214,7 +306,7 @@ class Settings
         $action = isset($_GET['action']) ? $_GET['action'] : 'index';
 
         $s = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
-        $level = isset($_REQUEST['level']) && in_array($_REQUEST['level'], Logger::LEVELS) ? $_REQUEST['level'] : '';
+        $level = isset($_REQUEST['level']) && in_array($_REQUEST['level'], Constants::LEVELS) ? $_REQUEST['level'] : '';
         $logFile = isset($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
 
         $data = [
@@ -225,15 +317,41 @@ class Settings
             'listTable' => $this->listTable
         ];
 
-        $this->show('list-table', $data);
+        $this->show('list-table', 'log', $data);
+    }
+
+    /**
+     * Display WP debug log list table page.
+     */
+    public function debugLogPage()
+    {
+        wp_enqueue_style('rrze-log-list-table');
+        wp_enqueue_script('rrze-log-list-table');
+
+        $this->debugListTable->prepare_items();
+
+        $action = isset($_GET['action']) ? $_GET['action'] : 'index';
+
+        $s = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
+        $level = isset($_REQUEST['level']) && in_array($_REQUEST['level'], Constants::DEBUG_LEVELS) ? $_REQUEST['level'] : '';
+
+        $data = [
+            'action' => $action,
+            's' => $s,
+            'level' => $level,
+            'listTable' => $this->debugListTable
+        ];
+
+        $this->show('list-table', 'debug', $data);
     }
 
     /**
      * Display list table notices.
      * @param  string $view [description]
+     * @param  string $context [description]
      * @param  array  $data [description]
      */
-    protected function show($view, $data = [])
+    protected function show($view, $context, $data = [])
     {
         if (!current_user_can('update_plugins') || !current_user_can('update_themes')) {
             wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
@@ -241,6 +359,91 @@ class Settings
 
         $data['messages'] = $this->messages;
 
-        include 'Views/base.php';
+        include 'Views/' . $context . '/base.php';
+    }
+
+    /**
+     * getTextarea
+     * @param array $option
+     * @return string
+     */
+    protected function getTextarea($option)
+    {
+        if (!empty($option) && is_array($option)) {
+            return implode(PHP_EOL, $option);
+        }
+        return '';
+    }
+
+    /**
+     * sanitizeTextarea
+     * @param string $input
+     * @param boolean $sort
+     * @return mixed
+     */
+    protected function sanitizeTextarea(string $input, bool $sort = true)
+    {
+        if (!empty($input)) {
+            $inputAry = explode(PHP_EOL, sanitize_textarea_field($input));
+            $inputAry = array_filter(array_map('trim', $inputAry));
+            $inputAry = array_unique(array_values($inputAry));
+            if ($sort) sort($inputAry);
+            return !empty($inputAry) ? $inputAry : '';
+        }
+        return '';
+    }
+
+    public function sanitizeWpLogAccess(array $data)
+    {
+        $debugLogAccess = [];
+        foreach ($data as $row) {
+            $aryRow = explode(' - ', $row);
+            $userLogin = isset($aryRow[0]) ? trim($aryRow[0]) : '';
+            if (!$userLogin) {
+                continue;
+            }
+            $args = [
+                'blog_id' => 0,
+                'role' => 'administrator',
+                'fields' => [
+                    'user_login',
+                    'user_nicename',
+                    'display_name'
+                ],
+                'search' => $userLogin,
+                'search_columns' => [
+                    'user_login'
+                ],
+            ];
+            $users = get_users($args);
+            $user = !empty($users[0]) && is_object(($users[0])) ? $users[0] : null;
+            if (is_null($user)) {
+                continue;
+            }
+            $userName = $user->display_name ?: $user->user_nicename;
+            $debugLogAccess[$userLogin] = implode(' - ', [$userLogin, $userName]);
+        }
+        ksort($debugLogAccess);
+        return $debugLogAccess;
+    }
+
+    /**
+     * isUserInDebugLogAccess
+     * @return bool
+     */
+    protected function isUserInDebugLogAccess()
+    {
+        $debugLogAccess = $this->options->debugLogAccess;
+        if (!empty($debugLogAccess) && is_array($debugLogAccess)) {
+            $currentUser = wp_get_current_user();
+            foreach ($debugLogAccess as $row) {
+                $aryRow = explode(' - ', $row);
+                $userLogin = isset($aryRow[0]) ? trim($aryRow[0]) : '';
+                if ($userLogin == $currentUser->user_login) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
