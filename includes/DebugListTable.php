@@ -4,7 +4,6 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-use RRZE\Log\Logger;
 use RRZE\Log\DebugLogParser;
 use WP_List_Table;
 
@@ -44,22 +43,7 @@ class DebugListTable extends WP_List_Table
      */
     public function column_default($item, $columnName)
     {
-        switch ($columnName) {
-            case 'siteurl':
-                return isset($item[$columnName]) ? parse_url($item[$columnName], PHP_URL_HOST) . parse_url($item[$columnName], PHP_URL_PATH) : '';
-            default:
-                return isset($item[$columnName]) ? $item[$columnName] : '';
-        }
-    }
-
-    /**
-     * [column_siteurl description]
-     * @param  array $item [description]
-     * @return string       [description]
-     */
-    public function column_siteurl($item)
-    {
-        return untrailingslashit($item['siteurl']);
+        return isset($item[$columnName]) ? $item[$columnName] : '';
     }
 
     /**
@@ -84,7 +68,6 @@ class DebugListTable extends WP_List_Table
     {
         $columns = [
             'level' => __('Error level', 'rrze-log'),
-            'siteurl' => __('Website', 'rrze-log'),
             'message' => __('Message', 'rrze-log'),
             'datetime' => __('Date', 'rrze-log')
         ];
