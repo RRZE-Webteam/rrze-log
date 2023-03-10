@@ -1,6 +1,6 @@
 {
     "name": "rrze-log",
-    "version": "2.6.2",
+    "version": "2.6.3",
     "main": "rrze-log.php",
     "scripts": {
         "start": "webpack --mode=development --watch",
