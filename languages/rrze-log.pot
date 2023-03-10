@@ -2,14 +2,14 @@
 # This file is distributed under the GNU General Public License v2.
 msgid ""
 msgstr ""
-"Project-Id-Version: RRZE Log 2.6.0\n"
+"Project-Id-Version: RRZE Log 2.6.3\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-log\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2023-03-10T12:43:05+00:00\n"
+"POT-Creation-Date: 2023-03-10T15:24:52+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: rrze-log\n"
@@ -34,32 +34,27 @@ msgstr ""
 msgid "https://blogs.fau.de/webworking/"
 msgstr ""
 
-#: includes/DebugListTable.php:86
+#: includes/DebugListTable.php:70
 #: includes/ListTable.php:86
 msgid "Error level"
 msgstr ""
 
-#: includes/DebugListTable.php:87
-#: includes/ListTable.php:87
-msgid "Website"
-msgstr ""
-
-#: includes/DebugListTable.php:88
+#: includes/DebugListTable.php:71
 #: includes/ListTable.php:88
 msgid "Message"
 msgstr ""
 
-#: includes/DebugListTable.php:89
+#: includes/DebugListTable.php:72
 #: includes/ListTable.php:89
 msgid "Date"
 msgstr ""
 
-#: includes/DebugListTable.php:188
+#: includes/DebugListTable.php:171
 #: includes/ListTable.php:194
 msgid "All error levels"
 msgstr ""
 
-#: includes/DebugLogParser.php:74
+#: includes/DebugLogParser.php:70
 #: includes/LogParser.php:61
 msgid "Log file not found."
 msgstr ""
@@ -67,6 +62,10 @@ msgstr ""
 #. translators: %s: File path name.
 #: includes/File/Flock.php:59
 msgid "Could not get lock on %s."
+msgstr ""
+
+#: includes/ListTable.php:87
+msgid "Website"
 msgstr ""
 
 #: includes/Settings.php:70
@@ -112,7 +111,7 @@ msgid "How many days can the log file remain on disk before it is removed?"
 msgstr ""
 
 #: includes/Settings.php:196
-msgid "List of user ids with access to view the wp debug log file. Enter one website ID per line."
+msgid "List of usernames with access to view the wp debug log file. Enter one username per line."
 msgstr ""
 
 #: includes/Settings.php:271

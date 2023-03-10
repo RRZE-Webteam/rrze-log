@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-log\n"
-"POT-Creation-Date: 2023-03-10T12:43:05+00:00\n"
-"PO-Revision-Date: 2023-03-10 13:49+0100\n"
+"POT-Creation-Date: 2023-03-10T15:24:52+00:00\n"
+"PO-Revision-Date: 2023-03-10 16:26+0100\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch\n"
 "Language: de_DE\n"
@@ -39,27 +39,23 @@ msgstr "RRZE-Webteam"
 msgid "https://blogs.fau.de/webworking/"
 msgstr "RRZE-Webteam"
 
-#: includes/DebugListTable.php:86 includes/ListTable.php:86
+#: includes/DebugListTable.php:70 includes/ListTable.php:86
 msgid "Error level"
 msgstr "Fehlerstufe"
 
-#: includes/DebugListTable.php:87 includes/ListTable.php:87
-msgid "Website"
-msgstr "Website"
-
-#: includes/DebugListTable.php:88 includes/ListTable.php:88
+#: includes/DebugListTable.php:71 includes/ListTable.php:88
 msgid "Message"
 msgstr "Nachricht"
 
-#: includes/DebugListTable.php:89 includes/ListTable.php:89
+#: includes/DebugListTable.php:72 includes/ListTable.php:89
 msgid "Date"
 msgstr "Datum"
 
-#: includes/DebugListTable.php:188 includes/ListTable.php:194
+#: includes/DebugListTable.php:171 includes/ListTable.php:194
 msgid "All error levels"
 msgstr "Alle Fehlerstufen"
 
-#: includes/DebugLogParser.php:74 includes/LogParser.php:61
+#: includes/DebugLogParser.php:70 includes/LogParser.php:61
 msgid "Log file not found."
 msgstr "Protokolldatei nicht gefunden."
 
@@ -67,6 +63,10 @@ msgstr "Protokolldatei nicht gefunden."
 #: includes/File/Flock.php:59
 msgid "Could not get lock on %s."
 msgstr "Konnte die Sperre auf %s nicht erhalten."
+
+#: includes/ListTable.php:87
+msgid "Website"
+msgstr "Website"
 
 #: includes/Settings.php:70 includes/Settings.php:71 includes/Settings.php:103
 #: includes/Settings.php:104 includes/Views/debug/list-table.php:8
@@ -110,11 +110,11 @@ msgstr ""
 
 #: includes/Settings.php:196
 msgid ""
-"List of user ids with access to view the wp debug log file. Enter one "
-"website ID per line."
+"List of usernames with access to view the wp debug log file. Enter one "
+"username per line."
 msgstr ""
-"Liste der Benutzer-IDs mit Zugriff zum Anzeigen der Debugging-"
-"Protokolldatei. Geben Sie eine Website-ID pro Zeile ein."
+"Liste der Benutzernamen mit Zugriff zum Anzeigen der Debugging-"
+"Protokolldatei. Geben Sie einen Benutzernamen pro Zeile ein."
 
 #: includes/Settings.php:271 includes/Settings.php:287
 msgid "Number of items per page:"
