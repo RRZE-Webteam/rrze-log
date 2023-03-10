@@ -265,7 +265,7 @@ class debugLogParser
             if (array_search(trim($errorDetails), array_column($errorList, 'details')) === false) {
                 $errorList[] = [
                     'level' => $errorLevel,
-                    'details' => trim(preg_replace('/([\r\n\t])/', '', $errorDetails)),
+                    'details' => trim(preg_replace('/([\r\n\t])/', '', wp_kses_post($errorDetails))),
                     'occurrences' => [$timestamp],
                 ];
             } else {
