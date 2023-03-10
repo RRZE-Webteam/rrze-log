@@ -76,15 +76,17 @@ class Settings
         );
         add_action("load-$logPage", [$this, 'screenOptions']);
 
-        $debugLogPage = add_submenu_page(
-            'rrze-log',
-            __('Debug Log', 'rrze-updater'),
-            __('Debug Log', 'rrze-updater'),
-            'manage_options',
-            'rrze-log-debug',
-            [$this, 'debugLogPage']
-        );
-        add_action("load-$debugLogPage", [$this, 'debugScreenOptions']);
+        if (Utils::isDebugLog()) {
+            $debugLogPage = add_submenu_page(
+                'rrze-log',
+                __('Debug Log', 'rrze-updater'),
+                __('Debug Log', 'rrze-updater'),
+                'manage_options',
+                'rrze-log-debug',
+                [$this, 'debugLogPage']
+            );
+            add_action("load-$debugLogPage", [$this, 'debugScreenOptions']);
+        }
 
         add_submenu_page(
             'rrze-log',
@@ -108,7 +110,7 @@ class Settings
         );
         add_action("load-$logPage", [$this, 'screenOptions']);
 
-        if ($this->isUserInDebugLogAccess()) {
+        if (Utils::isDebugLog() && $this->isUserInDebugLogAccess()) {
             $debugLogPage = add_submenu_page(
                 'tools.php',
                 __('Debug Log', 'rrze-log'),
