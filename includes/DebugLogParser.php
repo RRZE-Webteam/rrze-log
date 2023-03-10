@@ -71,7 +71,7 @@ class debugLogParser
         } else {
             if (filesize($filename) > $this->maxFileSize) {
                 return false;
-            }    
+            }
             $this->file = new \SplFileObject($filename);
             $this->file->setFlags(
                 \SplFileObject::READ_AHEAD |
@@ -260,15 +260,16 @@ class debugLogParser
             }
 
             $timestamp = str_replace(["[", "]"], "", $timestamp);
+            $errorDetails = trim(preg_replace('/([\r\n\t])/', '', wp_kses_post($errorDetails)));
 
             if (array_search(trim($errorDetails), array_column($errorList, 'details')) === false) {
                 $errorList[] = [
                     'level' => $errorLevel,
-                    'details' => trim(preg_replace('/([\r\n\t])/', '', wp_kses_post($errorDetails))),
+                    'details' => $errorDetails,
                     'occurrences' => [$timestamp],
                 ];
             } else {
-                $errorPosition = array_search(trim($errorDetails), array_column($errorList, 'details'));
+                $errorPosition = array_search($errorDetails, array_column($errorList, 'details'));
                 array_push($errorList[$errorPosition]['occurrences'], $timestamp);
             }
         }
