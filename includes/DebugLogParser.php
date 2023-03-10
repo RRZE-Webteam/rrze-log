@@ -66,13 +66,12 @@ class debugLogParser
         $this->count = $count;
         $this->search = $search;
 
-        if (filesize($filename) > $this->maxFileSize) {
-            return false;
-        }
-
         if (!file_exists($filename)) {
             $this->error = new \WP_Error('rrze_log_file', __('Log file not found.', 'rrze-log'));
         } else {
+            if (filesize($filename) > $this->maxFileSize) {
+                return false;
+            }    
             $this->file = new \SplFileObject($filename);
             $this->file->setFlags(
                 \SplFileObject::READ_AHEAD |
