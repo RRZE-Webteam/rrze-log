@@ -166,7 +166,7 @@ class Main
      */
     public function adminEnqueueScripts($hook)
     {
-        if (!in_array($hook, ['toplevel_page_rrze-log', 'tools_page_rrze-log', 'tools_page_rrze-log-debug'])) {
+        if (!str_contains($hook, 'page_rrze-log') && !str_contains($hook, 'page_rrze-log-debug')) {
             return;
         }
 
