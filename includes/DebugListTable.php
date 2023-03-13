@@ -19,13 +19,23 @@ class DebugListTable extends WP_List_Table
     public $options;
 
     /**
-     * [__construct description]
+     * Absolut Log Path
+     *
+     * @var string
      */
-    public function __construct()
+    protected $logPath;
+
+    /**
+     * Constructor
+     *
+     * @param string $logPath
+     */
+    public function __construct(string $logPath)
     {
         global $status, $page;
 
         $this->options = Options::getOptions();
+        $this->logPath = $logPath;
         $this->items = [];
 
         parent::__construct([
@@ -99,6 +109,7 @@ class DebugListTable extends WP_List_Table
     {
         $s = !empty($_REQUEST['s']) ? array_map('trim', explode(' ', trim($_REQUEST['s']))) : '';
         $level = !empty($_REQUEST['level']) && in_array($_REQUEST['level'], CONSTANTS::DEBUG_LEVELS) ? $_REQUEST['level'] : '';
+        $logFile = isset($_REQUEST['logfile']) && $this->verifyLogfileFormat($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
 
         $columns = $this->get_columns();
         $hidden = [];
@@ -109,16 +120,19 @@ class DebugListTable extends WP_List_Table
         $perPage = $this->get_items_per_page('rrze_log_per_page', 1);
         $currentPage = $this->get_pagenum();
 
-        $logFile = WP_CONTENT_DIR . '/debug.log';
+        $logFile = sprintf('%1$s%2$s.log', $this->logPath, $logFile);
 
         $search = [];
         if ($s) {
             $search[] = $s;
         }
+
         if ($level) {
             $search[] = '"level":"' . $level . '"';
         }
+
         $logParser = new DebugLogParser($logFile, $search, (($currentPage - 1) * $perPage), $perPage);
+
         $items = $logParser->getItems();
         if (!is_wp_error($items)) {
             foreach ($items as $value) {
@@ -149,6 +163,7 @@ class DebugListTable extends WP_List_Table
                 ob_start();
 
                 $this->levelsDropdown();
+                $this->logFilesDropdown();
 
                 $output = ob_get_clean();
 
@@ -172,6 +187,38 @@ class DebugListTable extends WP_List_Table
             <?php foreach (Constants::DEBUG_LEVELS as $level) :
                 $selected = $levelFilter == $level ? ' selected = "selected"' : ''; ?>
                 <option value="<?php echo $level; ?>" <?php echo $selected; ?>><?php echo $level; ?></option>
+            <?php endforeach; ?>
+        </select>
+    <?php
+    }
+
+    /**
+     * [logFilesDropdown description]
+     */
+    protected function logFilesDropdown()
+    {
+        $logFilesFilter = isset($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
+        $logFiles = [];
+        if (!is_dir($this->logPath)) {
+            return;
+        }
+        foreach (new \DirectoryIterator($this->logPath) as $file) {
+            if ($file->isFile()) {
+                $logfile = $file->getBasename('.' . $file->getExtension());
+                if ($this->verifyLogfileFormat($logfile)) {
+                    $logFiles[$logfile] = $logfile;
+                }
+            }
+        }
+
+        if (count($logFiles) < 2) {
+            return;
+        }
+        krsort($logFiles); ?>
+        <select id="logfiles-filter" name="logfile">
+            <?php foreach ($logFiles as $logfile) :
+                $selected = $logFilesFilter == $logfile ? ' selected = "selected"' : ''; ?>
+                <option value="<?php echo $logfile; ?>" <?php echo $selected; ?>><?php echo $logfile; ?></option>
             <?php endforeach; ?>
         </select>
 <?php

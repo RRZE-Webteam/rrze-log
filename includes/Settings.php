@@ -196,7 +196,7 @@ class Settings
     ?>
         <textarea id="debug-log-access" cols="50" rows="5" name="<?php printf('%s[debugLogAccess]', $this->optionName); ?>"><?php echo esc_attr($this->getTextarea($this->options->debugLogAccess)) ?></textarea>
         <p class="description"><?php _e('List of usernames with access to view the wp debug log file. Enter one username per line.', 'rrze-log'); ?></p>
-    <?php
+<?php
     }
 
     /**
@@ -276,7 +276,9 @@ class Settings
         ];
 
         add_screen_option($option, $args);
-        $this->listTable = new ListTable();
+
+        $this->unlinkOldLogFiles(Constants::LOG_PATH);
+        $this->listTable = new ListTable(Constants::LOG_PATH);
     }
 
     /**
@@ -292,7 +294,9 @@ class Settings
         ];
 
         add_screen_option($option, $args);
-        $this->debugListTable = new DebugListTable();
+
+        $this->unlinkOldLogFiles(Constants::DEBUG_LOG_PATH);
+        $this->debugListTable = new DebugListTable(Constants::DEBUG_LOG_PATH);
     }
 
     /**
@@ -323,7 +327,7 @@ class Settings
             'listTable' => $this->listTable
         ];
 
-        $this->show('list-table', 'log', $data);
+        $this->show('list-table', $data);
     }
 
     /**
@@ -344,27 +348,28 @@ class Settings
 
         $s = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
         $level = isset($_REQUEST['level']) && in_array($_REQUEST['level'], Constants::DEBUG_LEVELS) ? $_REQUEST['level'] : '';
+        $logFile = isset($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
 
         $data = [
             'action' => $action,
             's' => $s,
             'level' => $level,
+            'logfile' => $logFile,
             'listTable' => $this->debugListTable
         ];
 
-        $this->show('list-table', 'debug', $data);
+        $this->show('list-table', $data);
     }
 
     /**
      * Display list table notices.
      * @param  string $view [description]
-     * @param  string $context [description]
      * @param  array  $data [description]
      */
-    protected function show($view, $context, $data = [])
+    protected function show($view, $data = [])
     {
         $data['messages'] = $this->messages;
-        include 'Views/' . $context . '/base.php';
+        include 'Views/base.php';
     }
 
     /**
@@ -453,5 +458,20 @@ class Settings
             }
         }
         return false;
+    }
+
+    /**
+     * unlinkOldLogFiles
+     *
+     * @param string $logPath
+     * @return void
+     */
+    protected function unlinkOldLogFiles($logPath)
+    {
+        foreach (new \DirectoryIterator($logPath) as $file) {
+            if ($file->isFile() && (time() - $file->getMTime() > $this->options->logTTL * DAY_IN_SECONDS)) {
+                @unlink(Constants::LOG_PATH . $file->getFilename());
+            }
+        }
     }
 }

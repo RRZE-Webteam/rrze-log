@@ -4,7 +4,6 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-use RRZE\Log\Logger;
 use RRZE\Log\LogParser;
 use WP_List_Table;
 
@@ -20,13 +19,23 @@ class ListTable extends WP_List_Table
     public $options;
 
     /**
-     * [__construct description]
+     * Absolut Log Path
+     *
+     * @var string
      */
-    public function __construct()
+    protected $logPath;
+
+    /**
+     * Constructor
+     *
+     * @param string $logPath
+     */
+    public function __construct(string $logPath)
     {
         global $status, $page;
 
         $this->options = Options::getOptions();
+        $this->logPath = $logPath;
         $this->items = [];
 
         parent::__construct([
@@ -127,16 +136,19 @@ class ListTable extends WP_List_Table
         $perPage = $this->get_items_per_page('rrze_log_per_page', 1);
         $currentPage = $this->get_pagenum();
 
-        $logFile = sprintf('%1$s%2$s.log', Constants::LOG_PATH, $logFile);
+        $logFile = sprintf('%1$s%2$s.log', $this->logPath, $logFile);
 
         $search = [];
         if ($s) {
             $search[] = $s;
         }
+
         if ($level) {
             $search[] = '"level":"' . $level . '"';
         }
+
         $logParser = new LogParser($logFile, $search, (($currentPage - 1) * $perPage), $perPage);
+
         if (!is_network_admin() && $this->options->adminMenu) {
             $items = $logParser->getItems('siteurl', site_url());
         } else {
@@ -207,10 +219,10 @@ class ListTable extends WP_List_Table
     {
         $logFilesFilter = isset($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
         $logFiles = [];
-        if (!is_dir(Constants::LOG_PATH)) {
+        if (!is_dir($this->logPath)) {
             return;
         }
-        foreach (new \DirectoryIterator(Constants::LOG_PATH) as $file) {
+        foreach (new \DirectoryIterator($this->logPath) as $file) {
             if ($file->isFile()) {
                 $logfile = $file->getBasename('.' . $file->getExtension());
                 if ($this->verifyLogfileFormat($logfile)) {

@@ -22,7 +22,7 @@ class Constants
      * Full log path.
      * @var string
      */
-    const LOG_PATH = WP_CONTENT_DIR . '/log/rrze-log/';
+    const LOG_PATH = WP_CONTENT_DIR . '/log/rrze-log/log/';
 
     /**
      * Log error levels.
@@ -34,6 +34,12 @@ class Constants
         'NOTICE',
         'INFO'
     ];
+
+    /**
+     * Full log path.
+     * @var string
+     */
+    const DEBUG_LOG_PATH = WP_CONTENT_DIR . '/log/rrze-log/debug/';
 
     /**
      * Debug error levels.
