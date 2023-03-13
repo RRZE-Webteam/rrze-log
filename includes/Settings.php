@@ -300,6 +300,10 @@ class Settings
      */
     public function logPage()
     {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
+        }
+
         wp_enqueue_style('rrze-log-list-table');
         wp_enqueue_script('rrze-log-list-table');
 
@@ -327,6 +331,10 @@ class Settings
      */
     public function debugLogPage()
     {
+        if (!current_user_can('manage_options') || !$this->isUserInDebugLogAccess()) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
+        }
+
         wp_enqueue_style('rrze-log-list-table');
         wp_enqueue_script('rrze-log-list-table');
 
@@ -355,12 +363,7 @@ class Settings
      */
     protected function show($view, $context, $data = [])
     {
-        if (!current_user_can('update_plugins') || !current_user_can('update_themes')) {
-            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
-        }
-
         $data['messages'] = $this->messages;
-
         include 'Views/' . $context . '/base.php';
     }
 
