@@ -135,8 +135,6 @@ class Logger
             return false;
         }
 
-        $this->unlinkOldLogFiles();
-
         $newFile = false;
 
         if (!file_exists($this->logFile)) {
@@ -246,18 +244,6 @@ class Logger
         }
 
         return isset($length) ? substr($str, $start, $length) : substr($str, $start);
-    }
-
-    /**
-     * [unlinkOldLogFiles description]
-     */
-    protected function unlinkOldLogFiles()
-    {
-        foreach (new \DirectoryIterator(Constants::LOG_PATH) as $file) {
-            if ($file->isFile() && (time() - $file->getMTime() > $this->options->logTTL * DAY_IN_SECONDS)) {
-                @unlink(Constants::LOG_PATH . $file->getFilename());
-            }
-        }
     }
 
     /**
