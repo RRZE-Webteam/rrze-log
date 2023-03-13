@@ -42,6 +42,7 @@ class Main
     public function onLoaded()
     {
         file_exists(Constants::LOG_PATH) || wp_mkdir_p(Constants::LOG_PATH);
+        file_exists(Constants::DEBUG_LOG_PATH) || wp_mkdir_p(Constants::DEBUG_LOG_PATH);
 
         add_action('admin_enqueue_scripts', [$this, 'adminEnqueueScripts']);
 
