@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-log\n"
-"POT-Creation-Date: 2023-03-10T15:48:59+00:00\n"
-"PO-Revision-Date: 2023-03-10 16:49+0100\n"
+"POT-Creation-Date: 2023-03-13T16:19:41+00:00\n"
+"PO-Revision-Date: 2023-03-13 17:21+0100\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch (Sie)\n"
 "Language: de\n"
@@ -40,19 +40,19 @@ msgstr "RRZE-Webteam"
 msgid "https://blogs.fau.de/webworking/"
 msgstr "RRZE-Webteam"
 
-#: includes/DebugListTable.php:70 includes/ListTable.php:86
+#: includes/DebugListTable.php:80 includes/ListTable.php:95
 msgid "Error level"
 msgstr "Fehlerstufe"
 
-#: includes/DebugListTable.php:71 includes/ListTable.php:88
+#: includes/DebugListTable.php:81 includes/ListTable.php:97
 msgid "Message"
 msgstr "Nachricht"
 
-#: includes/DebugListTable.php:72 includes/ListTable.php:89
+#: includes/DebugListTable.php:82 includes/ListTable.php:98
 msgid "Date"
 msgstr "Datum"
 
-#: includes/DebugListTable.php:171 includes/ListTable.php:194
+#: includes/DebugListTable.php:186 includes/ListTable.php:206
 msgid "All error levels"
 msgstr "Alle Fehlerstufen"
 
@@ -65,19 +65,18 @@ msgstr "Protokolldatei nicht gefunden."
 msgid "Could not get lock on %s."
 msgstr "Konnte die Sperre auf %s nicht erhalten."
 
-#: includes/ListTable.php:87
+#: includes/ListTable.php:96
 msgid "Website"
 msgstr "Website"
 
 #: includes/Settings.php:70 includes/Settings.php:71 includes/Settings.php:105
-#: includes/Settings.php:106 includes/Views/debug/list-table.php:8
-#: includes/Views/log/list-table.php:8
+#: includes/Settings.php:106 includes/Views/list-table.php:8
 msgid "Log"
 msgstr "Protokoll"
 
 #: includes/Settings.php:116 includes/Settings.php:117
 msgid "Debug Log"
-msgstr "Debugging-Protokoll"
+msgstr "Debug-Log"
 
 #: includes/Settings.php:149
 msgid "Enable Log"
@@ -93,7 +92,7 @@ msgstr "Administrations-Menüs aktivieren"
 
 #: includes/Settings.php:153
 msgid "Debug Log Access"
-msgstr "Debugging-Protokoll-Zugriff"
+msgstr "Debug-Log-Zugriff"
 
 #: includes/Settings.php:164
 msgid "Enables network-wide logging"
@@ -117,17 +116,17 @@ msgstr ""
 "Liste der Benutzernamen mit Zugriff zum Anzeigen der Debugging-"
 "Protokolldatei. Geben Sie einen Benutzernamen pro Zeile ein."
 
-#: includes/Settings.php:273 includes/Settings.php:289
+#: includes/Settings.php:273 includes/Settings.php:291
 msgid "Number of items per page:"
 msgstr "Einträge pro Seite:"
 
-#: includes/Settings.php:359
+#: includes/Settings.php:308 includes/Settings.php:339
 msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 "Sie haben nicht genügend Berechtigungen, um auf diese Seite zuzugreifen."
 
 #. translators: %s: Error message.
-#: includes/Views/debug/base.php:15 includes/Views/log/base.php:15
+#: includes/Views/base.php:15
 msgid "Error: %s"
 msgstr "Fehler: %s"
 

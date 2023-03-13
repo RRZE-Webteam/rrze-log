@@ -2,14 +2,14 @@
 # This file is distributed under the GNU General Public License v2.
 msgid ""
 msgstr ""
-"Project-Id-Version: RRZE Log 2.6.4\n"
+"Project-Id-Version: RRZE Log 2.6.7\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-log\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2023-03-10T15:48:59+00:00\n"
+"POT-Creation-Date: 2023-03-13T16:19:41+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: rrze-log\n"
@@ -34,23 +34,23 @@ msgstr ""
 msgid "https://blogs.fau.de/webworking/"
 msgstr ""
 
-#: includes/DebugListTable.php:70
-#: includes/ListTable.php:86
+#: includes/DebugListTable.php:80
+#: includes/ListTable.php:95
 msgid "Error level"
 msgstr ""
 
-#: includes/DebugListTable.php:71
-#: includes/ListTable.php:88
+#: includes/DebugListTable.php:81
+#: includes/ListTable.php:97
 msgid "Message"
 msgstr ""
 
-#: includes/DebugListTable.php:72
-#: includes/ListTable.php:89
+#: includes/DebugListTable.php:82
+#: includes/ListTable.php:98
 msgid "Date"
 msgstr ""
 
-#: includes/DebugListTable.php:171
-#: includes/ListTable.php:194
+#: includes/DebugListTable.php:186
+#: includes/ListTable.php:206
 msgid "All error levels"
 msgstr ""
 
@@ -64,7 +64,7 @@ msgstr ""
 msgid "Could not get lock on %s."
 msgstr ""
 
-#: includes/ListTable.php:87
+#: includes/ListTable.php:96
 msgid "Website"
 msgstr ""
 
@@ -72,8 +72,7 @@ msgstr ""
 #: includes/Settings.php:71
 #: includes/Settings.php:105
 #: includes/Settings.php:106
-#: includes/Views/debug/list-table.php:8
-#: includes/Views/log/list-table.php:8
+#: includes/Views/list-table.php:8
 msgid "Log"
 msgstr ""
 
@@ -115,17 +114,17 @@ msgid "List of usernames with access to view the wp debug log file. Enter one us
 msgstr ""
 
 #: includes/Settings.php:273
-#: includes/Settings.php:289
+#: includes/Settings.php:291
 msgid "Number of items per page:"
 msgstr ""
 
-#: includes/Settings.php:359
+#: includes/Settings.php:308
+#: includes/Settings.php:339
 msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 
 #. translators: %s: Error message.
-#: includes/Views/debug/base.php:15
-#: includes/Views/log/base.php:15
+#: includes/Views/base.php:15
 msgid "Error: %s"
 msgstr ""
 
