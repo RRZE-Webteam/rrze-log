@@ -438,6 +438,9 @@ class Settings
      */
     protected function isUserInDebugLogAccess()
     {
+        if (is_super_admin()) {
+            return true;
+        }
         $debugLogAccess = $this->options->debugLogAccess;
         if (!empty($debugLogAccess) && is_array($debugLogAccess)) {
             $currentUser = wp_get_current_user();
