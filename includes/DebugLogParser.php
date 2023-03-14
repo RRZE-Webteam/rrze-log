@@ -27,7 +27,7 @@ class debugLogParser
      */
     protected $file = null;
 
-    protected $maxFileSize = 10240000; // 10Mb
+    protected $maxFileSize = 31457280; // 30Mb
 
     /**
      * [protected description]
