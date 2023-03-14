@@ -54,7 +54,7 @@ class Settings
         add_action('network_admin_menu', [$this, 'settingsSection']);
         add_action('network_admin_menu', [$this, 'settingsUpdate']);
 
-        if ($this->options->adminMenu) {
+        if (is_super_admin() || $this->options->adminMenu) {
             add_action('admin_menu', array($this, 'adminSubMenu'));
         }
 
