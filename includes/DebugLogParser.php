@@ -96,7 +96,7 @@ class debugLogParser
                     'message' => $details[0],
                     'datetime' => $line['occurrences'][0],
                     'details' => $details,
-                    'ocurrencies' => $line['occurrences']
+                    'ocurrencies' => count($line['occurrences'])
                 ];
             }
         }
