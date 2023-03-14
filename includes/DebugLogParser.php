@@ -138,7 +138,7 @@ class debugLogParser
     protected function processFileContent()
     {
         // Read the errors log file
-        $logSize = $this->file->getSize();
+        $logSize = is_object($this->file) ? $this->file->getSize() : null;
         if (!$logSize) {
             return [];
         }
