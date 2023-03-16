@@ -37,6 +37,18 @@ class Settings
     protected $messages = [];
 
     /**
+     * Is Debug Log set?
+     * @var boolean
+     */
+    protected $isDebugLog;
+
+    /**
+     * Error message
+     * @var string
+     */
+    protected $error;
+
+    /**
      * Set properties.
      */
     public function __construct()
@@ -59,6 +71,23 @@ class Settings
         }
 
         add_filter('set-screen-option', [$this, 'setScreenOption'], 10, 3);
+
+        $this->isDebugLog = Utils::isDebugLog();
+        if (is_wp_error($this->isDebugLog)) {
+            add_action('network_admin_notices', [$this, 'adminErrorNotice']);
+            add_action('admin_notices', [$this, 'adminErrorNotice']);
+            $this->error = $this->isDebugLog->get_error_message();
+            $this->isDebugLog = false;
+        }
+    }
+
+    /**
+     * Admin Notice
+     * @return void
+     */
+    public function adminErrorNotice()
+    {
+        printf('<div class="%1$s"><p>%2$s</p></div>', esc_attr('notice notice-error'), esc_html($this->error));
     }
 
     /**
@@ -76,7 +105,7 @@ class Settings
         );
         add_action("load-$logPage", [$this, 'screenOptions']);
 
-        if (Utils::isDebugLog()) {
+        if ($this->isDebugLog) {
             $debugLogPage = add_submenu_page(
                 'rrze-log',
                 __('Debug Log', 'rrze-updater'),
@@ -110,7 +139,7 @@ class Settings
         );
         add_action("load-$logPage", [$this, 'screenOptions']);
 
-        if (Utils::isDebugLog() && $this->isUserInDebugLogAccess()) {
+        if ($this->isDebugLog && $this->isUserInDebugLogAccess()) {
             $debugLogPage = add_submenu_page(
                 'tools.php',
                 __('Debug Log', 'rrze-log'),
@@ -149,7 +178,7 @@ class Settings
         add_settings_field('rrze-log-enabled', __('Enable Log', 'rrze-log'), [$this, 'enabledField'], 'rrze-log-settings', 'rrze-log-settings');
         add_settings_field('rrze-log-logTTL', __('Time to live', 'rrze-log'), [$this, 'logTTLField'], 'rrze-log-settings', 'rrze-log-settings');
         add_settings_field('rrze-log-adminMenu', __('Enable administration menus', 'rrze-log'), [$this, 'adminMenuField'], 'rrze-log-settings', 'rrze-log-settings');
-        if (Utils::isDebugLog()) {
+        if ($this->isDebugLog) {
             add_settings_field('rrze-log-debugLogAccess', __('Debug Log Access', 'rrze-log'), [$this, 'debugLogAccessField'], 'rrze-log-settings', 'rrze-log-settings');
         }
     }
@@ -212,7 +241,7 @@ class Settings
 
         $input['adminMenu'] = !empty($input['adminMenu']) ? 1 : 0;
 
-        if (Utils::isDebugLog()) {
+        if ($this->isDebugLog) {
             $input['debugLogAccess'] = isset($input['debugLogAccess']) ? $input['debugLogAccess'] : '';
             $debugLogAccess = $this->sanitizeTextarea($input['debugLogAccess']);
             $debugLogAccess = !empty($debugLogAccess) ? $this->sanitizeWpLogAccess($debugLogAccess) : '';
