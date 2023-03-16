@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-log\n"
-"POT-Creation-Date: 2023-03-13T16:19:41+00:00\n"
-"PO-Revision-Date: 2023-03-13 17:21+0100\n"
+"POT-Creation-Date: 2023-03-16T09:33:42+00:00\n"
+"PO-Revision-Date: 2023-03-16 10:35+0100\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch (Sie)\n"
 "Language: de\n"
@@ -69,46 +69,46 @@ msgstr "Konnte die Sperre auf %s nicht erhalten."
 msgid "Website"
 msgstr "Website"
 
-#: includes/Settings.php:70 includes/Settings.php:71 includes/Settings.php:105
-#: includes/Settings.php:106 includes/Views/list-table.php:8
+#: includes/Settings.php:99 includes/Settings.php:100 includes/Settings.php:134
+#: includes/Settings.php:135 includes/Views/list-table.php:8
 msgid "Log"
 msgstr "Protokoll"
 
-#: includes/Settings.php:116 includes/Settings.php:117
+#: includes/Settings.php:145 includes/Settings.php:146
 msgid "Debug Log"
 msgstr "Debug-Log"
 
-#: includes/Settings.php:149
+#: includes/Settings.php:178
 msgid "Enable Log"
 msgstr "Protokoll aktivieren"
 
-#: includes/Settings.php:150
+#: includes/Settings.php:179
 msgid "Time to live"
 msgstr "Time to live"
 
-#: includes/Settings.php:151
+#: includes/Settings.php:180
 msgid "Enable administration menus"
 msgstr "Administrations-Menüs aktivieren"
 
-#: includes/Settings.php:153
+#: includes/Settings.php:182
 msgid "Debug Log Access"
 msgstr "Debug-Log-Zugriff"
 
-#: includes/Settings.php:164
+#: includes/Settings.php:193
 msgid "Enables network-wide logging"
 msgstr "Aktiviert die netzwerkweite Protokollierung"
 
-#: includes/Settings.php:176
+#: includes/Settings.php:205
 msgid "Enables network wide the Log menu for administrators"
 msgstr "Aktiviert netzwerkweit das Log-Menü für Administratoren"
 
-#: includes/Settings.php:190
+#: includes/Settings.php:219
 msgid "How many days can the log file remain on disk before it is removed?"
 msgstr ""
 "Wie viele Tage kann die Protokolldatei auf der Festplatte verbleiben, bevor "
 "sie entfernt wird?"
 
-#: includes/Settings.php:198
+#: includes/Settings.php:227
 msgid ""
 "List of usernames with access to view the wp debug log file. Enter one "
 "username per line."
@@ -116,14 +116,23 @@ msgstr ""
 "Liste der Benutzernamen mit Zugriff zum Anzeigen der Debugging-"
 "Protokolldatei. Geben Sie einen Benutzernamen pro Zeile ein."
 
-#: includes/Settings.php:273 includes/Settings.php:291
+#: includes/Settings.php:302 includes/Settings.php:320
 msgid "Number of items per page:"
 msgstr "Einträge pro Seite:"
 
-#: includes/Settings.php:308 includes/Settings.php:339
+#: includes/Settings.php:337 includes/Settings.php:368
 msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 "Sie haben nicht genügend Berechtigungen, um auf diese Seite zuzugreifen."
+
+#: includes/Utils.php:30
+msgid ""
+"Invalid value of the WP_DEBUG_LOG constant. WP_DEBUG_LOG must have the "
+"following value: ABSPATH . 'wp-content/log/rrze-log/log/' . date('Y-m-d') . "
+"'.log'"
+msgstr ""
+"Ungültiger Wert der Konstante WP_DEBUG_LOG. WP_DEBUG_LOG muss folgenden Wert "
+"haben: ABSPATH . 'wp-content/log/rrze-log/log/' . date('Y-m-d') . '.log'"
 
 #. translators: %s: Error message.
 #: includes/Views/base.php:15

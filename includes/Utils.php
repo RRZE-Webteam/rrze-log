@@ -23,10 +23,13 @@ class Utils
 
     public static function isDebugLog()
     {
-        if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
-            return true;
+        if (!defined('WP_DEBUG') || !WP_DEBUG) {
+            return false;
         }
-        return false;
+        if (!is_string(WP_DEBUG_LOG) || WP_DEBUG_LOG != Constants::DEBUG_LOG_PATH . date('Y-m-d') . '.log') {
+            return new \WP_Error('wp_debug_log', __("Invalid value of the WP_DEBUG_LOG constant. WP_DEBUG_LOG must have the following value: ABSPATH . 'wp-content/log/rrze-log/log/' . date('Y-m-d') . '.log'", 'rrze-log'));
+        }
+        return true;
     }
 
     /**
@@ -37,7 +40,13 @@ class Utils
         if (!defined('WP_DEBUG') || !WP_DEBUG) {
             return;
         }
-        $logPath = plugin()->getPath() . 'debug.log';
+        if (in_array(strtolower((string) WP_DEBUG_LOG), ['true', '1'], true)) {
+            $logPath = WP_CONTENT_DIR . '/debug.log';
+        } elseif (is_string(WP_DEBUG_LOG)) {
+            $logPath = WP_DEBUG_LOG;
+        } else {
+            return;
+        }
         if (is_array($input) || is_object($input)) {
             $input = print_r($input, true);
         }
