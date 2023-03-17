@@ -97,7 +97,7 @@ class DebugListTable extends WP_List_Table
         $this->single_row_columns($item);
         echo '</tr>';
         printf('<tr class="metadata metadata-hidden"> <td colspan=%d>', count($this->get_columns()));
-        printf('<pre>%1$s</pre>', print_r($item, true));
+        printf('<pre style="white-space: pre-wrap;">%1$s</pre>', print_r($item, true));
         echo '</td> </tr>';
         echo '<tr class="hidden"> </tr>';
     }
