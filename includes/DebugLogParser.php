@@ -4,9 +4,6 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-use RRZE\Log\File\Flock;
-use RRZE\Log\File\FlockException;
-
 class debugLogParser
 {
     /**
@@ -90,7 +87,7 @@ class debugLogParser
         foreach ($errors as $line) {
             $searchStr = json_encode($line);
             if (!$this->search || $this->search($searchStr)) {
-                $details = explode('§§§', $line['details']);
+                $details = explode('@@@', $line['details']);
                 $lines[] = [
                     'level' => $line['level'],
                     'message' => $details[0],
@@ -144,80 +141,47 @@ class debugLogParser
         }
 
         $content = $this->file->fread($logSize);
-        // Certain error message contains a string, 
-        // which will make the following split via explode() to split lines 
-        // at places in the message it's not supposed to. 
-        // So it will temporarily be replaced with another string.
-        $content = str_replace("[]", "^^^^", $content);
-        $content = str_replace("[\\", "^\\", $content);
-        $content = str_replace("[\"", "^\"", $content);
-        $content = str_replace("[internal function]", "^internal function^", $content);
-
-        // Split content without using PHP_EOL to preserve the stack traces 
-        // for PHP Fatal Errors among other things.
-        $lines = explode("[", $content);
-        $prependLines = [];
-
-        // Pluck out the last 100k entries, the newest entry is last.
-        $lines = array_slice($lines, -100000);
-
-        foreach ($lines as $line) {
-            if (!empty($line)) {
-                // Replace ABSPATH
-                $line = str_replace(ABSPATH, ".../", $line);
-
-                // Add '@@@' as marker/separator after time stamp.
-                $line = str_replace("UTC]", "UTC]@@@", $line);
-
-                // Add '§§§' as marker/separator after time stamp.
-                $line = str_replace("Stack trace:", "§§§Stack trace:", $line);
-
-                if (strpos($line, 'PHP Fatal') !== false) {
-                    // Add '§§§' as marker/separator on PHP Fatal error's stack trace lines.
-                    $line = str_replace("#", "§§§#", $line);
-                }
-
-                // Remove §§§ on certain error messages.
-                $line = str_replace("Argument §§§#", "Argument #", $line);
-                $line = str_replace("parameter §§§#", "parameter #", $line);
-                $line = str_replace("the §§§#", "the #", $line);
-
-                // Reverse the temporary replacement of strings.
-                $line = str_replace("^^^^", "[]", $line);
-                $line = str_replace("^\\", "[\\", $line);
-                $line = str_replace("^\"", "[\"", $line);
-                $line = str_replace("^internal function^", "[internal function]", $line);
-
-                // Put back the missing '[' after explode operation
-                $prependLine = '[' . $line;
-
-                $prependLines[] = $prependLine;
+        $pattern = '/^\[(.*UTC)\]\s/mi';
+        $splitedLine = preg_split($pattern, $content, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+        $lines = [];
+        foreach (array_keys($splitedLine) as $key) {
+            if ($key % 2 == 0) {
+                $lines[$key] = $splitedLine[$key + 1];
             }
+        }
+        // Pluck out the last 100k entries, the newest entry is last.
+        $lines = array_slice($lines, -100000, null, true);
+
+        $prependLines = [];
+        foreach ($lines as $key => $line) {
+            // Replace ABSPATH
+            $line = str_replace(ABSPATH, ".../", $line);
+
+            // Add '@@@' as marker/separator before Stack trace.
+            $line = str_replace("Stack trace:", "@@@Stack trace:", $line);
+
+            if (strpos($line, 'PHP Fatal') !== false) {
+                // Add '@@@' as marker/separator on PHP Fatal error's stack trace lines.
+                $line = str_replace("#", "@@@#", $line);
+            }
+
+            // Remove @@@ on certain error messages.
+            $line = str_replace("Argument @@@#", "Argument #", $line);
+            $line = str_replace("parameter @@@#", "parameter #", $line);
+            $line = str_replace("the @@@#", "the #", $line);
+
+            $prependLines[$key] = $line;
         }
 
         // Reverse the order of the entries, so the newest entry is first.
-        $latestLines = array_reverse($prependLines);
+        $latestLines = array_reverse($prependLines, true);
 
         // Will hold error details types
         $errorList = [];
 
-        foreach ($latestLines as $line) {
-            // Split the line using the '@@@' marker/separator defined earlier. 
-            // '@@@' will be deleted by explode().
-            $line = explode("@@@ ", trim($line));
-
-            $timestamp = $line[0];
-            //$timestamp = str_replace(["[", "]"], "", $line[0]);
-
-            // Initialize error-related variables
-            $error = '';
+        foreach ($latestLines as $key => $error) {
+            $timestamp = $splitedLine[$key];
             //$errorFile = '';
-
-            if (array_key_exists('1', $line)) {
-                $error = $line[1];
-            } else {
-                $error = 'No error message.';
-            }
 
             if ((false !== strpos($error, 'PHP Fatal')) || (false !== strpos($error, 'FATAL')) || (false !== strpos($error, 'E_ERROR'))) {
                 $errorLevel = 'FATAL';
@@ -259,7 +223,6 @@ class debugLogParser
                 }
             }
 
-            $timestamp = str_replace(["[", "]"], "", $timestamp);
             $errorDetails = trim(preg_replace('/([\r\n\t])/', '', wp_kses_post($errorDetails)));
 
             if (array_search(trim($errorDetails), array_column($errorList, 'details')) === false) {
