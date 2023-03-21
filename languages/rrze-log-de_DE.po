@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-log\n"
-"POT-Creation-Date: 2023-03-16T09:33:42+00:00\n"
-"PO-Revision-Date: 2023-03-16 10:34+0100\n"
+"POT-Creation-Date: 2023-03-21T15:44:07+00:00\n"
+"PO-Revision-Date: 2023-03-21 16:44+0100\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch\n"
 "Language: de_DE\n"
@@ -55,7 +55,7 @@ msgstr "Datum"
 msgid "All error levels"
 msgstr "Alle Fehlerstufen"
 
-#: includes/DebugLogParser.php:70 includes/LogParser.php:61
+#: includes/DebugLogParser.php:67 includes/LogParser.php:61
 msgid "Log file not found."
 msgstr "Protokolldatei nicht gefunden."
 
@@ -69,13 +69,14 @@ msgid "Website"
 msgstr "Website"
 
 #: includes/Settings.php:99 includes/Settings.php:100 includes/Settings.php:134
-#: includes/Settings.php:135 includes/Views/list-table.php:8
+#: includes/Settings.php:135 includes/Settings.php:357
 msgid "Log"
 msgstr "Protokoll"
 
 #: includes/Settings.php:145 includes/Settings.php:146
-msgid "Debug Log"
-msgstr "Debug-Log"
+#: includes/Settings.php:389
+msgid "Debug"
+msgstr "Debug"
 
 #: includes/Settings.php:178
 msgid "Enable Log"
@@ -119,7 +120,7 @@ msgstr ""
 msgid "Number of items per page:"
 msgstr "Einträge pro Seite:"
 
-#: includes/Settings.php:337 includes/Settings.php:368
+#: includes/Settings.php:337 includes/Settings.php:369
 msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 "Sie haben nicht genügend Berechtigungen, um auf diese Seite zuzugreifen."
