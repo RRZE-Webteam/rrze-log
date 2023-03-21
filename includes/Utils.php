@@ -26,7 +26,7 @@ class Utils
         if (!defined('WP_DEBUG') || !WP_DEBUG) {
             return false;
         }
-        if (is_string(WP_DEBUG_LOG) || WP_DEBUG_LOG != Constants::DEBUG_LOG_PATH . date('Y-m-d') . '.log') {
+        if (!is_string(WP_DEBUG_LOG) || WP_DEBUG_LOG != Constants::DEBUG_LOG_PATH . date('Y-m-d') . '.log') {
             return new \WP_Error(
                 'wp_debug_log',
                 sprintf(
