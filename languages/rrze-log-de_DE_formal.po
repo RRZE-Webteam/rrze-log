@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-log\n"
-"POT-Creation-Date: 2023-03-21T15:44:07+00:00\n"
-"PO-Revision-Date: 2023-03-21 16:45+0100\n"
+"POT-Creation-Date: 2023-03-21T16:03:52+00:00\n"
+"PO-Revision-Date: 2023-03-21 17:05+0100\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch (Sie)\n"
 "Language: de\n"
@@ -126,14 +126,14 @@ msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 "Sie haben nicht genügend Berechtigungen, um auf diese Seite zuzugreifen."
 
-#: includes/Utils.php:30
+#. translators: %s: WP_DEBUG_LOG value.
+#: includes/Utils.php:34
 msgid ""
 "Invalid value of the WP_DEBUG_LOG constant. WP_DEBUG_LOG must have the "
-"following value: ABSPATH . 'wp-content/log/rrze-log/log/' . date('Y-m-d') . "
-"'.log'"
+"following value: %s"
 msgstr ""
 "Ungültiger Wert der Konstante WP_DEBUG_LOG. WP_DEBUG_LOG muss folgenden Wert "
-"haben: ABSPATH . 'wp-content/log/rrze-log/log/' . date('Y-m-d') . '.log'"
+"haben: %s"
 
 #. translators: %s: Error message.
 #: includes/Views/base.php:15

@@ -26,8 +26,15 @@ class Utils
         if (!defined('WP_DEBUG') || !WP_DEBUG) {
             return false;
         }
-        if (!is_string(WP_DEBUG_LOG) || WP_DEBUG_LOG != Constants::DEBUG_LOG_PATH . date('Y-m-d') . '.log') {
-            return new \WP_Error('wp_debug_log', __("Invalid value of the WP_DEBUG_LOG constant. WP_DEBUG_LOG must have the following value: ABSPATH . 'wp-content/log/rrze-log/log/' . date('Y-m-d') . '.log'", 'rrze-log'));
+        if (is_string(WP_DEBUG_LOG) || WP_DEBUG_LOG != Constants::DEBUG_LOG_PATH . date('Y-m-d') . '.log') {
+            return new \WP_Error(
+                'wp_debug_log',
+                sprintf(
+                    /* translators: %s: WP_DEBUG_LOG value. */
+                    __('Invalid value of the WP_DEBUG_LOG constant. WP_DEBUG_LOG must have the following value: %s', 'rrze-log'),
+                    "ABSPATH . 'wp-content/log/rrze-log/debug/' . date('Y-m-d') . '.log'"
+                )
+            );
         }
         return true;
     }
