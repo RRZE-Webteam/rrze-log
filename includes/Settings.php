@@ -108,8 +108,8 @@ class Settings
         if ($this->isDebugLog) {
             $debugLogPage = add_submenu_page(
                 'rrze-log',
-                __('Debug Log', 'rrze-updater'),
-                __('Debug Log', 'rrze-updater'),
+                __('Debug', 'rrze-updater'),
+                __('Debug', 'rrze-updater'),
                 'manage_options',
                 'rrze-log-debug',
                 [$this, 'debugLogPage']
@@ -142,8 +142,8 @@ class Settings
         if ($this->isDebugLog && $this->isUserInDebugLogAccess()) {
             $debugLogPage = add_submenu_page(
                 'tools.php',
-                __('Debug Log', 'rrze-log'),
-                __('Debug Log', 'rrze-log'),
+                __('Debug', 'rrze-log'),
+                __('Debug', 'rrze-log'),
                 'manage_options',
                 'rrze-log-debug',
                 [$this, 'debugLogPage']
@@ -225,7 +225,7 @@ class Settings
     ?>
         <textarea id="debug-log-access" cols="50" rows="5" name="<?php printf('%s[debugLogAccess]', $this->optionName); ?>"><?php echo esc_attr($this->getTextarea($this->options->debugLogAccess)) ?></textarea>
         <p class="description"><?php _e('List of usernames with access to view the wp debug log file. Enter one username per line.', 'rrze-log'); ?></p>
-<?php
+    <?php
     }
 
     /**
@@ -353,7 +353,8 @@ class Settings
             's' => $s,
             'level' => $level,
             'logfile' => $logFile,
-            'listTable' => $this->listTable
+            'listTable' => $this->listTable,
+            'title' => __('Log', 'rrze-log')
         ];
 
         $this->show('list-table', $data);
@@ -384,7 +385,8 @@ class Settings
             's' => $s,
             'level' => $level,
             'logfile' => $logFile,
-            'listTable' => $this->debugListTable
+            'listTable' => $this->debugListTable,
+            'title' => __('Debug', 'rrze-log')
         ];
 
         $this->show('list-table', $data);
@@ -499,7 +501,7 @@ class Settings
     {
         foreach (new \DirectoryIterator($logPath) as $file) {
             if ($file->isFile() && (time() - $file->getMTime() > $this->options->logTTL * DAY_IN_SECONDS)) {
-                @unlink(Constants::LOG_PATH . $file->getFilename());
+                @unlink($logPath . $file->getFilename());
             }
         }
     }
