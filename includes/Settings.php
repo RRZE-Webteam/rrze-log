@@ -479,11 +479,11 @@ class Settings
         }
         $debugLogAccess = $this->options->debugLogAccess;
         if (!empty($debugLogAccess) && is_array($debugLogAccess)) {
-            $currentUser = wp_get_current_user();
+            $currentUserLogin = wp_get_current_user()->data->user_login;
             foreach ($debugLogAccess as $row) {
                 $aryRow = explode(' - ', $row);
                 $userLogin = isset($aryRow[0]) ? trim($aryRow[0]) : '';
-                if ($userLogin == $currentUser->user_login) {
+                if ($userLogin == $currentUserLogin) {
                     return true;
                 }
             }
