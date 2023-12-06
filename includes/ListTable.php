@@ -252,6 +252,6 @@ class ListTable extends WP_List_Table
     protected function verifyLogfileFormat($date)
     {
         $dt = \DateTime::createFromFormat("Y-m-d", $date);
-        return $dt !== false && !array_sum($dt::getLastErrors());
+        return $dt !== false && $dt::getLastErrors() !== false && !array_sum($dt::getLastErrors());
     }
 }
