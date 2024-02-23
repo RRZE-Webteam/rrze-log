@@ -4,7 +4,7 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-class debugLogParser
+class DebugLogParser
 {
     /**
      * [protected description]
