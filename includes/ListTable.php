@@ -8,7 +8,7 @@ use RRZE\Log\LogParser;
 use WP_List_Table;
 
 /**
- * [ListTable description]
+ * List Table
  */
 class ListTable extends WP_List_Table
 {
@@ -45,12 +45,6 @@ class ListTable extends WP_List_Table
         ]);
     }
 
-    /**
-     * [column_default description]
-     * @param  array $item        [description]
-     * @param  string $columnName [description]
-     * @return string              [description]
-     */
     public function column_default($item, $columnName)
     {
         switch ($columnName) {
@@ -61,21 +55,11 @@ class ListTable extends WP_List_Table
         }
     }
 
-    /**
-     * [column_siteurl description]
-     * @param  array $item [description]
-     * @return string       [description]
-     */
     public function column_siteurl($item)
     {
         return untrailingslashit($item['siteurl']);
     }
 
-    /**
-     * [column_date description]
-     * @param  array $item [description]
-     * @return string       [description]
-     */
     public function column_datetime($item)
     {
         return sprintf(
@@ -85,10 +69,6 @@ class ListTable extends WP_List_Table
         );
     }
 
-    /**
-     * [get_columns description]
-     * @return array [description]
-     */
     public function get_columns()
     {
         $columns = [
@@ -103,10 +83,6 @@ class ListTable extends WP_List_Table
         return $columns;
     }
 
-    /**
-     * [single_row description]
-     * @param  array $item [description]
-     */
     public function single_row($item)
     {
         echo '<tr class="data">';
@@ -118,14 +94,11 @@ class ListTable extends WP_List_Table
         echo '<tr class="hidden"> </tr>';
     }
 
-    /**
-     * [prepare_items description]
-     */
     public function prepare_items()
     {
         $s = !empty($_REQUEST['s']) ? array_map('trim', explode(' ', trim($_REQUEST['s']))) : '';
         $level = !empty($_REQUEST['level']) && in_array($_REQUEST['level'], CONSTANTS::LEVELS) ? $_REQUEST['level'] : '';
-        $logFile = isset($_REQUEST['logfile']) && $this->verifyLogfileFormat($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
+        $logFile = isset($_REQUEST['logfile']) && Utils::verifyLogfileFormat($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
 
         $columns = $this->get_columns();
         $hidden = [];
@@ -170,10 +143,6 @@ class ListTable extends WP_List_Table
         );
     }
 
-    /**
-     * [extra_tablenav description]
-     * @param  string $which [description]
-     */
     protected function extra_tablenav($which)
     {
 ?>
@@ -197,7 +166,7 @@ class ListTable extends WP_List_Table
     }
 
     /**
-     * [levelsDropdown description]
+     * Dropdown with error levels.
      */
     protected function levelsDropdown()
     {
@@ -213,7 +182,7 @@ class ListTable extends WP_List_Table
     }
 
     /**
-     * [logFilesDropdown description]
+     * Dropdown with log files.
      */
     protected function logFilesDropdown()
     {
@@ -225,7 +194,7 @@ class ListTable extends WP_List_Table
         foreach (new \DirectoryIterator($this->logPath) as $file) {
             if ($file->isFile()) {
                 $logfile = $file->getBasename('.' . $file->getExtension());
-                if ($this->verifyLogfileFormat($logfile)) {
+                if (Utils::verifyLogfileFormat($logfile)) {
                     $logFiles[$logfile] = $logfile;
                 }
             }
@@ -242,16 +211,5 @@ class ListTable extends WP_List_Table
             <?php endforeach; ?>
         </select>
 <?php
-    }
-
-    /**
-     * [verifyLogfileFormat description]
-     * @param  string $date [description]
-     * @return boolean       [description]
-     */
-    protected function verifyLogfileFormat($date)
-    {
-        $dt = \DateTime::createFromFormat("Y-m-d", $date);
-        return $dt !== false && $dt::getLastErrors() !== false && !array_sum($dt::getLastErrors());
     }
 }
