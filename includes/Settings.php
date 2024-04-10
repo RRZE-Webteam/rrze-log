@@ -38,7 +38,7 @@ class Settings
 
     /**
      * Is Debug Log set?
-     * @var boolean
+     * @var boolean|object
      */
     protected $isDebugLog;
 
@@ -74,8 +74,11 @@ class Settings
 
         $this->isDebugLog = Utils::isDebugLog();
         if (is_wp_error($this->isDebugLog)) {
-            add_action('network_admin_notices', [$this, 'adminErrorNotice']);
-            add_action('admin_notices', [$this, 'adminErrorNotice']);
+            if (is_multisite()) {
+                add_action('network_admin_notices', [$this, 'adminErrorNotice']);
+            } else {
+                add_action('admin_notices', [$this, 'adminErrorNotice']);
+            }
             $this->error = $this->isDebugLog->get_error_message();
             $this->isDebugLog = false;
         }
@@ -225,7 +228,7 @@ class Settings
     ?>
         <textarea id="debug-log-access" cols="50" rows="5" name="<?php printf('%s[debugLogAccess]', $this->optionName); ?>"><?php echo esc_attr($this->getTextarea($this->options->debugLogAccess)) ?></textarea>
         <p class="description"><?php _e('List of usernames with access to view the wp debug log file. Enter one username per line.', 'rrze-log'); ?></p>
-    <?php
+<?php
     }
 
     /**
