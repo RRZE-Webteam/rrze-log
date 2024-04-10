@@ -83,10 +83,6 @@ $logs = apply_filters('rrze.log.get', array $args);
 
 Wenn `$arg` ein leeres Array ist, werden alle Protokolle für den aktuellen Tag abgerufen.
 
-#### Rückgabewert
-
-Ein Array von Datensätzen, die die Protokolle enthalten.
-
 **Standardargumente-Array**
 ```php
 $args = [
@@ -95,6 +91,9 @@ $args = [
     'offset' => 0,
 ];
 ```
+#### Rückgabewert
+
+Ein Array von Datensätzen, die die Protokolle enthalten.
 
 #### Beispiele
 ```php
