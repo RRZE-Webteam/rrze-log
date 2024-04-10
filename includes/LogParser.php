@@ -55,7 +55,7 @@ class LogParser
     {
         $this->offset = $offset;
         $this->count = $count;
-        $this->search = $search;
+        $this->search = array_filter(array_map('mb_strtolower', $search));
 
         if (!file_exists($filename)) {
             $this->error = new WP_Error('rrze_log_file', __('Log file not found.', 'rrze-log'));
@@ -89,6 +89,7 @@ class LogParser
     protected function search($haystack)
     {
         $find = true;
+        $haystack = mb_strtolower($haystack);
         foreach ($this->search as $needle) {
             if (is_array($needle) && !empty($needle)) {
                 foreach ($needle as $str) {
@@ -128,10 +129,12 @@ class LogParser
             return $this->error;
         }
         $lines = [];
+        $search = mb_strtolower($search);
         foreach ($this->iterateFile() as $line) {
             if ($key && $search) {
                 $lineObj = json_decode($line);
                 $value = $lineObj->$key ?? '';
+                $value = mb_strtolower($value);
                 if ($value && untrailingslashit($value) != untrailingslashit($search)) {
                     continue;
                 }
