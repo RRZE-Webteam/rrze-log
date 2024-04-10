@@ -110,7 +110,7 @@ class ListTable extends WP_List_Table
 
         $search = [];
         if ($s) {
-            $search[] = $s;
+            $search = $s;
         }
 
         if ($level) {
