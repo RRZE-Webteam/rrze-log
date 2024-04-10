@@ -61,7 +61,7 @@ class DebugLogParser
     {
         $this->offset = $offset;
         $this->count = $count;
-        $this->search = $search;
+        $this->search = array_filter(array_map('mb_strtolower', $search));
 
         if (!file_exists($filename)) {
             $this->error = new \WP_Error('rrze_log_file', __('Log file not found.', 'rrze-log'));
@@ -114,6 +114,7 @@ class DebugLogParser
     protected function search($haystack)
     {
         $find = true;
+        $haystack = mb_strtolower($haystack);
         foreach ($this->search as $needle) {
             if (is_array($needle) && !empty($needle)) {
                 foreach ($needle as $str) {
