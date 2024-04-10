@@ -4,7 +4,6 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-use RRZE\Log\LogParser;
 use WP_List_Table;
 
 /**
@@ -109,8 +108,6 @@ class ListTable extends WP_List_Table
         $perPage = $this->get_items_per_page('rrze_log_per_page', 1);
         $currentPage = $this->get_pagenum();
 
-        $logFile = sprintf('%1$s%2$s.log', $this->logPath, $logFile);
-
         $search = [];
         if ($s) {
             $search[] = $s;
@@ -120,19 +117,9 @@ class ListTable extends WP_List_Table
             $search[] = '"level":"' . $level . '"';
         }
 
-        $logParser = new LogParser($logFile, $search, (($currentPage - 1) * $perPage), $perPage);
-
-        if (!is_network_admin() && $this->options->adminMenu) {
-            $items = $logParser->getItems('siteurl', site_url());
-        } else {
-            $items = $logParser->getItems();
-        }
-        if (!is_wp_error($items)) {
-            foreach ($items as $value) {
-                $this->items[] = json_decode($value, true);
-            }
-        }
-        $totalItems = $logParser->getTotalLines();
+        $logs = Utils::getLog($logFile, $search, (($currentPage - 1) * $perPage), $perPage);
+        $this->items = $logs['items'] ?? [];
+        $totalItems = $logs['total_items'] ?? 0;
 
         $this->set_pagination_args(
             [
