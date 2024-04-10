@@ -4,7 +4,7 @@
 Plugin Name:     RRZE Log
 Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-log
 Description:     The plugin allows you to log certain actions of the plugins and themes in a log file, which are or may be necessary for further investigations.
-Version:         2.6.18
+Version:         2.6.19
 Author:          RRZE Webteam
 Author URI:      https://blogs.fau.de/webworking/
 License:         GNU General Public License v2
@@ -45,6 +45,8 @@ register_activation_hook(__FILE__, __NAMESPACE__ . '\activation');
 register_deactivation_hook(__FILE__, __NAMESPACE__ . '\deactivation');
 
 add_action('plugins_loaded', __NAMESPACE__ . '\loaded');
+
+add_filter('rrze.log.get', __NAMESPACE__ . '\Utils::getLogs');
 
 /**
  * Loads a plugin’s translated strings.
