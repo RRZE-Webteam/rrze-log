@@ -55,7 +55,8 @@ class LogParser
     {
         $this->offset = $offset;
         $this->count = $count;
-        $this->search = array_filter(array_map('mb_strtolower', $search));
+        $search = array_map('mb_strtolower', $search);
+        $this->search = array_filter($search);
 
         if (!file_exists($filename)) {
             $this->error = new WP_Error('rrze_log_file', __('Log file not found.', 'rrze-log'));

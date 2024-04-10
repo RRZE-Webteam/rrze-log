@@ -95,9 +95,9 @@ class ListTable extends WP_List_Table
 
     public function prepare_items()
     {
-        $s = !empty($_REQUEST['s']) ? array_map('trim', explode(' ', trim($_REQUEST['s']))) : '';
-        $level = !empty($_REQUEST['level']) && in_array($_REQUEST['level'], CONSTANTS::LEVELS) ? $_REQUEST['level'] : '';
-        $logFile = isset($_REQUEST['logfile']) && Utils::verifyLogfileFormat($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
+        $s = $_REQUEST['s'] ?? '';
+        $level = $_REQUEST['level'] ?? '';
+        $logFile = $_REQUEST['logfile'] ?? '';
 
         $columns = $this->get_columns();
         $hidden = [];
@@ -108,13 +108,10 @@ class ListTable extends WP_List_Table
         $perPage = $this->get_items_per_page('rrze_log_per_page', 1);
         $currentPage = $this->get_pagenum();
 
-        $search = [];
-        if ($s) {
-            $search[] = $s;
-        }
+        $search = array_map('trim', explode(' ', trim($s)));
 
         if ($level) {
-            $search[] = '"level":"' . $level . '"';
+            $search[] = '"level":"' . trim($level) . '"';
         }
 
         $logs = Utils::getLog($logFile, $search, (($currentPage - 1) * $perPage), $perPage);

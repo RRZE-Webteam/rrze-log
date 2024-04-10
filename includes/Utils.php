@@ -62,7 +62,7 @@ class Utils
     {
         $search = $args['search'] ?? [];
         $limit = $args['limit'] ?? -1;
-        $offset = $args['offset'] ?? 0;      
+        $offset = $args['offset'] ?? 0;
 
         return self::getLog('', $search, $offset, $limit)['items'] ?? [];
     }
@@ -82,9 +82,10 @@ class Utils
             $logFile = date('Y-m-d');
         }
         $logFile = sprintf('%1$s%2$s.log', $logPath, $logFile);
-        $search = is_array($search) ?
-            array_filter(array_map('trim', $search)) :
+        $search = is_array($search) && self::isNotMultidimensional($search) ?
+            array_map('trim', $search) :
             [];
+        $search = array_filter($search);
         $offset = absint($offset);
         $count = $count < 0 ? -1 : absint($count);
 
@@ -109,5 +110,20 @@ class Utils
             'items' => $items,
             'total_items' => $totalItems
         ];
+    }
+
+    /**
+     * Check if the array is multidimensional.
+     * @param  array $array
+     * @return boolean
+     */
+    public static function isNotMultidimensional($array)
+    {
+        foreach ($array as $value) {
+            if (is_array($value)) {
+                return false;
+            }
+        }
+        return true;
     }
 }
