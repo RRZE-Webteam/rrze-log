@@ -54,9 +54,9 @@ class Logger
     }
 
     /**
-     * [onLoaded description]
+     * [loaded description]
      */
-    public function onLoaded()
+    public function loaded()
     {
         isset($this->funcOverload) || $this->funcOverload = (extension_loaded('mbstring') && ini_get('mbstring.func_overload'));
 

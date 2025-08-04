@@ -4,62 +4,78 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
+/**
+ * Plugin class
+ * 
+ * This class provides methods to manage plugin information such as file path,
+ * basename, directory, URL, and plugin data.
+ * 
+ * @package RRZE\PrivateSite
+ */
 class Plugin
 {
     /**
-     * The full path and filename of the plugin.
+     * The full path and filename of the plugin
+     * 
      * @var string
      */
     protected $pluginFile;
 
     /**
-     * The basename of the plugin.
+     * The basename of the plugin
+     * 
      * @var string
      */
     protected $basename;
 
     /**
-     * The filesystem directory path (with trailing slash) for the plugin.
+     * The filesystem directory path (with trailing slash) for the plugin
+     * 
      * @var string
      */
     protected $directory;
 
     /**
-     * The URL directory path (with trailing slash) for the plugin.
+     * The URL directory path (with trailing slash) for the plugin
+     * 
      * @var string
      */
     protected $url;
 
     /**
-     * The version of the plugin.
-     * @var string
+     * The data of the plugin
+     * 
+     * @var array
      */
-    protected $version;
+    protected $data;
 
     /**
-     * __construct method
-     * @param string $pluginFile The full path and filename of the plugin.
+     * Constructor
+     * 
+     * @param string $pluginFile The full path and filename of the plugin
+     * @return void
      */
     public function __construct(string $pluginFile)
     {
         $this->pluginFile = $pluginFile;
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
     }
 
     /**
-     * loaded method
+     * Load the plugin information
      */
     public function loaded()
     {
         $this->setBasename()
             ->setDirectory()
             ->setUrl()
-            ->setVersion();
+            ->setData();
     }
 
     /**
-     * getFile method
-     * Get the full path and filename of the plugin.
-     * @return string The full path and filename.
+     * Get the full path and filename of the plugin
+     * 
+     * @return string The full path and filename
      */
     public function getFile(): string
     {
@@ -67,9 +83,9 @@ class Plugin
     }
 
     /**
-     * getBasename method
-     * Get the basename of the plugin.
-     * @return string The basename.
+     * Get the basename of the plugin
+     * 
+     * @return string The basename
      */
     public function getBasename(): string
     {
@@ -77,9 +93,9 @@ class Plugin
     }
 
     /**
-     * setBasename method
-     * Set the basename of the plugin.
-     * @return object This Plugin object.
+     * Set the basename of the plugin
+     * 
+     * @return object This Plugin object
      */
     public function setBasename(): object
     {
@@ -88,9 +104,9 @@ class Plugin
     }
 
     /**
-     * getDirectory method
-     * Get the filesystem directory path (with trailing slash) for the plugin.
-     * @return string The filesystem directory path.
+     * Get the filesystem directory path (with trailing slash) for the plugin
+     * 
+     * @return string The filesystem directory path
      */
     public function getDirectory(): string
     {
@@ -98,32 +114,32 @@ class Plugin
     }
 
     /**
-     * setDirectory method
-     * Set the filesystem directory path (with trailing slash) for the plugin.
-     * @return object This Plugin object.
+     * Set the filesystem directory path (with trailing slash) for the plugin
+     * 
+     * @return object This Plugin object
      */
     public function setDirectory(): object
     {
-        $this->directory = rtrim(plugin_dir_path($this->pluginFile), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        $this->directory = rtrim(plugin_dir_path($this->pluginFile), '/') . '/';
         return $this;
     }
 
     /**
-     * getPath method
-     * Get the filesystem directory path (with trailing slash) for the plugin.
-     * @param string $path The path name.
-     * @return string The filesystem directory path.
+     * Get the filesystem directory path (with trailing slash) for the plugin
+     * 
+     * @param string $path The path name
+     * @return string The filesystem directory path
      */
     public function getPath(string $path = ''): string
     {
-        return $this->directory . ($path ? trim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR : '');
+        return $this->directory . ($path ? trim($path, '/') . '/' : '');
     }
 
     /**
-     * getUrl method
-     * Get the URL directory path (with trailing slash) for the plugin.
-     * @param string $path The path name.
-     * @return string The URL directory path.
+     * Get the URL directory path (with trailing slash) for the plugin
+     * 
+     * @param string $path The path name
+     * @return string The URL directory path
      */
     public function getUrl(string $path = ''): string
     {
@@ -131,9 +147,9 @@ class Plugin
     }
 
     /**
-     * setUrl method
-     * Set the URL directory path (with trailing slash) for the plugin.
-     * @return object This Plugin object.
+     * Set the URL directory path (with trailing slash) for the plugin
+     * 
+     * @return object This Plugin object
      */
     public function setUrl(): object
     {
@@ -142,9 +158,9 @@ class Plugin
     }
 
     /**
-     * getSlug method
-     * Get the slug of the plugin.
-     * @return string The slug.
+     * Get the slug of the plugin
+     * 
+     * @return string The slug
      */
     public function getSlug(): string
     {
@@ -152,50 +168,79 @@ class Plugin
     }
 
     /**
-     * getVersion method
-     * Get the version of the plugin.
-     * @return string The version.
+     * Set the data of the plugin
+     * 
+     * @return object This Plugin object
      */
-    public function getVersion(): string
+    public function setData(): object
     {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            return bin2hex(random_bytes(4));
-        }
-        return $this->version;
-    }
-
-    /**
-     * getVersion method
-     * Set the version of the plugin.
-     * @return object This Plugin object.
-     */
-    public function setVersion(): object
-    {
-        $headers = ['Version' => 'Version'];
-        $fileData = get_file_data($this->pluginFile, $headers, 'plugin');
-        if (isset($fileData['Version'])) {
-            $this->version = $fileData['Version'];
-        };
+        $this->data = get_plugin_data($this->pluginFile, false, false);
         return $this;
     }
 
     /**
+     * Get the data of the plugin
+     * 
+     * @return array The data
+     */
+    public function getData(): array
+    {
+        return $this->data;
+    }
+
+    /**
+     * Get the name of the plugin
+     * 
+     * @return string The name
+     */
+    public function getName(): string
+    {
+        return $this->data['Name'];
+    }
+
+    /**
+     * Get the version of the plugin
+     * 
+     * @return string The version
+     */
+    public function getVersion(): string
+    {
+        return $this->data['Version'];
+    }
+
+    /**
+     * Get the required WordPress version of the plugin
+     * 
+     * @return string The required WordPress version
+     */
+    public function getRequiresWP(): string
+    {
+        return $this->data['RequiresWP'];
+    }
+
+    /**
+     * Get the required PHP version of the plugin
+     * 
+     * @return string The required PHP version
+     */
+    public function getRequiresPHP(): string
+    {
+        return $this->data['RequiresPHP'];
+    }
+
+    /**
      * __call method
+     * 
      * Method overloading.
+     * 
+     * @param  string $name      The name of the method
+     * @param  array  $arguments The arguments passed to the method
+     * @return void
      */
     public function __call(string $name, array $arguments)
     {
         if (!method_exists($this, $name)) {
             $message = sprintf('Call to undefined method %1$s::%2$s', __CLASS__, $name);
-            do_action(
-                'rrze.log.error',
-                $message,
-                [
-                    'class' => __CLASS__,
-                    'method' => $name,
-                    'arguments' => $arguments
-                ]
-            );
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 throw new \Exception($message);
             }

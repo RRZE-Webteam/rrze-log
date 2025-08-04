@@ -95,7 +95,7 @@ class DebugListTable extends WP_List_Table
 
         $this->_column_headers = array($columns, $hidden, $sortable);
 
-        $perPage = $this->get_items_per_page('rrze_log_per_page', 1);
+        $perPage = $this->get_items_per_page('rrze_log_per_page');
         $currentPage = $this->get_pagenum();
 
         $logFile = Utils::verifyLogfileFormat($logFile) ? $logFile : date('Y-m-d');

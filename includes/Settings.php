@@ -60,7 +60,7 @@ class Settings
     /**
      * Add hooks.
      */
-    public function onLoaded()
+    public function loaded()
     {
         add_action('network_admin_menu', [$this, 'networkAdminMenu']);
         add_action('network_admin_menu', [$this, 'settingsSection']);
@@ -140,6 +140,7 @@ class Settings
             'rrze-log',
             [$this, 'logPage']
         );
+
         add_action("load-$logPage", [$this, 'screenOptions']);
 
         if ($this->isDebugLog && $this->isUserInDebugLogAccess()) {
@@ -151,6 +152,7 @@ class Settings
                 'rrze-log-debug',
                 [$this, 'debugLogPage']
             );
+
             add_action("load-$debugLogPage", [$this, 'debugScreenOptions']);
         }
     }

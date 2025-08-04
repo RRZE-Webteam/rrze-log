@@ -39,7 +39,7 @@ class Main
     /**
      * Initiate classes & add hooks.
      */
-    public function onLoaded()
+    public function loaded()
     {
         file_exists(Constants::LOG_PATH) || wp_mkdir_p(Constants::LOG_PATH);
         file_exists(Constants::DEBUG_LOG_PATH) || wp_mkdir_p(Constants::DEBUG_LOG_PATH);
@@ -47,14 +47,14 @@ class Main
         add_action('admin_enqueue_scripts', [$this, 'adminEnqueueScripts']);
 
         $settings = new Settings;
-        $settings->onLoaded();
+        $settings->loaded();
 
         if (!$this->options->enabled) {
             return;
         }
 
         $this->logger = new Logger;
-        $this->logger->onLoaded();
+        $this->logger->loaded();
 
         add_action('rrze.log.error', [$this, 'logError'], 10, 2);
         add_action('rrze.log.warning', [$this, 'logWarning'], 10, 2);
