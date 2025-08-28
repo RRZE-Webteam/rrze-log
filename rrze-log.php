@@ -4,7 +4,7 @@
 Plugin Name:        RRZE Log
 Plugin URI:         https://gitlab.rrze.fau.de/rrze-webteam/rrze-log
 Description:        The plugin allows you to log certain actions of the plugins and themes in a log file, which are or may be necessary for further investigations.
-Version:            2.6.20
+Version:            2.7.0
 Author:             RRZE Webteam
 Author URI:         https://www.wp.rrze.fau.de/
 License:            GNU General Public License Version 3
@@ -13,7 +13,6 @@ Text Domain:        rrze-log
 Domain Path:        /languages
 Requires at least:  6.8
 Requires PHP:       8.2
-Network:            true
 */
 
 namespace RRZE\Log;
@@ -21,6 +20,8 @@ namespace RRZE\Log;
 defined('ABSPATH') || exit;
 
 use RRZE\Log\Plugin;
+use RRZE\Log\Main;
+use RRZE\Log\Cron;
 
 /**
  * SPL Autoloader (PSR-4).
@@ -77,7 +78,7 @@ function activation($networkWide)
  */
 function deactivation()
 {
-    // Nothing to do here for deactivation.
+    Cron::unschedule();
 }
 
 /**
@@ -122,12 +123,6 @@ function loadTextDomain()
  */
 function systemRequirements(): string
 {
-    // Get the global WordPress version.
-    global $wp_version;
-
-    // Get the PHP version.
-    $phpVersion = phpversion();
-
     // Initialize an error message string.
     $error = '';
 
@@ -136,7 +131,7 @@ function systemRequirements(): string
         $error = sprintf(
             /* translators: 1: Server WordPress version number, 2: Required WordPress version number. */
             __('The server is running WordPress version %1$s. The plugin requires at least WordPress version %2$s.', 'rrze-log'),
-            $wp_version,
+            wp_get_wp_version(),
             plugin()->getRequiresWP()
         );
     } elseif (!is_php_version_compatible(plugin()->getRequiresPHP())) {
@@ -144,11 +139,11 @@ function systemRequirements(): string
         $error = sprintf(
             /* translators: 1: Server PHP version number, 2: Required PHP version number. */
             __('The server is running PHP version %1$s. The plugin requires at least PHP version %2$s.', 'rrze-log'),
-            $phpVersion,
+            phpversion(),
             plugin()->getRequiresPHP()
         );
-    } elseif (!is_multisite()) {
-        $error = __('The plugin is compatible only with WordPress Multisite.', 'rrze-log');
+    } elseif (is_multisite() && !is_plugin_active_for_network(plugin()->getBaseName())) {
+        $error = __('This plugin must be activated network-wide on multisite installations.', 'rrze-log');
     }
 
     // Return the error message string, which will be empty if requirements are satisfied.
@@ -169,7 +164,7 @@ function loaded()
     // Trigger the 'loaded' method of the main plugin instance.
     plugin()->loaded();
 
-    // Check system requirements.
+    // Check system requirements and store any error messages.
     if ($error = systemRequirements()) {
         // If there is an error, add an action to display an admin notice with the error message.
         add_action('admin_init', function () use ($error) {
