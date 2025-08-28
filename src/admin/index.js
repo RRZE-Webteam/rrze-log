@@ -1,5 +1,5 @@
 /**
  * Plugin dependencies
  */
-import "./style.scss";
-import "./script.js";
+import "./admin.scss";
+import "./admin.js";
