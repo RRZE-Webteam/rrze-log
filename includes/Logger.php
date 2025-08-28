@@ -111,7 +111,7 @@ class Logger
      */
     protected function log(string $level, string $message, array $context)
     {
-        $this->logFile = sprintf('%1$s%2$s.log', Constants::LOG_PATH, date('Y-m-d'));
+        $this->logFile = Constants::LOG_FILE;
 
         $data = [
             'datetime' => $this->getDateTime(),
