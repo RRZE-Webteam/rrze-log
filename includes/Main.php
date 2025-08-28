@@ -4,8 +4,11 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
+use RRZE\Log\Options;
 use RRZE\Log\Settings;
 use RRZE\Log\Logger;
+use RRZE\Log\Cron;
+use RRZE\Log\Constants;
 
 class Main
 {
@@ -42,7 +45,6 @@ class Main
     public function loaded()
     {
         file_exists(Constants::LOG_PATH) || wp_mkdir_p(Constants::LOG_PATH);
-        file_exists(Constants::DEBUG_LOG_PATH) || wp_mkdir_p(Constants::DEBUG_LOG_PATH);
 
         add_action('admin_enqueue_scripts', [$this, 'adminEnqueueScripts']);
 
@@ -60,6 +62,8 @@ class Main
         add_action('rrze.log.warning', [$this, 'logWarning'], 10, 2);
         add_action('rrze.log.notice', [$this, 'logNotice'], 10, 2);
         add_action('rrze.log.info', [$this, 'logInfo'], 10, 2);
+
+        Cron::init();
     }
 
     /**
@@ -171,18 +175,20 @@ class Main
             return;
         }
 
+        $assetFile = include(plugin()->getPath('build') . 'admin.asset.php');
+
         wp_register_style(
             'rrze-log-list-table',
             plugins_url('build/admin.css', plugin()->getBasename()),
             [],
-            plugin()->getVersion()
+            $assetFile['version'] ?? plugin()->getVersion()
         );
 
         wp_register_script(
             'rrze-log-list-table',
             plugins_url('build/admin.js', plugin()->getBasename()),
-            ['jquery'],
-            plugin()->getVersion()
+            $assetFile['dependencies'],
+            $assetFile['version'] ?? plugin()->getVersion()
         );
     }
 }
