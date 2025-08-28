@@ -20,8 +20,10 @@ class Options
     {
         $options = [
             'enabled' => '0',
-            'logTTL' => 7, // in days
+            'maxLines' => 5000,
             'adminMenu' => '0',
+            'debugMaxLines' => 5000,
+            'debugReverseStreaming' => '0',
             'debugLogAccess' => ''
         ];
 
