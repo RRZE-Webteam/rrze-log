@@ -49,7 +49,8 @@ class Settings
     protected $error;
 
     /**
-     * Set properties.
+     * Constructor
+     * @return void
      */
     public function __construct()
     {
@@ -58,7 +59,8 @@ class Settings
     }
 
     /**
-     * Add hooks.
+     * Initiate hooks.
+     * @return void
      */
     public function loaded()
     {
@@ -73,7 +75,7 @@ class Settings
         add_filter('set-screen-option', [$this, 'setScreenOption'], 10, 3);
 
         $this->isDebugLog = Utils::isDebugLog();
-        if (is_wp_error($this->isDebugLog)) {
+        if ($this->isDebugLog instanceof \WP_Error && is_wp_error($this->isDebugLog)) {
             if (is_multisite()) {
                 add_action('network_admin_notices', [$this, 'adminErrorNotice']);
             } else {
@@ -134,8 +136,8 @@ class Settings
     {
         $logPage = add_submenu_page(
             'tools.php',
-            __('Log', 'rrze-log'),
-            __('Log', 'rrze-log'),
+            __('RRZE-Log', 'rrze-log'),
+            __('RRZE-Log', 'rrze-log'),
             'manage_options',
             'rrze-log',
             [$this, 'logPage']
@@ -146,8 +148,8 @@ class Settings
         if ($this->isDebugLog && $this->isUserInDebugLogAccess()) {
             $debugLogPage = add_submenu_page(
                 'tools.php',
-                __('Debug', 'rrze-log'),
-                __('Debug', 'rrze-log'),
+                __('WP-Debug', 'rrze-log'),
+                __('WP-Debug', 'rrze-log'),
                 'manage_options',
                 'rrze-log-debug',
                 [$this, 'debugLogPage']
@@ -179,12 +181,68 @@ class Settings
      */
     public function settingsSection()
     {
-        add_settings_section('rrze-log-settings', false, '__return_false', 'rrze-log-settings');
-        add_settings_field('rrze-log-enabled', __('Enable Log', 'rrze-log'), [$this, 'enabledField'], 'rrze-log-settings', 'rrze-log-settings');
-        add_settings_field('rrze-log-logTTL', __('Time to live', 'rrze-log'), [$this, 'logTTLField'], 'rrze-log-settings', 'rrze-log-settings');
-        add_settings_field('rrze-log-adminMenu', __('Enable administration menus', 'rrze-log'), [$this, 'adminMenuField'], 'rrze-log-settings', 'rrze-log-settings');
+        add_settings_section(
+            'rrze-log-settings',
+            __('RRZE Log', 'rrze-log'),
+            '__return_false',
+            'rrze-log-settings'
+        );
+
+        add_settings_field(
+            'rrze-log-enabled',
+            __('Enable Log', 'rrze-log'),
+            [$this, 'enabledField'],
+            'rrze-log-settings',
+            'rrze-log-settings'
+        );
+
+        add_settings_field(
+            'rrze-log-maxLines',
+            __('Truncate log file to last N lines', 'rrze-log'),
+            [$this, 'maxLinesField'],
+            'rrze-log-settings',
+            'rrze-log-settings'
+        );
+
+        add_settings_field(
+            'rrze-log-adminMenu',
+            __('Enable administration menus', 'rrze-log'),
+            [$this, 'adminMenuField'],
+            'rrze-log-settings',
+            'rrze-log-settings'
+        );
+
         if ($this->isDebugLog) {
-            add_settings_field('rrze-log-debugLogAccess', __('Debug Log Access', 'rrze-log'), [$this, 'debugLogAccessField'], 'rrze-log-settings', 'rrze-log-settings');
+            add_settings_section(
+                'rrze-log-wp-debug-settings',
+                __('WP Debug Log', 'rrze-log'),
+                '__return_false',
+                'rrze-log-settings'
+            );
+
+            add_settings_field(
+                'rrze-log-maxLines',
+                __('Truncate log file to last N lines', 'rrze-log'),
+                [$this, 'debugMaxLinesField'],
+                'rrze-log-settings',
+                'rrze-log-wp-debug-settings'
+            );
+
+            add_settings_field(
+                'rrze-log-debugReverseStreaming',
+                __('Reverse Streaming', 'rrze-log'),
+                [$this, 'debugReverseStreamingField'],
+                'rrze-log-settings',
+                'rrze-log-wp-debug-settings'
+            );
+
+            add_settings_field(
+                'rrze-log-debugLogAccess',
+                __('Log Access', 'rrze-log'),
+                [$this, 'debugLogAccessField'],
+                'rrze-log-settings',
+                'rrze-log-wp-debug-settings'
+            );
         }
     }
 
@@ -213,15 +271,40 @@ class Settings
     }
 
     /**
-     * Display logTTL field.
+     * Display maxLines field.
      */
-    public function logTTLField()
+    public function maxLinesField()
     {
     ?>
         <label for="rrze-log-ttl">
-            <input type="number" min="1" max="365" step="1" name="<?php printf('%s[logTTL]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->logTTL) ?>" class="small-text">
+            <input type="number" min="5000" max="100000" step="1" name="<?php printf('%s[maxLines]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->maxLines) ?>" class="small-text">
         </label>
-        <p class="description"><?php _e('How many days can the log file remain on disk before it is removed?', 'rrze-log'); ?></p>
+        <p class="description"><?php _e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
+    <?php
+    }
+
+    /**
+     * Display debugMaxLines field.
+     */
+    public function debugMaxLinesField()
+    {
+    ?>
+        <label for="rrze-log-ttl">
+            <input type="number" min="5000" max="100000" step="1" name="<?php printf('%s[debugMaxLines]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->debugMaxLines) ?>" class="small-text">
+        </label>
+        <p class="description"><?php _e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
+    <?php
+    }
+
+    /**
+     * Display debugReverseStreaming field.
+     */
+    public function debugReverseStreamingField()
+    {
+    ?>
+        <label>
+            <input type="checkbox" id="debug-reverse-streaming" name="<?php printf('%s[debugReverseStreaming]', $this->optionName); ?>" value="1" <?php checked($this->options->debugReverseStreaming, 1); ?>> <?php _e('Parse entire file via reverse streaming (slower, complete)', 'rrze-log'); ?>
+        </label>
     <?php
     }
 
@@ -234,19 +317,27 @@ class Settings
     }
 
     /**
-     * Validate options.
-     * @param  array $input [description]
-     * @return array        [description]
+     * Validate options input.
+     * @param  array $input
+     * @return array
      */
     public function optionsValidate($input)
     {
         $input['enabled'] = !empty($input['enabled']) ? 1 : 0;
 
-        $input['logTTL'] = !empty($input['logTTL']) && absint($input['logTTL']) ? absint($input['logTTL']) : $this->options->logTTL;
+        $input['maxLines'] = !empty($input['maxLines']) && absint($input['maxLines'])
+            ? min(absint($input['maxLines']), 100000)
+            : $this->options->maxLines;
 
         $input['adminMenu'] = !empty($input['adminMenu']) ? 1 : 0;
 
         if ($this->isDebugLog) {
+            $input['debugMaxLines'] = !empty($input['debugMaxLines']) && absint($input['debugMaxLines'])
+                ? min(absint($input['debugMaxLines']), 100000)
+                : $this->options->debugMaxLines;
+
+            $input['debugReverseStreaming'] = !empty($input['debugReverseStreaming']) ? 1 : 0;
+
             $input['debugLogAccess'] = isset($input['debugLogAccess']) ? $input['debugLogAccess'] : '';
             $debugLogAccess = $this->sanitizeTextarea($input['debugLogAccess']);
             $debugLogAccess = !empty($debugLogAccess) ? $this->sanitizeWpLogAccess($debugLogAccess) : '';
@@ -259,6 +350,7 @@ class Settings
 
     /**
      * Update network admin options.
+     * @return void
      */
     public function settingsUpdate()
     {
@@ -273,6 +365,7 @@ class Settings
 
     /**
      * Update network admin notice.
+     * @return void
      */
     public function settingsUpdateNotice()
     {
@@ -284,10 +377,10 @@ class Settings
 
     /**
      * Set screen options.
-     * @param string $status [description]
-     * @param string $option [description]
-     * @param string $value  [description]
-     * @return string        [description]
+     * @param  boolean $status
+     * @param  string  $option
+     * @param  integer $value
+     * @return integer
      */
     public function setScreenOption($status, $option, $value)
     {
@@ -299,6 +392,7 @@ class Settings
 
     /**
      * Add screen options.
+     * @return void
      */
     public function screenOptions()
     {
@@ -311,12 +405,12 @@ class Settings
 
         add_screen_option($option, $args);
 
-        $this->unlinkOldLogFiles(Constants::LOG_PATH);
-        $this->listTable = new ListTable(Constants::LOG_PATH);
+        $this->listTable = new ListTable();
     }
 
     /**
      * Add debug screen options.
+     * @return void
      */
     public function debugScreenOptions()
     {
@@ -329,12 +423,12 @@ class Settings
 
         add_screen_option($option, $args);
 
-        $this->unlinkOldLogFiles(Constants::DEBUG_LOG_PATH);
-        $this->debugListTable = new DebugListTable(Constants::DEBUG_LOG_PATH);
+        $this->debugListTable = new DebugListTable();
     }
 
     /**
      * Display log list table page.
+     * @return void
      */
     public function logPage()
     {
@@ -367,6 +461,7 @@ class Settings
 
     /**
      * Display WP debug log list table page.
+     * @return void
      */
     public function debugLogPage()
     {
@@ -398,9 +493,10 @@ class Settings
     }
 
     /**
-     * Display list table notices.
-     * @param  string $view [description]
-     * @param  array  $data [description]
+     * Render a view.
+     * @param  string $view
+     * @param  array  $data
+     * @return void
      */
     protected function show($view, $data = [])
     {
@@ -409,8 +505,8 @@ class Settings
     }
 
     /**
-     * getTextarea
-     * @param array $option
+     * Get textarea value.
+     * @param  array|string $option
      * @return string
      */
     protected function getTextarea($option)
@@ -422,10 +518,10 @@ class Settings
     }
 
     /**
-     * sanitizeTextarea
-     * @param string $input
-     * @param boolean $sort
-     * @return mixed
+     * Sanitize textarea input.
+     * @param  string  $input
+     * @param  boolean $sort
+     * @return string|array
      */
     protected function sanitizeTextarea(string $input, bool $sort = true)
     {
@@ -439,6 +535,11 @@ class Settings
         return '';
     }
 
+    /**
+     * Sanitize WP log access input.
+     * @param  array $data
+     * @return array
+     */
     public function sanitizeWpLogAccess(array $data)
     {
         $debugLogAccess = [];
@@ -474,8 +575,8 @@ class Settings
     }
 
     /**
-     * isUserInDebugLogAccess
-     * @return bool
+     * Check if current user is in debug log access list.
+     * @return boolean
      */
     protected function isUserInDebugLogAccess()
     {
@@ -494,20 +595,5 @@ class Settings
             }
         }
         return false;
-    }
-
-    /**
-     * unlinkOldLogFiles
-     *
-     * @param string $logPath
-     * @return void
-     */
-    protected function unlinkOldLogFiles($logPath)
-    {
-        foreach (new \DirectoryIterator($logPath) as $file) {
-            if ($file->isFile() && (time() - $file->getMTime() > $this->options->logTTL * DAY_IN_SECONDS)) {
-                @unlink($logPath . $file->getFilename());
-            }
-        }
     }
 }
