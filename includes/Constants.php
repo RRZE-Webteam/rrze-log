@@ -7,22 +7,16 @@ defined('ABSPATH') || exit;
 class Constants
 {
     /**
-     * Required PHP version.
-     * @var string
-     */
-    const REQUIRED_PHP_VERSION = '8.0';
-
-    /**
-     * Required WP version.
-     * @var string
-     */
-    const REQUIRED_WP_VERSION = '6.1';
-
-    /**
      * Full log path.
      * @var string
      */
-    const LOG_PATH = WP_CONTENT_DIR . '/log/rrze-log/log/';
+    const LOG_PATH = WP_CONTENT_DIR . '/log/';
+
+    /**
+     * Log file name.
+     * @var string
+     */
+    const LOG_FILE = WP_CONTENT_DIR . '/log/rrze-log.log';
 
     /**
      * Log error levels.
@@ -36,10 +30,10 @@ class Constants
     ];
 
     /**
-     * Full log path.
+     * Debug log file name.
      * @var string
      */
-    const DEBUG_LOG_PATH = WP_CONTENT_DIR . '/log/rrze-log/debug/';
+    const DEBUG_LOG_FILE = WP_CONTENT_DIR . '/log/wp-debug.log';
 
     /**
      * Debug error levels.
