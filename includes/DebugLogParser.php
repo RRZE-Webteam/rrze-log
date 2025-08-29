@@ -39,14 +39,14 @@ class DebugLogParser
     /** @var int Total number of items after filtering, for the last getItems() */
     protected $totalLines = 0;
 
-    /** @var int Chunk size for reverse streaming (full mode) */
-    protected int $chunkSize = 8192;
-
     /** @var string Regex matching timestamp lines like "[... UTC] ..." */
     protected string $tsRegex = '/^\[(.+?UTC)\]\s?(.*)$/';
 
-    /** @var bool If true, parse whole file (reverse streaming). If false, use tail-chunk mode. */
-    protected bool $full = false;
+    /** @var int Chunk size (bytes) for reverse reading */
+    protected int $chunkSize = 8192;
+
+    /** @var bool Use fast tail-chunk mode by default */
+    protected bool $useTailChunk = true;
 
     /** @var int Bytes to read from the file tail in fast mode (default 10 MB) */
     protected int $tailBytes = 104857600; // 10 * 1024 * 1024
@@ -58,14 +58,14 @@ class DebugLogParser
      * @param array    $search   Search terms (case-insensitive). AND semantics; nested arrays also AND.
      * @param int      $offset   Pagination offset.
      * @param int      $count    Pagination count (-1 = unlimited).
-     * @param bool     $full     If true, parse entire file via reverse streaming (slower, complete).
-     * @param int|null $tailBytes Bytes to read from the end in fast mode. Null keeps default.
+     * @param bool     $useTailChunk Whether to use tail-chunk mode (default: true).
+     * @param int|null $tailBytes    Custom tail size in bytes (null = default 10 MB).
      */
-    public function __construct($filename, $search = [], $offset = 0, $count = -1, bool $full = false, ?int $tailBytes = null)
+    public function __construct($filename, $search = [], $offset = 0, $count = -1, bool $useTailChunk = false, ?int $tailBytes = null)
     {
         $this->offset = max(0, (int) $offset);
         $this->count  = (int) $count;
-        $this->full   = $full;
+        $this->useTailChunk  = $useTailChunk;
 
         if ($tailBytes !== null && $tailBytes > 0) {
             $this->tailBytes = $tailBytes;
@@ -113,7 +113,7 @@ class DebugLogParser
             return $this->error;
         }
 
-        $groupsNewestFirst = $this->full
+        $groupsNewestFirst = $this->useTailChunk
             ? $this->parseAndGroupReverseWithEarlyExit()
             : $this->parseTailChunk();
 
