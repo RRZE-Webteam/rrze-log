@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-log\n"
 "POT-Creation-Date: 2025-08-29T08:32:37+00:00\n"
-"PO-Revision-Date: 2025-08-29 10:33+0200\n"
+"PO-Revision-Date: 2025-08-29 10:43+0200\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch\n"
 "Language: de_DE\n"
@@ -16,7 +16,7 @@ msgstr ""
 #. Plugin Name of the plugin
 #: rrze-log.php includes/Settings.php:186
 msgid "RRZE Log"
-msgstr "RRZE Protokoll"
+msgstr "RRZE-Protokoll"
 
 #. Plugin URI of the plugin
 #: rrze-log.php
