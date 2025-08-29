@@ -269,7 +269,7 @@ class Settings
     {
     ?>
         <label for="rrze-log-ttl">
-            <input type="number" min="5000" max="100000" step="1" name="<?php printf('%s[maxLines]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->maxLines) ?>" class="small-text">
+            <input type="number" min="10000" max="100000" step="1" name="<?php printf('%s[maxLines]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->maxLines) ?>" class="small-text">
         </label>
         <p class="description"><?php _e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
     <?php
@@ -282,7 +282,7 @@ class Settings
     {
     ?>
         <label for="rrze-log-ttl">
-            <input type="number" min="5000" max="100000" step="1" name="<?php printf('%s[debugMaxLines]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->debugMaxLines) ?>" class="small-text">
+            <input type="number" min="10000" max="100000" step="1" name="<?php printf('%s[debugMaxLines]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->debugMaxLines) ?>" class="small-text">
         </label>
         <p class="description"><?php _e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
     <?php
