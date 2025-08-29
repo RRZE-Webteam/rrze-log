@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-log\n"
-"POT-Creation-Date: 2023-03-21T16:03:52+00:00\n"
-"PO-Revision-Date: 2025-08-28 16:09+0200\n"
+"POT-Creation-Date: 2025-08-29T08:32:37+00:00\n"
+"PO-Revision-Date: 2025-08-29 10:33+0200\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch (Sie)\n"
 "Language: de\n"
@@ -49,23 +49,23 @@ msgstr "https://www.wp.rrze.fau.de/"
 msgid "RRZE Log – every %d seconds"
 msgstr "RRZE-Protokoll – alle %d Sekunden"
 
-#: includes/DebugListTable.php:56 includes/ListTable.php:64
+#: includes/DebugListTable.php:69 includes/ListTable.php:77
 msgid "Error level"
 msgstr "Fehlerstufe"
 
-#: includes/DebugListTable.php:57 includes/ListTable.php:66
+#: includes/DebugListTable.php:70 includes/ListTable.php:79
 msgid "Message"
 msgstr "Nachricht"
 
-#: includes/DebugListTable.php:58 includes/ListTable.php:67
+#: includes/DebugListTable.php:71 includes/ListTable.php:80
 msgid "Date"
 msgstr "Datum"
 
-#: includes/DebugListTable.php:147 includes/ListTable.php:148
+#: includes/DebugListTable.php:159 includes/ListTable.php:161
 msgid "All error levels"
 msgstr "Alle Fehlerstufen"
 
-#: includes/DebugLogParser.php:78 includes/LogParser.php:58
+#: includes/DebugLogParser.php:78 includes/LogParser.php:75
 msgid "Log file not found."
 msgstr "Protokolldatei nicht gefunden."
 
@@ -75,51 +75,51 @@ msgstr "Protokolldatei nicht gefunden."
 msgid "Cannot open log: %s"
 msgstr "Protokoll kann nicht geöffnet werden: %s"
 
-#. translators: %s: directory path
-#: includes/File/Flock.php:66
+#. translators: %s: directory path.
+#: includes/File/Flock.php:61
 #, php-format
 msgid "Cannot create directory %s."
 msgstr "Verzeichnis %s kann nicht erstellt werden."
 
-#. translators: %s: directory path
-#: includes/File/Flock.php:76
+#. translators: %s: directory path.
+#: includes/File/Flock.php:71
 #, php-format
 msgid "Directory is not writable: %s"
 msgstr "Verzeichnis ist nicht beschreibbar: %s"
 
-#. translators: %s: file path
-#: includes/File/Flock.php:87
+#. translators: %s: file path.
+#: includes/File/Flock.php:82
 #, php-format
 msgid "Cannot open log file for append: %s"
 msgstr "Protokolldatei kann nicht zum Anhängen geöffnet werden: %s"
 
-#. translators: %s: file path
-#: includes/File/Flock.php:107
+#. translators: %s: file path.
+#: includes/File/Flock.php:99
 #, php-format
 msgid "Could not get lock on %s (busy)."
 msgstr "Sperre für %s konnte nicht hergestellt werden (beschäftigt)."
 
-#. translators: %s: file path
-#: includes/File/Flock.php:117
+#. translators: %s: file path.
+#: includes/File/Flock.php:109
 #, php-format
 msgid "Timed out acquiring lock on %s."
 msgstr ""
 "Beim Abrufen der Sperre für %s ist eine Zeitüberschreitung aufgetreten."
 
-#: includes/File/Flock.php:143
+#: includes/File/Flock.php:132
 msgid "Write attempted without lock."
 msgstr "Schreibversuch ohne Sperre."
 
-#: includes/File/Flock.php:147
+#: includes/File/Flock.php:140
 msgid "Write failed."
 msgstr "Schreiben fehlgeschlagen."
 
-#: includes/ListTable.php:65
+#: includes/ListTable.php:78
 msgid "Website"
 msgstr "Website"
 
 #: includes/Settings.php:104 includes/Settings.php:105
-#: includes/Settings.php:456
+#: includes/Settings.php:434
 msgid "Log"
 msgstr "Protokoll"
 
@@ -148,33 +148,25 @@ msgid "WP Debug Log"
 msgstr "WP-Debug-Log"
 
 #: includes/Settings.php:233
-msgid "Reverse Streaming"
-msgstr "Rückwärtsstreaming"
-
-#: includes/Settings.php:241
 msgid "Log Access"
 msgstr "Log-Zugriff"
 
-#: includes/Settings.php:256
+#: includes/Settings.php:248
 msgid "Enables network-wide logging"
 msgstr "Aktiviert die netzwerkweite Protokollierung"
 
-#: includes/Settings.php:268
+#: includes/Settings.php:260
 msgid "Enables network wide the Log menu for administrators"
 msgstr "Aktiviert netzwerkweit das Log-Menü für Administratoren"
 
-#: includes/Settings.php:282 includes/Settings.php:295
+#: includes/Settings.php:274 includes/Settings.php:287
 msgid ""
 "Keep only the newest lines in the log file, up to the number specified here."
 msgstr ""
 "Es werden nur die neuesten Zeilen in der Protokolldatei behalten, bis zur "
 "hier angegebenen Anzahl."
 
-#: includes/Settings.php:306
-msgid "Parse entire file via reverse streaming (slower, complete)"
-msgstr "Gesamte Datei per Reverse-Streaming einlesen (langsamer, vollständig)"
-
-#: includes/Settings.php:315
+#: includes/Settings.php:295
 msgid ""
 "List of usernames with access to view the wp debug log file. Enter one "
 "username per line."
@@ -182,16 +174,16 @@ msgstr ""
 "Liste der Benutzernamen mit Zugriff zum Anzeigen der Debugging-"
 "Protokolldatei. Geben Sie einen Benutzernamen pro Zeile ein."
 
-#: includes/Settings.php:401 includes/Settings.php:419
+#: includes/Settings.php:379 includes/Settings.php:397
 msgid "Number of items per page:"
 msgstr "Einträge pro Seite:"
 
-#: includes/Settings.php:436 includes/Settings.php:469
+#: includes/Settings.php:414 includes/Settings.php:447
 msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 "Sie haben nicht genügend Berechtigungen, um auf diese Seite zuzugreifen."
 
-#: includes/Settings.php:489
+#: includes/Settings.php:467
 msgid "Debug"
 msgstr "Debug"
 
@@ -242,3 +234,10 @@ msgstr ""
 #, php-format
 msgid "Plugins: %1$s: %2$s"
 msgstr "Plugins: %1$s: %2$s"
+
+#~ msgid "Reverse Streaming"
+#~ msgstr "Rückwärtsstreaming"
+
+#~ msgid "Parse entire file via reverse streaming (slower, complete)"
+#~ msgstr ""
+#~ "Gesamte Datei per Reverse-Streaming einlesen (langsamer, vollständig)"
