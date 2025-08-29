@@ -4,31 +4,33 @@ namespace RRZE\Log\File;
 
 defined('ABSPATH') || exit;
 
+use RuntimeException;
+
+class FlockException extends RuntimeException {}
+
 /**
  * Flock
  *
- * Simple file-based mutex + append logger.
- * - Acquires an exclusive advisory lock (flock) on a file opened in append mode.
- * - Provides write helpers that are guaranteed to run under the lock.
- * - Designed for logging to a custom file (not using error_log()).
+ * File-based mutex + append writer for logs.
+ * - Exclusive advisory lock with flock()
+ * - Binary append, unbuffered writes
+ * - Retriable, bounded lock acquisition
  */
 class Flock
 {
-    /** @var bool Whether we currently hold the lock */
+    /** Whether we currently hold the lock */
     protected bool $locked = false;
 
-    /** @var resource|null Underlying file handle */
-    public $fp = null;
+    /** Underlying file handle (kept private) */
+    private $fp = null; // resource|null
 
-    /** @var string Absolute file path to write to */
+    /** Absolute file path to write to */
     protected string $filePath;
 
-    /** @var int Lock acquisition sleep (microseconds) base for backoff */
+    /** Backoff base (µs) and cap (µs) for lock retries */
     protected int $retryBaseUs = 2000; // 2 ms
+    protected int $retryCapUs  = 8000; // 8 ms
 
-    /**
-     * @param string $filePath Absolute path to the log file.
-     */
     public function __construct(string $filePath)
     {
         $this->filePath = $filePath;
@@ -42,14 +44,7 @@ class Flock
     /**
      * Acquire an exclusive lock. Optionally wait up to $timeoutMs milliseconds.
      *
-     * - Ensures the directory exists and is writable.
-     * - Opens the file in binary append mode ('ab') for portability.
-     * - Disables the stream write buffer (line-buffering is not reliable for logs).
-     *
-     * @param int $timeoutMs 0 = non-blocking (fail fast). >0 = wait up to that time.
-     * @return self
-     *
-     * @throws FlockException on failure to open or lock the file.
+     * @throws FlockException
      */
     public function acquire(int $timeoutMs = 0): self
     {
@@ -62,7 +57,7 @@ class Flock
             if (!@wp_mkdir_p($dir)) {
                 throw new FlockException(
                     sprintf(
-                        /* translators: %s: directory path */
+                        /* translators: %s: directory path. */
                         __('Cannot create directory %s.', 'rrze-log'),
                         $dir
                     )
@@ -72,7 +67,7 @@ class Flock
         if (!is_writable($dir)) {
             throw new FlockException(
                 sprintf(
-                    /* translators: %s: directory path */
+                    /* translators: %s: directory path. */
                     __('Directory is not writable: %s', 'rrze-log'),
                     $dir
                 )
@@ -83,27 +78,24 @@ class Flock
         if (!$this->fp) {
             throw new FlockException(
                 sprintf(
-                    /* translators: %s: file path */
+                    /* translators: %s: file path. */
                     __('Cannot open log file for append: %s', 'rrze-log'),
                     $this->filePath
                 )
             );
         }
 
-        // Disable buffering for timely writes
         @stream_set_write_buffer($this->fp, 0);
 
-        $deadline = $timeoutMs > 0 ? (microtime(true) + ($timeoutMs / 1000)) : 0;
+        $deadline = $timeoutMs > 0 ? (microtime(true) + ($timeoutMs / 1000)) : 0.0;
         $attempt  = 0;
 
-        // Try non-blocking first; if it fails and timeout>0, retry with small sleeps
         while (!@flock($this->fp, LOCK_EX | LOCK_NB)) {
             if ($timeoutMs <= 0) {
-                // Non-blocking mode: fail immediately
                 $this->cleanupOpen();
                 throw new FlockException(
                     sprintf(
-                        /* translators: %s: file path */
+                        /* translators: %s: file path. */
                         __('Could not get lock on %s (busy).', 'rrze-log'),
                         $this->filePath
                     )
@@ -113,14 +105,13 @@ class Flock
                 $this->cleanupOpen();
                 throw new FlockException(
                     sprintf(
-                        /* translators: %s: file path */
+                        /* translators: %s: file path. */
                         __('Timed out acquiring lock on %s.', 'rrze-log'),
                         $this->filePath
                     )
                 );
             }
-            // Exponential-ish backoff up to ~8ms
-            $sleepUs = min($this->retryBaseUs * max(1, ++$attempt), 8000);
+            $sleepUs = min($this->retryBaseUs * max(1, ++$attempt), $this->retryCapUs);
             usleep($sleepUs);
         }
 
@@ -129,44 +120,65 @@ class Flock
     }
 
     /**
-     * Write raw bytes to the file (no newline added).
-     * Requires the lock to be held.
+     * Write raw bytes (no newline). Requires the lock.
+     * Loops until the full buffer is written.
      *
-     * @param string $bytes
-     * @return int bytes written
-     *
-     * @throws FlockException if not locked or write fails.
+     * @return int total bytes written
+     * @throws FlockException
      */
-    public function write(string $bytes): int
+    public function write(string $bytes, bool $flush = true, bool $fsync = false): int
     {
         if (!$this->locked || !is_resource($this->fp)) {
             throw new FlockException(__('Write attempted without lock.', 'rrze-log'));
         }
-        $n = @fwrite($this->fp, $bytes);
-        if ($n === false) {
-            throw new FlockException(__('Write failed.', 'rrze-log'));
+
+        $len = strlen($bytes);
+        $off = 0;
+        while ($off < $len) {
+            $n = @fwrite($this->fp, substr($bytes, $off));
+            if ($n === false) {
+                throw new FlockException(__('Write failed.', 'rrze-log'));
+            }
+            $off += $n;
         }
-        // Ensure data is flushed to the OS (fsync is usually overkill for logs)
-        @fflush($this->fp);
-        return $n;
+
+        if ($flush) {
+            @fflush($this->fp);
+            if ($fsync && function_exists('fsync')) {
+                // fsync availability varies; guard it
+                @fsync($this->fp);
+            }
+        }
+
+        return $off;
     }
 
     /**
-     * Write a line and ensure exactly one trailing newline.
-     *
-     * @param string $line
-     * @return int bytes written
+     * Write a line ensuring exactly one trailing newline.
      */
-    public function writeln(string $line): int
+    public function writeln(string $line, bool $flush = true, bool $fsync = false): int
     {
         $line = rtrim($line, "\r\n") . "\n";
-        return $this->write($line);
+        return $this->write($line, $flush, $fsync);
+    }
+
+    /**
+     * Utility: acquire, call the callback, always release.
+     *
+     * @param callable(self $flock):void $callback
+     */
+    public function withLock(callable $callback, int $timeoutMs = 0): void
+    {
+        $this->acquire($timeoutMs);
+        try {
+            $callback($this);
+        } finally {
+            $this->release();
+        }
     }
 
     /**
      * Release the lock and close the file.
-     *
-     * @return self
      */
     public function release(): self
     {
@@ -174,13 +186,29 @@ class Flock
             @flock($this->fp, LOCK_UN);
             @fclose($this->fp);
         }
-        $this->fp    = null;
+        $this->fp = null;
         $this->locked = false;
         return $this;
     }
 
     /**
-     * Helper to close the file if open (used when failing to lock).
+     * Check if we currently hold the lock.
+     */
+    public function isLocked(): bool
+    {
+        return $this->locked;
+    }
+
+    /**
+     * Get the file path (for diagnostics).
+     */
+    public function getPath(): string
+    {
+        return $this->filePath;
+    }
+
+    /**
+     * Cleanup the open file handle without releasing the lock.
      */
     protected function cleanupOpen(): void
     {
