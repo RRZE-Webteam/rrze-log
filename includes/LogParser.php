@@ -9,12 +9,16 @@ use WP_Error;
 /**
  * Efficient LogParser for large log files.
  *
+ * Modes:
+ * - Tail-chunk (default): read only the last $tailBytes of the file, then split/filter/page.
+ *   Very fast thanks to native string ops; great when you only care about recent lines.
+ * - Reverse streaming: read from the end with fseek() in chunks; memory-stable for huge files.
+ *
  * Features:
- * - Lazy reading using SplFileObject and fseek()
- * - Supports offset + count (pagination)
- * - Filtering by search terms (case-insensitive)
- * - Optional JSON key/value filter
- * - Memory-efficient: only reads the required lines from the end of the file
+ * - Offset + count (pagination)
+ * - Case-insensitive search terms (AND semantics; nested arrays also AND)
+ * - Optional JSON key/value filter (per-line)
+ * - Memory efficient
  */
 class LogParser
 {
@@ -39,18 +43,31 @@ class LogParser
     /** @var int Chunk size (bytes) for reverse reading */
     protected int $chunkSize = 8192;
 
+    /** @var bool Use fast tail-chunk mode by default */
+    protected bool $useTailChunk = true;
+
+    /** @var int Bytes to read from the end in tail-chunk mode (default 10 MB) */
+    protected int $tailBytes = 104857600; // 10 * 1024 * 1024
+
     /**
      * Constructor.
      *
-     * @param string  $filename Path to log file.
-     * @param array   $search   Array of search terms (case-insensitive).
-     * @param int     $offset   Offset for pagination.
-     * @param int     $count    Number of lines to return (-1 = unlimited).
+     * @param string     $filename     Path to log file.
+     * @param array      $search       Array of search terms (case-insensitive).
+     * @param int        $offset       Offset for pagination.
+     * @param int        $count        Number of lines to return (-1 = unlimited).
+     * @param bool       $useTailChunk Whether to use tail-chunk mode (default: true).
+     * @param int|null   $tailBytes    Custom tail size in bytes (null = default 10 MB).
      */
-    public function __construct($filename, $search = [], $offset = 0, $count = -1)
+    public function __construct($filename, $search = [], $offset = 0, $count = -1, bool $useTailChunk = true, ?int $tailBytes = null)
     {
         $this->offset = max(0, (int) $offset);
         $this->count  = (int) $count; // -1 = unlimited
+        $this->useTailChunk = $useTailChunk;
+        if ($tailBytes !== null && $tailBytes > 0) {
+            $this->tailBytes = $tailBytes;
+        }
+
         $search = array_map('mb_strtolower', (array) $search);
         $this->search = array_filter($search, static fn($v) => $v !== '' && $v !== null);
 
@@ -69,7 +86,7 @@ class LogParser
 
     /**
      * Forward iterator: yields lines sequentially from the beginning.
-     * Used when no count limit is set (count = -1).
+     * Used when no count limit is set (count = -1) and tail-chunk mode is disabled.
      */
     protected function iterateFile()
     {
@@ -87,9 +104,6 @@ class LogParser
     /**
      * Case-insensitive search filter.
      * Returns true if all search terms are present in the line.
-     *
-     * @param string $haystack Line to check.
-     * @return bool
      */
     protected function matchesSearch(string $haystack): bool
     {
@@ -111,13 +125,88 @@ class LogParser
     }
 
     /**
-     * Reverse reader: efficiently reads from the end of the file.
+     * FAST PATH: read only the last $tailBytes of the file and slice/paginate there.
+     * Returns filtered lines in chronological order (oldest → newest).
      *
-     * @param int         $limit        Number of lines to return.
-     * @param int         $skip         Number of lines to skip.
-     * @param string|null $key          Optional JSON key for exact match.
-     * @param string|null $searchExact  Optional exact value for the JSON key.
-     * @return string[]   Lines in chronological order (old → new).
+     * @param int         $limit       Number of lines to return (-1 = all within tail).
+     * @param int         $skip        Number of lines to skip.
+     * @param string|null $key         Optional JSON key to match exactly (case-insensitive; trailing slashes ignored).
+     * @param string|null $searchExact Optional exact value for the JSON key.
+     * @return string[]
+     */
+    protected function tailChunkSlice(int $limit, int $skip = 0, ?string $key = null, ?string $searchExact = null): array
+    {
+        $fh = $this->file;
+        $stat = $fh->fstat();
+        $size = (int) ($stat['size'] ?? 0);
+        if ($size <= 0) {
+            $this->totalLines = 0;
+            return [];
+        }
+
+        // Read tail (or whole file if smaller)
+        $readBytes = min($this->tailBytes, $size);
+        $start = $size - $readBytes;
+        $fh->fseek($start);
+        $content = $fh->fread($readBytes);
+        if ($content === '' || $content === false) {
+            $this->totalLines = 0;
+            return [];
+        }
+
+        // Drop partial first line if we didn't start at 0
+        if ($start > 0) {
+            $pos = strpos($content, "\n");
+            if ($pos !== false) {
+                $content = substr($content, $pos + 1);
+            }
+        }
+
+        // Split into lines (file order: old → new)
+        $lines = explode("\n", rtrim($content, "\n"));
+
+        $useKeyFilter = ($key && $searchExact !== null && $searchExact !== '');
+        $searchExact = $useKeyFilter ? untrailingslashit(mb_strtolower($searchExact)) : null;
+
+        // Filter (text + optional JSON key/value)
+        $filtered = [];
+        foreach ($lines as $line) {
+            if ($line === '') {
+                continue;
+            }
+            if ($this->search && !$this->matchesSearch($line)) {
+                continue;
+            }
+            if ($useKeyFilter) {
+                $obj = json_decode($line);
+                if (!$obj || !isset($obj->{$key})) {
+                    continue;
+                }
+                $val = mb_strtolower(untrailingslashit((string) $obj->{$key}));
+                if ($val !== $searchExact) {
+                    continue;
+                }
+            }
+            $filtered[] = $line;
+        }
+
+        // Total within the tail window (what the UI can page through in this mode)
+        $this->totalLines = count($filtered);
+
+        // Apply pagination
+        if ($skip > 0) {
+            $filtered = array_slice($filtered, $skip);
+        }
+        if ($limit >= 0) {
+            $filtered = array_slice($filtered, 0, $limit);
+        }
+
+        return $filtered; // old → new
+    }
+
+    /**
+     * Reverse reader: efficiently reads from the end of the file.
+     * Returns lines in chronological order (oldest → newest).
      */
     protected function tailSlice(int $limit, int $skip = 0, ?string $key = null, ?string $searchExact = null): array
     {
@@ -125,6 +214,7 @@ class LogParser
         $meta = $fh->fstat();
         $size = (int) ($meta['size'] ?? 0);
         if ($size <= 0) {
+            $this->totalLines = 0;
             return [];
         }
 
@@ -203,6 +293,9 @@ class LogParser
         // Reverse to chronological order (oldest → newest)
         $collected = array_reverse($collected);
 
+        // We don't know the real total without a full pass; expose a lower bound for UX
+        $this->totalLines = $this->offset + min(($limit >= 0 ? $limit : count($collected)), count($collected));
+
         // Apply offset and limit
         if ($skip > 0) {
             $collected = array_slice($collected, $skip);
@@ -230,14 +323,19 @@ class LogParser
         $key = (string) $key;
         $search = mb_strtolower((string) $search);
 
-        // Optimized path: count >= 0
-        if ($this->count >= 0) {
-            $slice = $this->tailSlice($this->count, $this->offset, $key ?: null, $search ?: null);
-            $this->totalLines = $this->offset + count($slice); // at least this many
+        // FAST: tail-chunk mode (default). Pages/filtering happen within the tail window.
+        if ($this->useTailChunk) {
+            $slice = $this->tailChunkSlice($this->count, $this->offset, $key ?: null, $search ?: null);
             return new \LimitIterator(new \ArrayIterator($slice), 0, -1);
         }
 
-        // Fallback: read all (count = -1)
+        // ORIGINAL streaming behavior
+        if ($this->count >= 0) {
+            $slice = $this->tailSlice($this->count, $this->offset, $key ?: null, $search ?: null);
+            return new \LimitIterator(new \ArrayIterator($slice), 0, -1);
+        }
+
+        // Fallback: read all (count = -1) from the beginning (can be heavy)
         $buffer = [];
         foreach ($this->iterateFile() as $line) {
             if ($key && $search) {
@@ -252,7 +350,7 @@ class LogParser
 
         $this->totalLines = count($buffer);
 
-        // Reverse for "newest first" then apply offset
+        // Reverse for "newest first" then apply offset (to mirror previous UI)
         $buffer = array_reverse($buffer, false);
 
         if (count($buffer) >= $this->offset) {
@@ -264,9 +362,7 @@ class LogParser
     }
 
     /**
-     * Returns the total number of lines found.
-     *
-     * @return int
+     * Returns the total number of lines found (within the current mode/window).
      */
     public function getTotalLines()
     {
