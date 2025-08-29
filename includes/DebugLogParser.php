@@ -122,8 +122,8 @@ class DebugLogParser
         foreach ($groupsNewestFirst as $entry) {
             $detailsArr = explode('@@@', $entry['details']);
             $row = [
-                'level'       => $entry['level'],
                 'datetime'    => $entry['occurrences'][0], // newest
+                'level'       => $entry['level'],
                 'occurrences' => count($entry['occurrences']),
                 'message'     => $detailsArr[0],
                 // 'details'     => $detailsArr,
