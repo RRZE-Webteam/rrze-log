@@ -23,7 +23,6 @@ class Options
             'maxLines' => 5000,
             'adminMenu' => '0',
             'debugMaxLines' => 5000,
-            'debugReverseStreaming' => '0',
             'debugLogAccess' => ''
         ];
 
