@@ -53,8 +53,8 @@ class ListTable extends WP_List_Table
     {
         return sprintf(
             '<span title="%1$s">%2$s</span>',
-            get_date_from_gmt($item['datetime'], __('Y/m/d') . ' G:i:s.u'),
-            get_date_from_gmt($item['datetime'], __('Y/m/d') . ' H:i:s')
+            gmdate('Y/m/d G:i:s \U\T\C', strtotime($item['datetime'])),
+            get_date_from_gmt($item['datetime'], __('Y/m/d') . ' G:i:s'),
         );
     }
 
@@ -91,6 +91,7 @@ class ListTable extends WP_List_Table
         $this->single_row_columns($item);
         echo '</tr>';
         printf('<tr class="metadata metadata-hidden"> <td colspan=%d>', count($this->get_columns()));
+        $item['datetime'] = get_date_from_gmt($item['datetime'], __('Y/m/d') . ' G:i:s');
         printf('<pre>%1$s</pre>', print_r($item, true));
         echo '</td> </tr>';
         echo '<tr class="hidden"> </tr>';
