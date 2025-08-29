@@ -125,7 +125,7 @@ class DebugLogParser
                 'level'       => $entry['level'],
                 'message'     => $detailsArr[0],
                 'datetime'    => $entry['occurrences'][0], // newest
-                'details'     => $detailsArr,
+                // 'details'     => $detailsArr,
                 'occurrences' => count($entry['occurrences']),
             ];
 
