@@ -4,6 +4,4 @@ namespace RRZE\Log\File;
 
 defined('ABSPATH') || exit;
 
-class FlockException extends \Exception
-{
-}
+class FlockException extends \RuntimeException {}

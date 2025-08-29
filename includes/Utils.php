@@ -5,7 +5,7 @@ namespace RRZE\Log;
 defined('ABSPATH') || exit;
 
 /**
- * [Utils description]
+ * Utility functions
  */
 class Utils
 {
@@ -30,27 +30,17 @@ class Utils
         if (!defined('WP_DEBUG') || !WP_DEBUG) {
             return false;
         }
-        if (!is_string(WP_DEBUG_LOG) || WP_DEBUG_LOG != Constants::DEBUG_LOG_PATH . date('Y-m-d') . '.log') {
+        if (!is_string(WP_DEBUG_LOG) || WP_DEBUG_LOG != Constants::DEBUG_LOG_FILE) {
             return new \WP_Error(
                 'wp_debug_log',
                 sprintf(
                     /* translators: %s: WP_DEBUG_LOG value. */
                     __('Invalid value of the WP_DEBUG_LOG constant. WP_DEBUG_LOG must have the following value: %s', 'rrze-log'),
-                    "ABSPATH . 'wp-content/log/rrze-log/debug/' . date('Y-m-d') . '.log'"
+                    "ABSPATH . 'wp-content/log/wp-debug.log'"
                 )
             );
         }
         return true;
-    }
-
-    /**
-     * Verify if the string has the correct 'yyyy-mm-dd' format.
-     * @param  string $string 'yyyy-mm-dd' format
-     * @return boolean
-     */
-    public static function verifyLogfileFormat($string)
-    {
-        return preg_match("/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/", $string);
     }
 
     /**
@@ -77,11 +67,8 @@ class Utils
      */
     public static function getLog($logFile = '', $search = [], $offset = 0, $count = -1)
     {
-        $logPath = Constants::LOG_PATH;
-        if (!self::verifyLogfileFormat($logFile)) {
-            $logFile = date('Y-m-d');
-        }
-        $logFile = sprintf('%1$s%2$s.log', $logPath, $logFile);
+        $logFile = Constants::LOG_FILE;
+
         $search = is_array($search) && self::isNotMultidimensional($search) ?
             array_map('trim', $search) :
             [];

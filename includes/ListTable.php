@@ -18,23 +18,13 @@ class ListTable extends WP_List_Table
     public $options;
 
     /**
-     * Absolut Log Path
-     *
-     * @var string
-     */
-    protected $logPath;
-
-    /**
      * Constructor
-     *
-     * @param string $logPath
      */
-    public function __construct(string $logPath)
+    public function __construct()
     {
         global $status, $page;
 
         $this->options = Options::getOptions();
-        $this->logPath = $logPath;
         $this->items = [];
 
         parent::__construct([
@@ -63,9 +53,22 @@ class ListTable extends WP_List_Table
     {
         return sprintf(
             '<span title="%1$s">%2$s</span>',
-            get_date_from_gmt($item['datetime'], __('Y/m/d') . ' G:i:s.u'),
-            get_date_from_gmt($item['datetime'], __('Y/m/d') . ' H:i:s')
+            gmdate('Y/m/d G:i:s \U\T\C', strtotime($item['datetime'])),
+            get_date_from_gmt($item['datetime'], __('Y/m/d') . ' G:i:s'),
         );
+    }
+
+    /**
+     * Render the "message" column.
+     *
+     * @param array|object $item Current row item.
+     * @return string
+     */
+    public function column_message($item)
+    {
+        $text = is_array($item) ? ($item['message'] ?? '') : ($item->message ?? '');
+        $excerpt = wp_html_excerpt($text, 400, '…');
+        return esc_html($excerpt);
     }
 
     public function get_columns()
@@ -88,6 +91,7 @@ class ListTable extends WP_List_Table
         $this->single_row_columns($item);
         echo '</tr>';
         printf('<tr class="metadata metadata-hidden"> <td colspan=%d>', count($this->get_columns()));
+        $item['datetime'] = get_date_from_gmt($item['datetime'], __('Y/m/d') . ' G:i:s');
         printf('<pre>%1$s</pre>', print_r($item, true));
         echo '</td> </tr>';
         echo '<tr class="hidden"> </tr>';
@@ -136,7 +140,6 @@ class ListTable extends WP_List_Table
                 ob_start();
 
                 $this->levelsDropdown();
-                $this->logFilesDropdown();
 
                 $output = ob_get_clean();
 
@@ -160,38 +163,6 @@ class ListTable extends WP_List_Table
             <?php foreach (CONSTANTS::LEVELS as $level) :
                 $selected = $levelFilter == $level ? ' selected = "selected"' : ''; ?>
                 <option value="<?php echo $level; ?>" <?php echo $selected; ?>><?php echo $level; ?></option>
-            <?php endforeach; ?>
-        </select>
-    <?php
-    }
-
-    /**
-     * Dropdown with log files.
-     */
-    protected function logFilesDropdown()
-    {
-        $logFilesFilter = isset($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
-        $logFiles = [];
-        if (!is_dir($this->logPath)) {
-            return;
-        }
-        foreach (new \DirectoryIterator($this->logPath) as $file) {
-            if ($file->isFile()) {
-                $logfile = $file->getBasename('.' . $file->getExtension());
-                if (Utils::verifyLogfileFormat($logfile)) {
-                    $logFiles[$logfile] = $logfile;
-                }
-            }
-        }
-
-        if (count($logFiles) < 2) {
-            return;
-        }
-        krsort($logFiles); ?>
-        <select id="logfiles-filter" name="logfile">
-            <?php foreach ($logFiles as $logfile) :
-                $selected = $logFilesFilter == $logfile ? ' selected = "selected"' : ''; ?>
-                <option value="<?php echo $logfile; ?>" <?php echo $selected; ?>><?php echo $logfile; ?></option>
             <?php endforeach; ?>
         </select>
 <?php

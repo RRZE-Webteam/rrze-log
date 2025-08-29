@@ -9,252 +9,173 @@ use RRZE\Log\File\FlockException;
 
 class Logger
 {
-    /**
-     * [protected description]
-     * @var object
-     */
-    protected $options;
+    /** @var object Plugin options container */
+    protected object $options;
 
-    /**
-     * [protected description]
-     * @var string
-     */
-    protected $logFile;
+    /** @var string Absolute path to the target log file */
+    protected string $logFile = '';
 
-    /**
-     * [protected description]
-     * @var integer|boolean
-     */
-    protected $enabled;
+    /** @var string The current site URL (for multi-site context in entries) */
+    protected string $siteUrl = '';
 
-    /**
-     * [protected description]
-     * @var boolean
-     */
-    protected $funcOverload;
+    /** @var int File mode to set on first creation (subject to process umask) */
+    protected int $filePermissions = 0644;
 
-    /**
-     * [protected description]
-     * @var integer
-     */
-    protected $siteUrl;
-
-    /**
-     * [protected description]
-     * @var integer
-     */
-    protected $filePermissions = 0644;
-
-    /**
-     * [__construct description]
-     */
     public function __construct()
     {
-        $this->options = Options::getOptions();
+        $this->options = Options::getOptions(); // your existing options source
     }
 
     /**
-     * [loaded description]
+     * Call once when WP is loaded (e.g., on plugins_loaded).
      */
-    public function loaded()
+    public function loaded(): void
     {
-        isset($this->funcOverload) || $this->funcOverload = (extension_loaded('mbstring') && ini_get('mbstring.func_overload'));
-
         $this->siteUrl = site_url();
     }
 
-    /**
-     * [error description]
-     * @param  string $message [description]
-     * @param  array  $context [description]
-     */
-    public function error(string $message, array $context)
+    /** Convenience helpers */
+    public function error(string $message, array $context = []): bool
     {
-        $this->log('ERROR', $message, $context);
+        return $this->log('ERROR',   $message, $context);
+    }
+    public function warning(string $message, array $context = []): bool
+    {
+        return $this->log('WARNING', $message, $context);
+    }
+    public function notice(string $message, array $context = []): bool
+    {
+        return $this->log('NOTICE',  $message, $context);
+    }
+    public function info(string $message, array $context = []): bool
+    {
+        return $this->log('INFO',    $message, $context);
     }
 
     /**
-     * [warning description]
-     * @param  string $message [description]
-     * @param  array  $context [description]
+     * Core logger.
      */
-    public function warning(string $message, array $context)
+    protected function log(string $level, string $message, array $context = []): bool
     {
-        $this->log('WARNING', $message, $context);
-    }
-
-    /**
-     * [notice description]
-     * @param  string $message [description]
-     * @param  array  $context [description]
-     */
-    public function notice(string $message, array $context)
-    {
-        $this->log('NOTICE', $message, $context);
-    }
-
-    /**
-     * [info description]
-     * @param  string $message [description]
-     * @param  array  $context [description]
-     */
-    public function info(string $message, array $context)
-    {
-        $this->log('INFO', $message, $context);
-    }
-
-    /**
-     * [log description]
-     * @param  string $level   [description]
-     * @param  string $message [description]
-     * @param  array  $context [description]
-     */
-    protected function log(string $level, string $message, array $context)
-    {
-        $this->logFile = sprintf('%1$s%2$s.log', Constants::LOG_PATH, date('Y-m-d'));
-
-        $data = [
-            'datetime' => $this->getDateTime(),
-            'siteurl' => $this->siteUrl,
-            'level' => $level,
-            'message' => $message,
-            'context' => $context,
-        ];
-
-        $this->write($data, $level);
-    }
-
-    /**
-     * [write description]
-     * @param  array $data [description]
-     * @return boolean          [description]
-     */
-    protected function write(array $data)
-    {
-        if (!$this->isLogPathWritable()) {
+        $this->logFile = Constants::LOG_FILE; // ensure absolute path
+        if (!$this->ensureLogDirWritable()) {
             return false;
         }
 
-        $newFile = false;
+        $entry = [
+            'datetime' => $this->nowMicro(),
+            'siteurl'  => $this->siteUrl,
+            'level'    => $level,
+            'message'  => $message,
+            'context'  => $context,
+        ];
 
-        if (!file_exists($this->logFile)) {
-            $newFile = true;
-        }
+        return $this->writeJsonLine($entry);
+    }
 
+    /**
+     * Write one JSON line under an exclusive lock using Flock.
+     */
+    protected function writeJsonLine(array $data): bool
+    {
+        $isNew = !file_exists($this->logFile);
+
+        $json = $this->jsonEncodeSafe($data) . "\n";
         $flock = new Flock($this->logFile);
 
         try {
-            $fp = $flock->acquire()->fp;
-            $bytesWritten = $this->writeLine($fp, $data);
-            $flock->release();
+            // Acquire lock, write the full line, auto-release in finally.
+            $flock->withLock(function (Flock $l) use ($json) {
+                // writeln() would also work, but we already have \n appended
+                $l->write($json);
+            }, 200); // wait up to 200ms if busy
         } catch (FlockException $e) {
             return false;
         }
 
-        if ($newFile) {
-            chmod($this->logFile, $this->filePermissions);
+        if ($isNew) {
+            @chmod($this->logFile, $this->filePermissions);
         }
 
-        return is_int($bytesWritten);
-    }
-
-    /**
-     * [writeLine description]
-     * @param  resource $fp      [description]
-     * @param  string $level   [description]
-     * @param  array $data [description]
-     * @return integer          [description]
-     */
-    protected function writeLine($fp, $data)
-    {
-        $logData = json_encode($data) . PHP_EOL;
-
-        $bytesWritten = 0;
-        for ($written = 0, $length = $this->strLen($logData); $written < $length; $written += $bytesWritten) {
-            if (($bytesWritten = fwrite($fp, $this->subStr($logData, $written))) === false) {
-                break;
-            }
-        }
-
-        return $bytesWritten;
-    }
-
-    /**
-     * [isLogPathWritable description]
-     * @return boolean [description]
-     */
-    protected function isLogPathWritable()
-    {
-        if (!is_dir(Constants::LOG_PATH) || !$this->isWritable(Constants::LOG_PATH)) {
-            return false;
-        }
         return true;
     }
 
     /**
-     * [isWritable description]
-     * @param  string  $file [description]
-     * @return boolean       [description]
+     * Ensure the log directory exists and is writable.
      */
-    protected function isWritable($file)
+    protected function ensureLogDirWritable(): bool
     {
-        if (DIRECTORY_SEPARATOR === '/' && !ini_get('safe_mode')) {
-            return is_writable($file);
-        }
-
-        if (is_dir($file)) {
-            $file = rtrim($file, '/') . '/' . md5(mt_rand());
-            if (($fp = @fopen($file, 'ab')) === false) {
+        $dir = Constants::LOG_PATH;
+        if (!is_dir($dir)) {
+            if (!function_exists('wp_mkdir_p') || !@wp_mkdir_p($dir)) {
                 return false;
             }
+        }
+        return is_writable($dir);
+    }
 
-            fclose($fp);
-            @chmod($file, 0777);
-            @unlink($file);
-            return true;
-        } elseif (!is_file($file) || ($fp = @fopen($file, 'ab')) === false) {
-            return false;
+    /**
+     * JSON encode with safe flags and context normalization.
+     */
+    protected function jsonEncodeSafe(array $data): string
+    {
+        if (isset($data['context'])) {
+            $data['context'] = $this->normalizeContext($data['context']);
         }
 
-        fclose($fp);
-        return true;
-    }
-
-    /**
-     * [strLen description]
-     * @param  string $str [description]
-     * @return boolean      [description]
-     */
-    protected function strLen($str)
-    {
-        return ($this->funcOverload) ? mb_strlen($str, '8bit') : strlen($str);
-    }
-
-    /**
-     * [subStr description]
-     * @param  string $str    [description]
-     * @param  integer $start  [description]
-     * @param  integer $length [description]
-     * @return string         [description]
-     */
-    protected function subStr($str, $start, $length = null)
-    {
-        if ($this->funcOverload) {
-            return mb_substr($str, $start, $length, '8bit');
+        try {
+            return json_encode(
+                $data,
+                JSON_UNESCAPED_SLASHES
+                    | JSON_UNESCAPED_UNICODE
+                    | JSON_PARTIAL_OUTPUT_ON_ERROR
+                    | JSON_INVALID_UTF8_SUBSTITUTE
+            ) ?: '{}';
+        } catch (\Throwable $e) {
+            return json_encode([
+                'datetime' => $data['datetime'] ?? $this->nowMicro(),
+                'siteurl'  => $this->siteUrl,
+                'level'    => $data['level'] ?? 'OTHER',
+                'message'  => $data['message'] ?? '',
+                'context'  => '(context not serializable)',
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '{}';
         }
-
-        return isset($length) ? substr($str, $start, $length) : substr($str, $start);
     }
 
     /**
-     * [getDateTime description]
-     * @return string [description]
+     * Make context JSON-serializable.
      */
-    protected function getDateTime()
+    protected function normalizeContext(array $ctx): array
     {
-        $currentTime = microtime(true);
-        $microTime = sprintf("%06d", ($currentTime - floor($currentTime)) * 1000000);
-        $dateTime = new \DateTime(date('Y-m-d H:i:s.' . $microTime, intval($currentTime)));
-        return $dateTime->format('Y-m-d G:i:s.u');
+        foreach ($ctx as $k => $v) {
+            if (is_resource($v)) {
+                $ctx[$k] = 'RESOURCE(' . get_resource_type($v) . ')';
+            } elseif ($v instanceof \Throwable) {
+                $ctx[$k] = [
+                    'exception' => get_class($v),
+                    'message'   => $v->getMessage(),
+                    'code'      => $v->getCode(),
+                    'file'      => $v->getFile(),
+                    'line'      => $v->getLine(),
+                    'trace'     => $v->getTraceAsString(),
+                ];
+            } elseif (is_object($v) && !method_exists($v, '__toString')) {
+                $ctx[$k] = ['object' => get_class($v)];
+            }
+        }
+        return $ctx;
+    }
+
+    /**
+     * Current time with microseconds.
+     * Example: 2025-08-29 10:12:13.123456+02:00
+     */
+    protected function nowMicro(): string
+    {
+        $t  = microtime(true);
+        $dt = \DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', $t)) ?: new \DateTimeImmutable('now');
+        // Optionally align with WP timezone:
+        // $dt = $dt->setTimezone( wp_timezone() );
+        return $dt->format('Y-m-d H:i:s.uP');
     }
 }

@@ -4,16 +4,13 @@
 **/nbproject/
 ### PhpStorm ###
 .idea/
+*.css.map
 ### macOS ###
 .DS_Store
 ### Node ###
 node_modules/
-package-lock.json
-### Composer ###
-composer.lock
 ### WordPress ###
-*.pot
-### Debug ###
-debug.log
+/languages/*.pot
+/languages/*.mo
 ### Tmp ###
-_tmp/
+/_tmp/
