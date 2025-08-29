@@ -123,10 +123,10 @@ class DebugLogParser
             $detailsArr = explode('@@@', $entry['details']);
             $row = [
                 'level'       => $entry['level'],
-                'message'     => $detailsArr[0],
                 'datetime'    => $entry['occurrences'][0], // newest
-                // 'details'     => $detailsArr,
                 'occurrences' => count($entry['occurrences']),
+                'message'     => $detailsArr[0],
+                // 'details'     => $detailsArr,
             ];
 
             $searchStr = json_encode($row);
