@@ -58,6 +58,19 @@ class ListTable extends WP_List_Table
         );
     }
 
+    /**
+     * Render the "message" column.
+     *
+     * @param array|object $item Current row item.
+     * @return string
+     */
+    public function column_message($item)
+    {
+        $text = is_array($item) ? ($item['message'] ?? '') : ($item->message ?? '');
+        $excerpt = wp_html_excerpt($text, 400, '…');
+        return esc_html($excerpt);
+    }
+
     public function get_columns()
     {
         $columns = [
@@ -151,6 +164,6 @@ class ListTable extends WP_List_Table
                 <option value="<?php echo $level; ?>" <?php echo $selected; ?>><?php echo $level; ?></option>
             <?php endforeach; ?>
         </select>
-    <?php
+<?php
     }
 }
