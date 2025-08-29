@@ -229,14 +229,6 @@ class Settings
             );
 
             add_settings_field(
-                'rrze-log-debugReverseStreaming',
-                __('Reverse Streaming', 'rrze-log'),
-                [$this, 'debugReverseStreamingField'],
-                'rrze-log-settings',
-                'rrze-log-wp-debug-settings'
-            );
-
-            add_settings_field(
                 'rrze-log-debugLogAccess',
                 __('Log Access', 'rrze-log'),
                 [$this, 'debugLogAccessField'],
@@ -296,18 +288,6 @@ class Settings
     <?php
     }
 
-    /**
-     * Display debugReverseStreaming field.
-     */
-    public function debugReverseStreamingField()
-    {
-    ?>
-        <label>
-            <input type="checkbox" id="debug-reverse-streaming" name="<?php printf('%s[debugReverseStreaming]', $this->optionName); ?>" value="1" <?php checked($this->options->debugReverseStreaming, 1); ?>> <?php _e('Parse entire file via reverse streaming (slower, complete)', 'rrze-log'); ?>
-        </label>
-    <?php
-    }
-
     public function debugLogAccessField()
     {
     ?>
@@ -335,8 +315,6 @@ class Settings
             $input['debugMaxLines'] = !empty($input['debugMaxLines']) && absint($input['debugMaxLines'])
                 ? min(absint($input['debugMaxLines']), 100000)
                 : $this->options->debugMaxLines;
-
-            $input['debugReverseStreaming'] = !empty($input['debugReverseStreaming']) ? 1 : 0;
 
             $input['debugLogAccess'] = isset($input['debugLogAccess']) ? $input['debugLogAccess'] : '';
             $debugLogAccess = $this->sanitizeTextarea($input['debugLogAccess']);
