@@ -49,7 +49,7 @@ class DebugLogParser
     protected bool $useTailChunk = true;
 
     /** @var int Bytes to read from the file tail in fast mode (default 10 MB) */
-    protected int $tailBytes = 104857600; // 10 * 1024 * 1024
+    protected int $tailBytes = 10485760; // 10 * 1024 * 1024
 
     /**
      * Constructor.
