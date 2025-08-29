@@ -50,6 +50,19 @@ class DebugListTable extends WP_List_Table
         );
     }
 
+    /**
+     * Render the "message" column.
+     *
+     * @param array|object $item Current row item.
+     * @return string
+     */
+    public function column_message($item)
+    {
+        $text = is_array($item) ? ($item['message'] ?? '') : ($item->message ?? '');
+        $excerpt = wp_html_excerpt($text, 400, '…');
+        return esc_html($excerpt);
+    }
+
     public function get_columns()
     {
         $columns = [
@@ -96,8 +109,7 @@ class DebugListTable extends WP_List_Table
             $search[] = '"level":"' . trim($level) . '"';
         }
 
-        $reverseStreaming = (bool) $this->options->debugReverseStreaming ?? false;
-        $logParser = new DebugLogParser($logFile, $search, (($currentPage - 1) * $perPage), $perPage, $reverseStreaming);
+        $logParser = new DebugLogParser($logFile, $search, (($currentPage - 1) * $perPage), $perPage);
 
         $items = $logParser->getItems();
         if (!is_wp_error($items)) {
