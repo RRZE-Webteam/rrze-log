@@ -269,7 +269,7 @@ class Settings
     {
     ?>
         <label for="rrze-log-ttl">
-            <input type="number" min="1000" max="50000" step="1" name="<?php printf('%s[maxLines]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->maxLines) ?>" class="small-text">
+            <input type="number" min="1000" max="5000" step="1" name="<?php printf('%s[maxLines]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->maxLines) ?>" class="small-text">
         </label>
         <p class="description"><?php _e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
     <?php
@@ -282,7 +282,7 @@ class Settings
     {
     ?>
         <label for="rrze-log-ttl">
-            <input type="number" min="1000" max="50000" step="1" name="<?php printf('%s[debugMaxLines]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->debugMaxLines) ?>" class="small-text">
+            <input type="number" min="1000" max="5000" step="1" name="<?php printf('%s[debugMaxLines]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->debugMaxLines) ?>" class="small-text">
         </label>
         <p class="description"><?php _e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
     <?php
@@ -306,14 +306,14 @@ class Settings
         $input['enabled'] = !empty($input['enabled']) ? 1 : 0;
 
         $input['maxLines'] = !empty($input['maxLines']) && absint($input['maxLines'])
-            ? min(absint($input['maxLines']), 10000)
+            ? min(absint($input['maxLines']), 5000)
             : $this->options->maxLines;
 
         $input['adminMenu'] = !empty($input['adminMenu']) ? 1 : 0;
 
         if ($this->isDebugLog) {
             $input['debugMaxLines'] = !empty($input['debugMaxLines']) && absint($input['debugMaxLines'])
-                ? min(absint($input['debugMaxLines']), 10000)
+                ? min(absint($input['debugMaxLines']), 5000)
                 : $this->options->debugMaxLines;
 
             $input['debugLogAccess'] = isset($input['debugLogAccess']) ? $input['debugLogAccess'] : '';
