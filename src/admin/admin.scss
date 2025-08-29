@@ -1,26 +1,45 @@
 .wp-list-table {
-    .data {
-        cursor: default;
+    tr.data {
+        td.column-message {
+            cursor: pointer;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
     }
 
-    .column-level {
-        width: 11%;
+    tr.metadata {
+        display: none;
+
+        &.metadata-hidden {
+            display: none;
+        }
+
+        &.is-open {
+            display: table-row;
+        }
     }
 
-    .column-message {
-        width: 54%;
-    }
+    th,
+    td {
+        &.column-level {
+            width: 11%;
+        }
+        &.column-message {
+            width: 54%;
+        }
+        &.column-datetime {
+            width: 14%;
 
-    .column-datetime {
-        width: 14%;
-
-        span[title] {
-            -webkit-text-decoration: dotted underline;
-            text-decoration: dotted underline;
+            span[title] {
+                -webkit-text-decoration: dotted underline;
+                text-decoration: dotted underline;
+            }
         }
     }
 
     .hidden {
-        display: none;
+        display: none !important;
     }
 }
