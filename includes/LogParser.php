@@ -125,14 +125,14 @@ class LogParser
     }
 
     /**
-     * FAST PATH: read only the last $tailBytes of the file and slice/paginate there.
-     * Returns filtered lines in chronological order (oldest → newest).
-     *
-     * @param int         $limit       Number of lines to return (-1 = all within tail).
-     * @param int         $skip        Number of lines to skip.
-     * @param string|null $key         Optional JSON key to match exactly (case-insensitive; trailing slashes ignored).
+     * FAST PATH: read only the last $tailBytes and paginate there.
+     * Returns lines in NEW → OLD order.
+     * 
+     * @param int         $limit      Number of lines to return (-1 = unlimited).
+     * @param int         $skip       Number of lines to skip (offset).
+     * @param string|null $key        Optional JSON key to filter by.
      * @param string|null $searchExact Optional exact value for the JSON key.
-     * @return string[]
+     * @return array
      */
     protected function tailChunkSlice(int $limit, int $skip = 0, ?string $key = null, ?string $searchExact = null): array
     {
@@ -166,7 +166,7 @@ class LogParser
         $lines = explode("\n", rtrim($content, "\n"));
 
         $useKeyFilter = ($key && $searchExact !== null && $searchExact !== '');
-        $searchExact = $useKeyFilter ? untrailingslashit(mb_strtolower($searchExact)) : null;
+        $searchExact  = $useKeyFilter ? untrailingslashit(mb_strtolower($searchExact)) : null;
 
         // Filter (text + optional JSON key/value)
         $filtered = [];
@@ -190,10 +190,13 @@ class LogParser
             $filtered[] = $line;
         }
 
-        // Total within the tail window (what the UI can page through in this mode)
+        // Total within the tail window
         $this->totalLines = count($filtered);
 
-        // Apply pagination
+        // Reverse to NEW → OLD before paginating
+        $filtered = array_reverse($filtered, false);
+
+        // Apply pagination (offset from newest)
         if ($skip > 0) {
             $filtered = array_slice($filtered, $skip);
         }
@@ -201,12 +204,18 @@ class LogParser
             $filtered = array_slice($filtered, 0, $limit);
         }
 
-        return $filtered; // old → new
+        return $filtered; // new → old
     }
 
     /**
-     * Reverse reader: efficiently reads from the end of the file.
-     * Returns lines in chronological order (oldest → newest).
+     * Reverse reader from end of file.
+     * Returns lines in NEW → OLD order.
+     * 
+     * @param int         $limit      Number of lines to return (-1 = unlimited).
+     * @param int         $skip       Number of lines to skip (offset).
+     * @param string|null $key        Optional JSON key to filter by.
+     * @param string|null $searchExact Optional exact value for the JSON key.
+     * @return array
      */
     protected function tailSlice(int $limit, int $skip = 0, ?string $key = null, ?string $searchExact = null): array
     {
@@ -246,12 +255,10 @@ class LogParser
                     continue;
                 }
 
-                // Apply text search
                 if ($this->search && !$this->matchesSearch($line)) {
                     continue;
                 }
 
-                // Apply JSON key filter
                 if ($useKeyFilter) {
                     $obj = json_decode($line);
                     if (!$obj || !isset($obj->{$key})) {
@@ -263,14 +270,14 @@ class LogParser
                     }
                 }
 
-                $collected[] = $line;
+                $collected[] = $line; // newest → oldest
                 if (count($collected) >= $need) {
                     break;
                 }
             }
         }
 
-        // Handle remaining buffer (beginning of file)
+        // Remaining buffer (start of file)
         if ($buffer !== '' && count($collected) < $need) {
             $line = rtrim($buffer, "\r");
             if ($line !== '') {
@@ -290,13 +297,11 @@ class LogParser
             }
         }
 
-        // Reverse to chronological order (oldest → newest)
-        $collected = array_reverse($collected);
-
-        // We don't know the real total without a full pass; expose a lower bound for UX
+        // 👉 Keep NEW → OLD (no reverse)
+        // Lower-bound total for UX
         $this->totalLines = $this->offset + min(($limit >= 0 ? $limit : count($collected)), count($collected));
 
-        // Apply offset and limit
+        // Apply pagination (offset from newest)
         if ($skip > 0) {
             $collected = array_slice($collected, $skip);
         }
@@ -304,7 +309,7 @@ class LogParser
             $collected = array_slice($collected, 0, $limit);
         }
 
-        return $collected;
+        return $collected; // new → old
     }
 
     /**
