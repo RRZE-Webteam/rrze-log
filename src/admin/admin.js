@@ -1,11 +1,13 @@
 "use strict";
-jQuery(document).ready(function ($) {
-    let $listTable = $("table.wp-list-table");
-    $listTable.find("tr.data").show();
-    $listTable.find("tr.metadata").hide();
+jQuery(function ($) {
+    const $listTable = $("table.wp-list-table");
 
-    $listTable.find("tr.data").click(function () {
-        $("tr.data").not(this).next("tr.metadata").hide();
-        $(this).next("tr.metadata").toggle("fast");
+    $listTable.on("click", "tr.data td.column-message", function () {
+        const $row = $(this).closest("tr.data");
+        const $metaRow = $row.next("tr.metadata");
+
+        $("tr.metadata").not($metaRow).hide().addClass("metadata-hidden");
+
+        $metaRow.toggle().toggleClass("metadata-hidden");
     });
 });
