@@ -40,7 +40,7 @@ class DebugLogParser
     protected $totalLines = 0;
 
     /** @var string Regex matching timestamp lines like "[... UTC] ..." */
-    protected string $tsRegex = '/^\[(.+?UTC)\]\s?(.*)$/';
+    protected string $tsRegex = '/^\[(\d{2}-[A-Za-z]{3}-\d{4}\s+\d{2}:\d{2}:\d{2}\s+[^\]]+)\]\s?(.*)$/';
 
     /** @var int Chunk size (bytes) for reverse reading */
     protected int $chunkSize = 8192;
@@ -114,8 +114,8 @@ class DebugLogParser
         }
 
         $groupsNewestFirst = $this->useTailChunk
-            ? $this->parseAndGroupReverseWithEarlyExit()
-            : $this->parseTailChunk();
+            ? $this->parseTailChunk()
+            : $this->parseAndGroupReverseWithEarlyExit();
 
         // Build rows and apply search filter
         $rows = [];
@@ -182,7 +182,7 @@ class DebugLogParser
             $content = $fh->fread($this->tailBytes);
 
             // Align to next timestamp to avoid starting mid-entry
-            if (preg_match('/^\[(.+?UTC)\]\s/m', $content, $m, PREG_OFFSET_CAPTURE)) {
+            if (preg_match('/^\[(\d{2}-[A-Za-z]{3}-\d{4}\s+\d{2}:\d{2}:\d{2}\s+[^\]]+)\]\s/m', $content, $m, PREG_OFFSET_CAPTURE)) {
                 $offset = $m[0][1];
                 if ($offset > 0) {
                     $content = substr($content, $offset);
@@ -198,7 +198,7 @@ class DebugLogParser
         }
 
         // Split by timestamp. Capturing group retains timestamps.
-        $pattern = '/^\[(.*UTC)\]\s/mi';
+        $pattern = '/^\[(\d{2}-[A-Za-z]{3}-\d{4}\s+\d{2}:\d{2}:\d{2}\s+[^\]]+)\]\s/mi';
         $parts = preg_split($pattern, $content, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
 
         // Pair [timestamp, message] sequentially
@@ -206,7 +206,7 @@ class DebugLogParser
         for ($i = 0; $i + 1 < count($parts); $i += 2) {
             $timestamp = $parts[$i];
             $message   = $parts[$i + 1];
-            if ($timestamp === '' || $message === '' || $timestamp === null || $message === null) {
+            if ($timestamp === '' || trim($message) === '' || $timestamp === null || $message === null) {
                 continue;
             }
 
@@ -294,6 +294,15 @@ class DebugLogParser
                     $fullMessage = ($inlineMsg !== '')
                         ? $inlineMsg . ($body !== '' ? "\n" . $body : '')
                         : $body;
+
+                    $fullMessage = ($inlineMsg !== '')
+                        ? $inlineMsg . ($body !== '' ? "\n" . $body : '')
+                        : $body;
+
+                    if ($fullMessage === '') {
+                        $currentEntryLines = [];
+                        continue;
+                    }
 
                     $this->finalizeGroupEntry($timestamp, $fullMessage, $groups, $order);
 
