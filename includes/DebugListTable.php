@@ -90,12 +90,6 @@ class DebugListTable extends WP_List_Table
 
     public function single_row($item)
     {
-        $ts = $this->to_utc_timestamp((string) ($item['datetime'] ?? ''));
-        if ($ts) {
-            $dt = (new \DateTimeImmutable('@' . $ts))->setTimezone(wp_timezone());
-            $item['datetime'] = $dt->format('Y/m/d G:i:s');
-        }
-
         $message = $item['message'] ?? '';
         $safe = esc_html($message);
         $safe = preg_replace('/[ \t]+/', ' ', $safe);
@@ -187,37 +181,5 @@ class DebugListTable extends WP_List_Table
             <?php endforeach; ?>
         </select>
 <?php
-    }
-
-    /**
-     * Normalize various debug.log datetime strings to a UTC timestamp.
-     * Supports e.g. "01-Sep-2025 14:07:28 Europe/Berlin" or "... UTC".
-     */
-    private function to_utc_timestamp(string $raw): ?int
-    {
-        $raw = trim($raw);
-        if ($raw === '') {
-            return null;
-        }
-
-        // 1) Try format with named timezone: "d-M-Y H:i:s e" (e.g., Europe/Berlin or UTC)
-        $dt = \DateTimeImmutable::createFromFormat('d-M-Y H:i:s e', $raw);
-        if ($dt instanceof \DateTimeImmutable) {
-            return $dt->setTimezone(new \DateTimeZone('UTC'))->getTimestamp();
-        }
-
-        // 2) Try generic strtotime (handles many cases incl. "UTC")
-        $ts = strtotime($raw);
-        if ($ts !== false) {
-            return $ts;
-        }
-
-        // 3) Try MySQL-like (in case your parser already normalized): "Y-m-d H:i:s"
-        $dt = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $raw, new \DateTimeZone('UTC'));
-        if ($dt instanceof \DateTimeImmutable) {
-            return $dt->getTimestamp();
-        }
-
-        return null;
     }
 }
