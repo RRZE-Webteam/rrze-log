@@ -114,11 +114,11 @@ class Cron
         $targets = apply_filters('rrze_log/truncate_targets', [
             [
                 'file'  => Constants::LOG_FILE,
-                'lines' => $options->maxLines ?? 5000, // fallback if option missing
+                'lines' => $options->maxLines ?? 1000, // fallback if option missing
             ],
             [
                 'file'  => Constants::DEBUG_LOG_FILE,
-                'lines' => $options->debugMaxLines ?? 5000, // fallback if option missing
+                'lines' => $options->debugMaxLines ?? 1000, // fallback if option missing
             ],
         ]);
 
