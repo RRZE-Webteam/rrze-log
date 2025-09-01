@@ -78,12 +78,17 @@ class DebugListTable extends WP_List_Table
 
     public function single_row($item)
     {
+        $message = $item['message'] ?? '';
+        $safe = esc_html($message);
+        $safe = preg_replace('/[ \t]+/', ' ', $safe);
+        $item['message'] = nl2br($safe);
+
         echo '<tr class="data">';
         $this->single_row_columns($item);
         echo '</tr>';
         printf('<tr class="metadata metadata-hidden"> <td colspan=%d>', count($this->get_columns()));
         $item['datetime'] = get_date_from_gmt($item['datetime'], __('Y/m/d') . ' G:i:s');
-        printf('<pre style="white-space: pre-wrap;">%1$s</pre>', print_r($item, true));
+        print_r($item);
         echo '</td> </tr>';
         echo '<tr class="hidden"> </tr>';
     }

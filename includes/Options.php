@@ -20,9 +20,9 @@ class Options
     {
         $options = [
             'enabled' => '0',
-            'maxLines' => 10000,
+            'maxLines' => 1000,
             'adminMenu' => '0',
-            'debugMaxLines' => 10000,
+            'debugMaxLines' => 1000,
             'debugLogAccess' => ''
         ];
 

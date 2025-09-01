@@ -47,7 +47,7 @@ class LogParser
     protected bool $useTailChunk = true;
 
     /** @var int Bytes to read from the end in tail-chunk mode (default 10 MB) */
-    protected int $tailBytes = 104857600; // 10 * 1024 * 1024
+    protected int $tailBytes = 10485760; // 10 * 1024 * 1024
 
     /**
      * Constructor.

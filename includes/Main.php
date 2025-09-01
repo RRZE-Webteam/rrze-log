@@ -63,6 +63,8 @@ class Main
         add_action('rrze.log.notice', [$this, 'logNotice'], 10, 2);
         add_action('rrze.log.info', [$this, 'logInfo'], 10, 2);
 
+        Logger::attachRestSniffer();
+
         Cron::init();
     }
 
