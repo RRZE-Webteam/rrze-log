@@ -135,6 +135,8 @@ class DebugLogParser
             }
         }
 
+        $rows = array_reverse($rows);
+
         $this->totalLines = count($rows);
 
         // Pagination
