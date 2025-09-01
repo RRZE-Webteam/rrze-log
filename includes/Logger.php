@@ -6,6 +6,7 @@ defined('ABSPATH') || exit;
 
 use RRZE\Log\File\Flock;
 use RRZE\Log\File\FlockException;
+use RRZE\Log\REST\StrayOutputSniffer;
 
 class Logger
 {
@@ -178,4 +179,29 @@ class Logger
         // $dt = $dt->setTimezone( wp_timezone() );
         return $dt->format('Y-m-d H:i:s.uP');
     }
+
+    /**
+     * Attach the StrayOutputSniffer to REST requests.
+     *
+     * @param int  $site    Limit to specific blog_id (0 = all sites)
+     * @param bool $guard   If true, stray output is cleaned to avoid broken JSON
+     */
+    public static function attachRestSniffer(int $site = 0, bool $guard = true): void
+    {
+        $logger = new self();
+        $logger->loaded();
+
+        $sniffer = new StrayOutputSniffer([
+            'enabled' => true,
+            'guard'   => $guard,
+            'site'    => $site,
+            'logger'  => function (string $message) use ($logger) {
+                $logger->warning('REST stray output detected', [
+                    'detail' => $message,
+                ]);
+            },
+        ]);
+
+        $sniffer->boot();
+    }    
 }
