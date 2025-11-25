@@ -15,32 +15,33 @@ class Utils
      * @param string $string
      * @return boolean
      */
-    public static function isJson(string $string): bool
-    {
-        json_decode($string);
-        return json_last_error() === JSON_ERROR_NONE;
-    }
-
-    /**
-     * Check if the WP_DEBUG_LOG constant is defined and has the correct value.
-     * @return boolean|\WP_Error
-     */
-    public static function isDebugLog()
-    {
+    public static function isDebugLog() {
         if (!defined('WP_DEBUG') || !WP_DEBUG) {
             return false;
         }
-        if (!is_string(WP_DEBUG_LOG) || WP_DEBUG_LOG != Constants::DEBUG_LOG_FILE) {
+
+        if (!defined('WP_DEBUG_LOG')) {
+            return new \WP_Error(
+                'wp_debug_log_missing',
+                __('WP_DEBUG_LOG ist nicht definiert.', 'rrze-log')
+            );
+        }
+
+        $value = WP_DEBUG_LOG;
+
+        if (!is_string($value) || $value != Constants::DEBUG_LOG_FILE) {
             return new \WP_Error(
                 'wp_debug_log',
                 sprintf(
-                    /* translators: %s: WP_DEBUG_LOG value. */
-                    __('Invalid value of the WP_DEBUG_LOG constant. WP_DEBUG_LOG must have the following value: %s', 'rrze-log'),
-                    "ABSPATH . 'wp-content/log/wp-debug.log'"
+                    /* translators: %s: Current WP_DEBUG_LOG value. */
+                    __('Ungültiger Wert für WP_DEBUG_LOG. Aktueller Wert: %s — Erwartet: %s', 'rrze-log'),
+                    var_export($value, true),
+                    Constants::DEBUG_LOG_FILE
                 )
             );
         }
-        return true;
+
+        return $value;
     }
 
     /**
