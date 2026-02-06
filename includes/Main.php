@@ -200,7 +200,11 @@ class Main {
      * @param string $hook
      */
     public function adminEnqueueScripts(string $hook): void {
-        if (!str_contains($hook, 'page_rrze-log') && !str_contains($hook, 'page_rrze-log-debug')) {
+       if (
+            !str_contains($hook, 'page_rrze-log')
+            && !str_contains($hook, 'page_rrze-log-debug')
+            && !str_contains($hook, 'page_rrze-log-audit')
+        ) {
             return;
         }
 

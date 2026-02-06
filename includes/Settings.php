@@ -28,6 +28,12 @@ class Settings {
      * @var object
      */
     protected $debugListTable;
+    
+    /**
+    * WP_List_Table object.
+    * @var object
+    */
+   protected $auditListTable;
 
     /**
      * List table notice messages.
@@ -120,6 +126,20 @@ class Settings {
             );
             add_action("load-$debugLogPage", [$this, 'debugScreenOptions']);
         }
+        
+        
+        if (!empty($this->options->auditEnabled) && is_super_admin()) {
+            $auditPage = add_submenu_page(
+                'rrze-log',
+                __('Audit', 'rrze-log'),
+                __('Audit', 'rrze-log'),
+                'manage_options',
+                'rrze-log-audit',
+                [$this, 'auditLogPage']
+            );
+
+            add_action("load-$auditPage", [$this, 'auditScreenOptions']);
+        }
 
         add_submenu_page(
             'rrze-log',
@@ -155,6 +175,19 @@ class Settings {
 
             add_action("load-$debugLogPage", [$this, 'debugScreenOptions']);
         }
+        if (!empty($this->options->auditEnabled) && is_super_admin()) {
+            $auditPage = add_submenu_page(
+                'tools.php',
+                __('Audit', 'rrze-log'),
+                __('Audit', 'rrze-log'),
+                'manage_options',
+                'rrze-log-audit',
+                [$this, 'auditLogPage']
+            );
+
+            add_action("load-$auditPage", [$this, 'auditScreenOptions']);
+        }
+
     }
 
     /**
@@ -619,6 +652,54 @@ class Settings {
        }
 
        return !empty($settingsOptions->plugins->rrze_log_auditEnabled);
+   }
+
+   
+   /**
+    * Add audit screen options.
+    * @return void
+    */
+   public function auditScreenOptions() {
+       $option = 'per_page';
+       $args = [
+           'label' => __('Number of items per page:', 'rrze-log'),
+           'default' => 20,
+           'option' => 'rrze_log_per_page',
+       ];
+
+       add_screen_option($option, $args);
+
+       $this->auditListTable = new AuditListTable();
+   }
+
+   /**
+    * Display audit log list table page.
+    * Direct access protection: only super admins and only if audit is enabled.
+    * @return void
+    */
+   public function auditLogPage() {
+       if (!is_super_admin() || empty($this->options->auditEnabled)) {
+           wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
+       }
+
+       wp_enqueue_style('rrze-log-list-table');
+       wp_enqueue_script('rrze-log-list-table');
+
+       $this->auditListTable->prepare_items();
+
+       $action = isset($_GET['action']) ? $_GET['action'] : 'index';
+       $s = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
+
+       $data = [
+           'action' => $action,
+           's' => $s,
+           'level' => '',
+           'logfile' => date('Y-m-d'),
+           'listTable' => $this->auditListTable,
+           'title' => __('Audit', 'rrze-log'),
+       ];
+
+       $this->show('list-table', $data);
    }
 
 }
