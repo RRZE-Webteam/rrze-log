@@ -4,37 +4,36 @@ namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-use RRZE\Log\Options;
-use RRZE\Log\Settings;
-use RRZE\Log\Logger;
-use RRZE\Log\Cron;
-use RRZE\Log\Constants;
+class Main {
 
-class Main
-{
     /**
      * Option name.
      * @var string
      */
-    public $optionName;
+    public string $optionName;
 
     /**
      * Options values.
      * @var object
      */
-    public $options;
+    public object $options;
 
     /**
      * Logger object.
-     * @var object
+     * @var Logger|null
      */
-    protected $logger;
+    protected ?Logger $logger = null;
+
+    /**
+     * Audit logger (admin/superadmin actions).
+     * @var AdminAudit|null
+     */
+    protected ?AdminAudit $adminAudit = null;
 
     /**
      * Set properties.
      */
-    public function __construct()
-    {
+    public function __construct() {
         $this->optionName = Options::getOptionName();
         $this->options = Options::getOptions();
     }
@@ -42,21 +41,23 @@ class Main
     /**
      * Initiate classes & add hooks.
      */
-    public function loaded()
-    {
-        file_exists(Constants::LOG_PATH) || wp_mkdir_p(Constants::LOG_PATH);
-
+    public function loaded(): void {
         add_action('admin_enqueue_scripts', [$this, 'adminEnqueueScripts']);
 
-        $settings = new Settings;
+        $settings = new Settings();
         $settings->loaded();
 
         if (!$this->options->enabled) {
             return;
         }
 
-        $this->logger = new Logger;
+        $this->logger = new Logger();
         $this->logger->loaded();
+
+        if (!empty($this->options->auditEnabled)) {
+            $this->adminAudit = new AdminAudit($this->logger);
+            $this->adminAudit->register();
+        }
 
         add_action('rrze.log.error', [$this, 'logError'], 10, 2);
         add_action('rrze.log.warning', [$this, 'logWarning'], 10, 2);
@@ -70,60 +71,83 @@ class Main
 
     /**
      * ERROR log type.
-     * @param  mixed $message
-     * @param  array  $context
+     * @param mixed $message
+     * @param array $context
      */
-    public function logError($message, $context = [])
-    {
-        if ($content = $this->sanitizeArgs($message, $context)) {
-            $this->logger->error($content['message'], $content['context']);
+    public function logError($message, $context = []): void {
+        if (!$this->logger) {
+            return;
         }
+
+        $content = $this->sanitizeArgs($message, $context);
+        if (!$content) {
+            return;
+        }
+
+        $this->logger->error($content['message'], $content['context']);
     }
 
     /**
      * WARNING log type.
-     * @param  mixed $message
-     * @param  array  $context
+     * @param mixed $message
+     * @param array $context
      */
-    public function logWarning($message, $context = [])
-    {
-        if ($content = $this->sanitizeArgs($message, $context)) {
-            $this->logger->warning($content['message'], $content['context']);
+    public function logWarning($message, $context = []): void {
+        if (!$this->logger) {
+            return;
         }
+
+        $content = $this->sanitizeArgs($message, $context);
+        if (!$content) {
+            return;
+        }
+
+        $this->logger->warning($content['message'], $content['context']);
     }
 
     /**
      * NOTICE log type.
-     * @param  mixed $message
-     * @param  array  $context
+     * @param mixed $message
+     * @param array $context
      */
-    public function logNotice($message, $context = [])
-    {
-        if ($content = $this->sanitizeArgs($message, $context)) {
-            $this->logger->notice($content['message'], $content['context']);
+    public function logNotice($message, $context = []): void {
+        if (!$this->logger) {
+            return;
         }
+
+        $content = $this->sanitizeArgs($message, $context);
+        if (!$content) {
+            return;
+        }
+
+        $this->logger->notice($content['message'], $content['context']);
     }
 
     /**
      * INFO log type.
-     * @param  mixed $message
-     * @param  array  $context
+     * @param mixed $message
+     * @param array $context
      */
-    public function logInfo($message, $context = [])
-    {
-        if ($content = $this->sanitizeArgs($message, $context)) {
-            $this->logger->info($content['message'], $content['context']);
+    public function logInfo($message, $context = []): void {
+        if (!$this->logger) {
+            return;
         }
+
+        $content = $this->sanitizeArgs($message, $context);
+        if (!$content) {
+            return;
+        }
+
+        $this->logger->info($content['message'], $content['context']);
     }
 
     /**
      * Sanitize log arguments.
-     * @param  mixed $message
-     * @param  array  $context
-     * @return array
+     * @param mixed $message
+     * @param mixed $context
+     * @return array|false
      */
-    protected function sanitizeArgs($message, $context)
-    {
+    protected function sanitizeArgs($message, $context) {
         if (empty($message)) {
             return false;
         }
@@ -140,39 +164,42 @@ class Main
         }
 
         $message = !$message && $context ? '{' . implode('} {', array_keys($context)) . '}' : $message;
-        $message = $context ? $this->interpolate($message, $context) : $message;
+        $message = $context ? $this->interpolate((string) $message, $context) : (string) $message;
 
         return [
-            'message' => trim($message),
-            'context' => $context
+            'message' => trim((string) $message),
+            'context' => $context,
         ];
     }
 
     /**
      * Variable interpolation.
-     * @param  string $message
-     * @param  array  $context
+     * @param string $message
+     * @param array  $context
      * @return string
      */
-    protected function interpolate($message, array $context)
-    {
+    protected function interpolate(string $message, array $context): string {
         $replace = [];
+
         foreach ($context as $key => $value) {
             $fromStr = '{' . $key . '}';
             $toStr = '';
+
             if (!is_array($value) && (!is_object($value) || method_exists($value, '__toString'))) {
-                $toStr = $value;
+                $toStr = (string) $value;
             }
+
             $replace[$fromStr] = $toStr;
         }
+
         return strtr($message, $replace);
     }
 
     /**
      * Register admin styles & scripts.
+     * @param string $hook
      */
-    public function adminEnqueueScripts($hook)
-    {
+    public function adminEnqueueScripts(string $hook): void {
         if (!str_contains($hook, 'page_rrze-log') && !str_contains($hook, 'page_rrze-log-debug')) {
             return;
         }

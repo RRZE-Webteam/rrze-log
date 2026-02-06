@@ -1,45 +1,51 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-class Constants
-{
+final class Constants {
     /**
      * Full log path.
-     * @var string
      */
-    const LOG_PATH = WP_CONTENT_DIR . '/log/';
+    public const LOG_DIR = WP_CONTENT_DIR . '/log';
 
     /**
-     * Log file name.
-     * @var string
+     * Log file names.
      */
-    const LOG_FILE = WP_CONTENT_DIR . '/log/rrze-log.log';
-
+    public const LOG_FILE = self::LOG_DIR . '/rrze-log.log';
+        // Debug Logs
+    public const AUDIT_LOG_FILE = self::LOG_DIR . '/rrze-admin-audit.log';
+        // Admin Logs
+    public const DEBUG_LOG_FILE = self::LOG_DIR . '/wp-debug.log';    
+        // Default Debug Logs
+    
+    
+    /*
+     * WP-Cron hook name for the truncation task 
+     */
+    public const CRON_HOOK = 'rrze_log_truncate';
+    
     /**
      * Log error levels.
      * @var array
      */
-    const LEVELS = [
+    public const LEVELS = [
         'ERROR',
         'WARNING',
         'NOTICE',
         'INFO'
     ];
 
-    /**
-     * Debug log file name.
-     * @var string
-     */
-    const DEBUG_LOG_FILE = WP_CONTENT_DIR . '/log/wp-debug.log';
+  
 
     /**
      * Debug error levels.
      * @var array
      */
-    const DEBUG_LEVELS = [
+    public const DEBUG_LEVELS = [
         'FATAL',
         'WARNING',
         'NOTICE',
