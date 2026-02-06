@@ -2,9 +2,9 @@
 
 /*
 Plugin Name:        RRZE Log
-Plugin URI:         https://gitlab.rrze.fau.de/rrze-webteam/rrze-log
+Plugin URI:         https://github.com/RRZE-Webteam/rrze-log
 Description:        The plugin allows you to log certain actions of the plugins and themes in a log file, which are or may be necessary for further investigations.
-Version:            2.7.2
+Version:            2.7.4
 Author:             RRZE Webteam
 Author URI:         https://www.wp.rrze.fau.de/
 License:            GNU General Public License Version 3
@@ -12,7 +12,7 @@ License URI:        https://www.gnu.org/licenses/gpl-3.0.html
 Text Domain:        rrze-log
 Domain Path:        /languages
 Requires at least:  6.8
-Requires PHP:       8.2
+Requires PHP:       8.4
 */
 
 namespace RRZE\Log;

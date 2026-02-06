@@ -10,7 +10,7 @@ use WP_List_Table;
  * AuditListTable
  *
  * List table for the admin audit log.
- * Shows action + actor + object to make entries useful for operations.
+ * Shows action + user + role + object and a compact timestamp.
  */
 class AuditListTable extends WP_List_Table {
 
@@ -42,10 +42,11 @@ class AuditListTable extends WP_List_Table {
     public function get_columns() {
         $columns = [
             'action' => __('Action', 'rrze-log'),
-            'actor' => __('Actor', 'rrze-log'),
+            'user' => __('User', 'rrze-log'),
+            'role' => __('Role', 'rrze-log'),
             'object' => __('Object', 'rrze-log'),
             'message' => __('Message', 'rrze-log'),
-            'datetime' => __('Date', 'rrze-log'),
+            'time' => __('Time', 'rrze-log'),
             'siteurl' => __('Website', 'rrze-log'),
         ];
 
@@ -71,16 +72,18 @@ class AuditListTable extends WP_List_Table {
         switch ($columnName) {
             case 'action':
                 return esc_html($this->getContextAction($item));
-            case 'actor':
-                return esc_html($this->getContextActor($item));
+            case 'user':
+                return $this->renderUserColumn($item);
+            case 'role':
+                return esc_html($this->getContextRole($item));
             case 'object':
                 return esc_html($this->getContextObject($item));
             case 'siteurl':
                 return esc_html($item['siteurl'] ?? '');
             case 'message':
                 return esc_html($item['message'] ?? '');
-            case 'datetime':
-                return esc_html($item['datetime'] ?? '');
+            case 'time':
+                return esc_html($this->formatTime($item));
             default:
                 return '';
         }
@@ -160,9 +163,9 @@ class AuditListTable extends WP_List_Table {
     }
 
     /**
-     * Formats actor information from context.
+     * Extracts role from context.
      */
-    protected function getContextActor(array $item): string {
+    protected function getContextRole(array $item): string {
         $context = $this->getContext($item);
 
         if (!isset($context['actor']) || !is_array($context['actor'])) {
@@ -170,24 +173,9 @@ class AuditListTable extends WP_List_Table {
         }
 
         $actor = $context['actor'];
+        $role = isset($actor['role']) ? (string) $actor['role'] : '';
 
-        $login = isset($actor['login']) ? (string) $actor['login'] : '';
-        $id = isset($actor['id']) ? (int) $actor['id'] : 0;
-        $isSuper = !empty($actor['is_super_admin']) ? 1 : 0;
-
-        $parts = [];
-
-        if ($login !== '') {
-            $parts[] = $login;
-        }
-        if ($id > 0) {
-            $parts[] = '#' . $id;
-        }
-        if ($isSuper) {
-            $parts[] = 'SA';
-        }
-
-        return implode(' ', $parts);
+        return $role !== '' ? strtoupper($role) : '';
     }
 
     /**
@@ -219,6 +207,14 @@ class AuditListTable extends WP_List_Table {
             $parts[] = '(' . (string) $obj['post_type'] . ')';
         }
 
+        if (isset($obj['stylesheet']) && $obj['stylesheet'] !== '') {
+            $parts[] = (string) $obj['stylesheet'];
+        }
+
+        if (isset($obj['plugin']) && $obj['plugin'] !== '') {
+            $parts[] = (string) $obj['plugin'];
+        }
+
         if (isset($obj['login']) && $obj['login'] !== '') {
             $parts[] = (string) $obj['login'];
         }
@@ -229,6 +225,10 @@ class AuditListTable extends WP_List_Table {
                 $title = mb_substr($title, 0, 80) . '...';
             }
             $parts[] = '"' . $title . '"';
+        }
+
+        if (isset($obj['name']) && $obj['name'] !== '') {
+            $parts[] = '"' . (string) $obj['name'] . '"';
         }
 
         return implode(' ', $parts);
@@ -243,5 +243,54 @@ class AuditListTable extends WP_List_Table {
         }
 
         return $item['context'];
+    }
+
+    /**
+     * Renders the "User" column and includes last-login as a tooltip if present.
+     *
+     * User format: login (id)
+     */
+   protected function renderUserColumn(array $item): string {
+       $context = $this->getContext($item);
+
+       if (!isset($context['actor']) || !is_array($context['actor'])) {
+           return '';
+       }
+
+       $actor = $context['actor'];
+
+       $login = isset($actor['login']) ? (string) $actor['login'] : '';
+       $id = isset($actor['id']) ? (int) $actor['id'] : 0;
+
+       $label = $login !== '' ? $login : '';
+       if ($id > 0) {
+           $label .= ' (' . $id . ')';
+       }
+
+       $label = trim($label);
+       if ($label === '') {
+           return '';
+       }
+
+       return esc_html($label);
+   }
+
+
+    /**
+     * Formats the time column as "YYYY-MM-DD HH:MM:SS".
+     * Uses the already stored datetime string if possible; falls back to parsing.
+     */
+    protected function formatTime(array $item): string {
+        $dt = isset($item['datetime']) ? (string) $item['datetime'] : '';
+        if ($dt === '') {
+            return '';
+        }
+
+        $ts = strtotime($dt);
+        if ($ts === false) {
+            return $dt;
+        }
+
+        return gmdate('Y-m-d H:i:s', $ts);
     }
 }
