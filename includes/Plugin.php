@@ -12,8 +12,7 @@ defined('ABSPATH') || exit;
  * 
  * @package RRZE\PrivateSite
  */
-class Plugin
-{
+class Plugin {
     /**
      * The full path and filename of the plugin
      * 

@@ -8,8 +8,7 @@ namespace RRZE\Log\REST;
  * Detects and optionally guards against stray output (e.g., <p></p>)
  * during WordPress REST requests, which can break JSON responses.
  */
-class StrayOutputSniffer
-{
+class StrayOutputSniffer {
     /** @var bool */
     protected $enabled = true;
 
@@ -36,8 +35,7 @@ class StrayOutputSniffer
      *   @type callable|null $logger function(string $message): void
      * }
      */
-    public function __construct(array $args = [])
-    {
+    public function __construct(array $args = [])  {
         $this->enabled = isset($args['enabled']) ? (bool) $args['enabled'] : true;
         $this->guard   = isset($args['guard'])   ? (bool) $args['guard']   : true;
         $this->site    = isset($args['site'])    ? (int)  $args['site']    : 0;
@@ -57,8 +55,7 @@ class StrayOutputSniffer
     }
 
     /** Initialize hooks */
-    public function boot(): void
-    {
+    public function boot(): void  {
         if (!$this->enabled) {
             return;
         }
@@ -101,8 +98,7 @@ class StrayOutputSniffer
     }
 
     /** Output buffer callback: inspect but return unchanged */
-    public function inspectBuffer(string $buffer): string
-    {
+    public function inspectBuffer(string $buffer): string  {
         $trim = trim($buffer);
 
         // Consider "stray output" if it's empty HTML like repeated <p></p>, <br>, empty <div>, etc.
@@ -123,8 +119,7 @@ class StrayOutputSniffer
     }
 
     /** Drop all buffers opened after our start level (clean, never flush) */
-    protected function dropAllBuffers(): void
-    {
+    protected function dropAllBuffers(): void  {
         if ($this->obLevelStart === null) {
             // Fallback: drain everything if we didn't record a start level
             while (ob_get_level() > 0) {
@@ -138,14 +133,12 @@ class StrayOutputSniffer
     }
 
     /** Is this request a REST request? */
-    protected function isRest(): bool
-    {
+    protected function isRest(): bool  {
         return (defined('REST_REQUEST') && REST_REQUEST) && !defined('WP_CLI');
     }
 
     /** Log via provided logger */
-    protected function log(string $message): void
-    {
+    protected function log(string $message): void  {
         try {
             ($this->logger)($message);
         } catch (\Throwable $e) {

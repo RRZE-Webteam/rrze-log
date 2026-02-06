@@ -6,6 +6,7 @@ defined('ABSPATH') || exit;
 
 use RRZE\Log\File\Flock;
 use RRZE\Log\File\FlockException;
+use RRZE\Log\REST\StrayOutputSniffer;
 
 class Logger {
     protected object $options;
@@ -138,4 +139,36 @@ class Logger {
         $dt = \DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', $t)) ?: new \DateTimeImmutable('now');
         return $dt->format('Y-m-d H:i:s.uP');
     }
+    
+    /**
+    * Attach the StrayOutputSniffer to REST requests.
+    *
+    * @param int  $site  Limit to specific blog_id (0 = all sites)
+    * @param bool $guard If true, stray output is cleaned to avoid broken JSON
+    */
+   public static function attachRestSniffer(int $site = 0, bool $guard = true): void {
+       $logger = new self();
+       $logger->loaded();
+
+       $sniffer = new StrayOutputSniffer([
+           'enabled' => true,
+           'guard' => $guard,
+           'site' => $site,
+           'logger' => [$logger, 'logRestStrayOutput'],
+       ]);
+
+       $sniffer->boot();
+   }
+
+   /**
+    * Callback for StrayOutputSniffer: writes a warning entry.
+    *
+    * @param string $message
+    */
+   public function logRestStrayOutput(string $message): void {
+       $this->warning('REST stray output detected', [
+           'detail' => $message,
+       ]);
+   }
+
 }

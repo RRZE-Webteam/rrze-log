@@ -64,8 +64,7 @@ add_filter('rrze.log.get', __NAMESPACE__ . '\Utils::getLogs');
  * @param bool $networkWide Indicates if the plugin is activated network-wide.
  * @return void
  */
-function activation($networkWide)
-{
+function activation($networkWide) {
     // Nothing to do here for activation.
 }
 
@@ -76,8 +75,7 @@ function activation($networkWide)
  * 
  * @return void
  */
-function deactivation()
-{
+function deactivation() {
     Cron::unschedule();
 }
 
@@ -88,8 +86,7 @@ function deactivation()
  *
  * @return Plugin The main instance of the Plugin class.
  */
-function plugin(): Plugin
-{
+function plugin(): Plugin {
     // Declare a static variable to hold the instance.
     static $instance;
 
@@ -108,8 +105,7 @@ function plugin(): Plugin
  * 
  * @return void
  */
-function loadTextDomain()
-{
+function loadTextDomain() {
     load_plugin_textdomain('rrze-log', false, dirname(plugin_basename(__FILE__)) . '/languages');
 }
 
@@ -121,8 +117,7 @@ function loadTextDomain()
  *
  * @return string An error message string if requirements are not met, or an empty string if requirements are satisfied.
  */
-function systemRequirements(): string
-{
+function systemRequirements(): string {
     // Initialize an error message string.
     $error = '';
 
@@ -156,8 +151,7 @@ function systemRequirements(): string
  * This function is responsible for initializing the plugin, loading text domains for localization,
  * checking system requirements, and displaying error notices if necessary.
  */
-function loaded()
-{
+function loaded() {
     // Load the plugin text domain for translations.
     loadTextDomain();
 
