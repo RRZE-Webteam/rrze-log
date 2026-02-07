@@ -1,0 +1,1 @@
+"use strict";(()=>{function n(o){var r=o.currentTarget,t=jQuery(r).closest("tr.data"),a=t.next("tr.metadata");if(a.length!==0){var e=t.hasClass("is-open");t.toggleClass("is-open",!e),a.toggleClass("is-open",!e),r.setAttribute("aria-expanded",e?"false":"true")}}function s(){jQuery("table.wp-list-table").on("click","button.rrze-log-toggle",n)}jQuery(document).ready(s);})();

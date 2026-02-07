@@ -93,17 +93,17 @@ class ListTable extends WP_List_Table
         $item['context']['detail'] = nl2br($safe);
 
         echo '<tr class="data">';
-        $this->single_row_columns($item);
+        $this->single_row_columns($item);        
+        echo '<td class="column-toggle"><button type="button" class="rrze-log-toggle" aria-expanded="false" aria-label="Details anzeigen"> ▸ </button></td>';        
         echo '</tr>';
-        printf('<tr class="metadata metadata-hidden"> <td colspan=%d>', count($this->get_columns()));
+        
+        printf('<tr class="metadata"> <td colspan=%d>', count($this->get_columns()));
         $item['datetime'] = get_date_from_gmt($item['datetime'], __('Y/m/d') . ' G:i:s');
         print_r($item);
         echo '</td> </tr>';
-        echo '<tr class="hidden"> </tr>';
     }
 
-    public function prepare_items()
-    {
+    public function prepare_items()  {
         $s = $_REQUEST['s'] ?? '';
         $level = $_REQUEST['level'] ?? '';
         $logFile = $_REQUEST['logfile'] ?? '';

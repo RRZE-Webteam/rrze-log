@@ -1,52 +1,56 @@
-.wp-list-table {
-    tr.data {
-        td.column-message {
-            cursor: pointer;
+/* RRZE Log – List Table */
 
-            &:hover {
-                text-decoration: underline;
-            }
+table.wp-list-table {
+
+    tr.data {
+        &:hover td {
+            background: rgba(0, 0, 0, 0.04);
         }
+    }
+
+    tr.data:nth-of-type(even) td {
+        background: rgba(0, 0, 0, 0.02);
+    }
+
+    td.column-toggle {
+        width: 32px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    td.column-message {
+              cursor: pointer;
+
+              &:hover {
+                  text-decoration: underline;
+              }
+    }
+    .rrze-log-toggle {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        padding: 0;
     }
 
     tr.metadata {
         display: none;
-
-        td {
-            white-space: pre-wrap;
-            font-family: monospace;
-            font-size: 12px;
-            line-height: 1.4em;
-        }
-
-        &.metadata-hidden {
-            display: none;
-        }
-
-        &.is-open {
-            display: table-row;
-        }
-    }
-
-    th,
-    td {
-        &.column-level {
-            width: 11%;
-        }
-        &.column-message {
-            width: 54%;
-        }
-        &.column-datetime {
-            width: 14%;
-
-            span[title] {
-                -webkit-text-decoration: dotted underline;
-                text-decoration: dotted underline;
+         td {
+                white-space: pre-wrap;
+                font-family: monospace;
+                font-size: 12px;
+                line-height: 1.4em;
             }
-        }
+        &.is-open {
+          display: table-row;
+        } 
     }
 
-    .hidden {
-        display: none !important;
+    tr.data.is-open {
+      .rrze-log-toggle {
+        transform: rotate(90deg);
+      }
     }
 }
+
+

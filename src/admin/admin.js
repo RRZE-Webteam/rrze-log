@@ -1,13 +1,28 @@
 "use strict";
-jQuery(function ($) {
-    const $listTable = $("table.wp-list-table");
 
-    $listTable.on("click", "tr.data td.column-message", function () {
-        const $row = $(this).closest("tr.data");
-        const $metaRow = $row.next("tr.metadata");
+function rrzeLogToggleMetadata(e) {
+    var button = e.currentTarget;
+    var row = jQuery(button).closest("tr.data");
+    var metaRow = row.next("tr.metadata");
 
-        $("tr.metadata").not($metaRow).hide().addClass("metadata-hidden");
+    if (metaRow.length === 0) {
+        return;
+    }
 
-        $metaRow.toggle().toggleClass("metadata-hidden");
-    });
-});
+    var isOpen = row.hasClass("is-open");
+
+    row.toggleClass("is-open", !isOpen);
+    metaRow.toggleClass("is-open", !isOpen);
+
+    button.setAttribute("aria-expanded", isOpen ? "false" : "true");
+}
+
+function rrzeLogInit() {
+    jQuery("table.wp-list-table").on(
+        "click",
+        "button.rrze-log-toggle",
+        rrzeLogToggleMetadata
+    );
+}
+
+jQuery(document).ready(rrzeLogInit);

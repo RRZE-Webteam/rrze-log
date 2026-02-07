@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../src/admin/admin.js"],
+  "sourcesContent": ["\"use strict\";\r\n\r\nfunction rrzeLogToggleMetadata(e) {\r\n    var button = e.currentTarget;\r\n    var row = jQuery(button).closest(\"tr.data\");\r\n    var metaRow = row.next(\"tr.metadata\");\r\n\r\n    if (metaRow.length === 0) {\r\n        return;\r\n    }\r\n\r\n    var isOpen = row.hasClass(\"is-open\");\r\n\r\n    row.toggleClass(\"is-open\", !isOpen);\r\n    metaRow.toggleClass(\"is-open\", !isOpen);\r\n\r\n    button.setAttribute(\"aria-expanded\", isOpen ? \"false\" : \"true\");\r\n}\r\n\r\nfunction rrzeLogInit() {\r\n    jQuery(\"table.wp-list-table\").on(\r\n        \"click\",\r\n        \"button.rrze-log-toggle\",\r\n        rrzeLogToggleMetadata\r\n    );\r\n}\r\n\r\njQuery(document).ready(rrzeLogInit);\r\n"],
+  "mappings": ";;;AAEA,WAAS,sBAAsB,GAAG;AAC9B,QAAI,SAAS,EAAE;AACf,QAAI,MAAM,OAAO,MAAM,EAAE,QAAQ,SAAS;AAC1C,QAAI,UAAU,IAAI,KAAK,aAAa;AAEpC,QAAI,QAAQ,WAAW,GAAG;AACtB;AAAA,IACJ;AAEA,QAAI,SAAS,IAAI,SAAS,SAAS;AAEnC,QAAI,YAAY,WAAW,CAAC,MAAM;AAClC,YAAQ,YAAY,WAAW,CAAC,MAAM;AAEtC,WAAO,aAAa,iBAAiB,SAAS,UAAU,MAAM;AAAA,EAClE;AAEA,WAAS,cAAc;AACnB,WAAO,qBAAqB,EAAE;AAAA,MAC1B;AAAA,MACA;AAAA,MACA;AAAA,IACJ;AAAA,EACJ;AAEA,SAAO,QAAQ,EAAE,MAAM,WAAW;",
+  "names": []
+}

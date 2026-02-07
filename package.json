@@ -1,6 +1,6 @@
 {
   "name": "RRZE Log",
-  "version": "2.7.4-1",
+  "version": "2.7.5",
   "description": "The plugin allows you to log certain actions of the plugins and themes in a log file, which are or may be necessary for further investigations.",
   "main": "rrze-log.php",
   "textdomain": "rrze-log",
@@ -27,18 +27,10 @@
     "node": ">=24.5.0",
     "npm": ">=11.5.1"
   },
-  "browserslist": [
-    "extends @wordpress/browserslist-config"
-  ],
   "scripts": {
-    "start": "wp-scripts start",
-    "build": "wp-scripts build && npm run build:meta:prod",
-    "dev": "wp-scripts build && npm run build:meta:dev",
-    "format": "wp-scripts format src",
-    "lint:js": "wp-scripts lint-js src",
-    "check-engines": "wp-scripts check-engines",
-    "check-licenses": "wp-scripts check-licenses --prod --gpl3",
-    "packages-update": "wp-scripts packages-update",
+    "build:dev": "node scripts/build-assets.js dev && npm run build:meta:dev",
+    "build:prod": "node scripts/build-assets.js prod && npm run build:meta:prod",
+    "watch": "node scripts/build-assets.js dev --watch",
     "build:readme": "node scripts/build-readme.js",
     "bump:dev": "node scripts/bump-version.js dev",
     "bump:prod": "node scripts/bump-version.js prod",
@@ -46,6 +38,7 @@
     "build:meta:prod": "npm run bump:prod && npm run build:readme"
   },
   "devDependencies": {
-    "@wordpress/scripts": "^19.2.4"
+    "esbuild": "^0.25.0",
+    "sass": "^1.89.0"
   }
 }

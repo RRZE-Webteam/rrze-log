@@ -208,20 +208,21 @@ class Main {
             return;
         }
 
-        $assetFile = include(plugin()->getPath('build') . 'admin.asset.php');
+        $version = plugin()->getVersion();
 
         wp_register_style(
             'rrze-log-list-table',
-            plugins_url('build/admin.css', plugin()->getBasename()),
+            plugins_url('assets/css/rrze-log.css', plugin()->getBasename()),
             [],
-            $assetFile['version'] ?? plugin()->getVersion()
+            $version
         );
 
         wp_register_script(
             'rrze-log-list-table',
-            plugins_url('build/admin.js', plugin()->getBasename()),
-            $assetFile['dependencies'],
-            $assetFile['version'] ?? plugin()->getVersion()
+            plugins_url('assets/js/rrze-log.js', plugin()->getBasename()),
+            ['jquery'],
+            $version,
+            true
         );
     }
 }
