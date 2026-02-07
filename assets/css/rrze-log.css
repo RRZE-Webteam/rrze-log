@@ -14,12 +14,6 @@ table.wp-list-table td.column-toggle {
   text-align: center;
   vertical-align: middle;
 }
-table.wp-list-table td.column-message {
-  cursor: pointer;
-}
-table.wp-list-table td.column-message:hover {
-  text-decoration: underline;
-}
 table.wp-list-table .rrze-log-toggle {
   background: none;
   border: none;
