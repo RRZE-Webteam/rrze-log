@@ -1,7 +1,7 @@
 /* RRZE Log – List Table */
 
 table.wp-list-table {
-
+    table-layout: auto;
     tr.data {
         &:hover td {
             background: rgba(0, 0, 0, 0.04);

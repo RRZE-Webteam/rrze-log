@@ -22,8 +22,7 @@ class DebugListTable extends WP_List_Table
      * Constructor
      * @return void
      */
-    public function __construct()
-    {
+    public function __construct()  {
         global $status, $page;
 
         $this->options = Options::getOptions();
@@ -36,8 +35,7 @@ class DebugListTable extends WP_List_Table
         ]);
     }
 
-    public function column_default($item, $columnName)
-    {
+    public function column_default($item, $columnName)  {
         return isset($item[$columnName]) ? $item[$columnName] : '';
     }
 
@@ -75,12 +73,12 @@ class DebugListTable extends WP_List_Table
         return esc_html($excerpt);
     }
 
-    public function get_columns()
-    {
+    public function get_columns()  {
         $columns = [
             'level' => __('Error level', 'rrze-log'),
             'message' => __('Message', 'rrze-log'),
-            'datetime' => __('Date', 'rrze-log')
+            'datetime' => __('Date', 'rrze-log'),
+            'toggle'  => __('Details', 'rrze-log')
         ];
         if (!is_network_admin() && $this->options->adminMenu) {
             unset($columns['siteurl']);
@@ -88,25 +86,24 @@ class DebugListTable extends WP_List_Table
         return $columns;
     }
 
-    public function single_row($item)
-    {
+    public function single_row($item)   {
         $message = $item['message'] ?? '';
         $safe = esc_html($message);
         $safe = preg_replace('/[ \t]+/', ' ', $safe);
         $item['message'] = nl2br($safe);
-
+        $item['toggle'] ='<button type="button" class="rrze-log-toggle" aria-expanded="false" aria-label="Details anzeigen"> ▸ </button>';  
         echo '<tr class="data">';
         $this->single_row_columns($item);
+
+
         echo '</tr>';
         printf('<tr class="metadata metadata-hidden"> <td colspan=%d>', count($this->get_columns()));
         $item['datetime'] = get_date_from_gmt($item['datetime'], __('Y/m/d') . ' G:i:s');
         print_r($item);
         echo '</td> </tr>';
-        echo '<tr class="hidden"> </tr>';
     }
 
-    public function prepare_items()
-    {
+    public function prepare_items()    {
         $s = $_REQUEST['s'] ?? '';
         $level = $_REQUEST['level'] ?? '';
 

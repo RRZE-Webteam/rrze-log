@@ -9,8 +9,7 @@ use WP_List_Table;
 /**
  * List Table
  */
-class ListTable extends WP_List_Table
-{
+class ListTable extends WP_List_Table {
     /**
      * Options values.
      * @var object
@@ -34,8 +33,7 @@ class ListTable extends WP_List_Table
         ]);
     }
 
-    public function column_default($item, $columnName)
-    {
+    public function column_default($item, $columnName)  {
         switch ($columnName) {
             case 'siteurl':
                 return isset($item[$columnName]) ? parse_url($item[$columnName], PHP_URL_HOST) . parse_url($item[$columnName], PHP_URL_PATH) : '';
@@ -44,13 +42,11 @@ class ListTable extends WP_List_Table
         }
     }
 
-    public function column_siteurl($item)
-    {
+    public function column_siteurl($item)  {
         return untrailingslashit($item['siteurl']);
     }
 
-    public function column_datetime($item)
-    {
+    public function column_datetime($item)  {
         return sprintf(
             '<span title="%1$s">%2$s</span>',
             gmdate('Y/m/d G:i:s \U\T\C', strtotime($item['datetime'])),
@@ -71,13 +67,13 @@ class ListTable extends WP_List_Table
         return esc_html($excerpt);
     }
 
-    public function get_columns()
-    {
+    public function get_columns()  {
         $columns = [
             'level' => __('Error level', 'rrze-log'),
             'siteurl' => __('Website', 'rrze-log'),
             'message' => __('Message', 'rrze-log'),
-            'datetime' => __('Date', 'rrze-log')
+            'datetime' => __('Date', 'rrze-log'),
+            'toggle'  => __('Details', 'rrze-log')
         ];
         if (!is_network_admin() && $this->options->adminMenu) {
             unset($columns['siteurl']);
@@ -85,16 +81,14 @@ class ListTable extends WP_List_Table
         return $columns;
     }
 
-    public function single_row($item)
-    {
+    public function single_row($item) {
         $detail = $item['context']['detail'] ?? '';
         $safe = esc_html($detail);
         $safe = preg_replace('/[ \t]+/', ' ', $safe);
         $item['context']['detail'] = nl2br($safe);
-
+        $item['toggle'] ='<button type="button" class="rrze-log-toggle" aria-expanded="false" aria-label="Details anzeigen"> ▸ </button>';  
         echo '<tr class="data">';
         $this->single_row_columns($item);        
-        echo '<td class="column-toggle"><button type="button" class="rrze-log-toggle" aria-expanded="false" aria-label="Details anzeigen"> ▸ </button></td>';        
         echo '</tr>';
         
         printf('<tr class="metadata"> <td colspan=%d>', count($this->get_columns()));
@@ -136,8 +130,7 @@ class ListTable extends WP_List_Table
         );
     }
 
-    protected function extra_tablenav($which)
-    {
+    protected function extra_tablenav($which)  {
 ?>
         <div class="alignleft actions">
             <?php
@@ -160,8 +153,7 @@ class ListTable extends WP_List_Table
     /**
      * Dropdown with error levels.
      */
-    protected function levelsDropdown()
-    {
+    protected function levelsDropdown()   {
         $levelFilter = isset($_REQUEST['level']) ? $_REQUEST['level'] : ''; ?>
         <select id="levels-filter" name="level">
             <option value=""><?php _e('All error levels', 'rrze-log'); ?></option>
