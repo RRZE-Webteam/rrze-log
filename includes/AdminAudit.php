@@ -15,20 +15,6 @@ defined('ABSPATH') || exit;
 class AdminAudit {
 
     /**
-     * User meta key for last login timestamp.
-     */
-    private const META_LAST_LOGIN = 'rrze_log_last_login';
-
-    /**
-     * Roles for which last login should be included in the actor context.
-     */
-    private const LAST_LOGIN_ROLES = [
-        'superadmin' => true,
-        'administrator' => true,
-        'editor' => true,
-    ];
-
-    /**
      * Logger instance used for audit logging.
      */
     private Logger $logger;
@@ -39,7 +25,7 @@ class AdminAudit {
      */
     private const ACTIONS = [
         'auth.login' => true,
-        
+
         'posts.create' => true,
         'posts.update' => true,
         'posts.delete' => true,
@@ -65,6 +51,50 @@ class AdminAudit {
 
         'settings.updated_option' => true,
         'settings.updated_site_option' => true,
+    ];
+
+    /**
+     * Type slugs and labels.
+     * Used for output and later for filtering/Settings.
+     */
+    private const TYPES = [
+        'cms' => 'CMS-Administration',
+        'site' => 'Website-Administration',
+        'editorial' => 'Redaktion',
+    ];
+
+    /**
+     * Action-to-type base mapping.
+     * Some actions are refined at runtime (plugins.* + auth.login).
+     */
+    private const ACTION_TYPES = [
+        'posts.create' => 'editorial',
+        'posts.update' => 'editorial',
+        'posts.delete' => 'editorial',
+
+        'media.create' => 'editorial',
+        'media.update' => 'editorial',
+        'media.delete' => 'editorial',
+
+        'users.create' => 'site',
+        'users.update' => 'site',
+
+        'theme.customizer_save' => 'site',
+        'theme.site_editor_change' => 'site',
+
+        'themes.activate' => 'site',
+        'themes.deactivate' => 'site',
+        'themes.install' => 'cms',
+        'themes.delete' => 'cms',
+
+        'settings.updated_option' => 'site',
+        'settings.updated_site_option' => 'cms',
+
+        'plugins.activate' => 'site',
+        'plugins.deactivate' => 'site',
+        'plugins.delete' => 'site',
+
+        'auth.login' => 'site',
     ];
 
     /**
@@ -139,29 +169,28 @@ class AdminAudit {
     }
 
     /**
-    * Logs login events for superadmin/administrator/editor.
-    */
-   public function onWpLogin(string $userLogin, \WP_User $user): void {
-       if (!$user || empty($user->ID)) {
-           return;
-       }
+     * Logs login events for superadmin/administrator/editor.
+     * Ensures the actor is taken from $user (wp_get_current_user() may not be ready yet).
+     */
+    public function onWpLogin(string $userLogin, \WP_User $user): void {
+        if (!$user || empty($user->ID)) {
+            return;
+        }
 
-       $role = $this->getPrimaryRoleForUser($user);
+        $role = $this->getPrimaryRoleForUser($user);
 
-       if (!$this->shouldLogLoginForRole($role)) {
-           return;
-       }
+        if (!$this->shouldLogLoginForRole($role)) {
+            return;
+        }
 
-       $this->logIfEnabled('auth.login', 'User logged in', [
-           'object' => [
-               'type' => 'auth',
-               'event' => 'login',
-           ],
-           'login' => (string) $userLogin,
-           'user_id' => (int) $user->ID,
-       ]);
-   }
-
+        $this->logIfEnabled('auth.login', 'User logged in', [
+            'actor' => $this->buildActorContextFromUser($user, $role),
+            'object' => [
+                'type' => 'auth',
+                'event' => 'login',
+            ],
+        ]);
+    }
 
     /**
      * Handles creation and updates of posts, pages and site editor entities.
@@ -468,8 +497,7 @@ class AdminAudit {
     }
 
     /**
-     * Handles theme installation (and updates) via upgrader.
-     * We only log installations here; updates can be added later if desired.
+     * Handles theme installation via upgrader.
      */
     public function onUpgraderProcessComplete($upgrader, array $hookExtra): void {
         if (!$this->isAllowedActorForThemes()) {
@@ -536,7 +564,7 @@ class AdminAudit {
     }
 
     /**
-     * Writes an audit log entry if the given action is enabled.
+     * Writes an audit log entry if the given action is enabled and its type is enabled.
      */
     private function logIfEnabled(string $action, string $message, array $context): void {
         $actions = apply_filters('rrze_log/audit_actions', self::ACTIONS);
@@ -546,9 +574,120 @@ class AdminAudit {
         }
 
         $context['action'] = $action;
-        $context['actor'] = $this->buildActorContext();
+
+        if (!isset($context['actor']) || !is_array($context['actor'])) {
+            $context['actor'] = $this->buildActorContext();
+        }
+
+        $type = $this->getAuditTypeForAction($action, $context);
+        if ($type === '') {
+            return;
+        }
+
+        if (!$this->isAuditTypeEnabled($type)) {
+            return;
+        }
+
+        $context['audit_type'] = $type;
+        $context['audit_type_label'] = $this->getAuditTypeLabel($type);
 
         $this->logger->audit($message, $context);
+    }
+
+    /**
+     * Returns the audit type slug for an action, with runtime refinements.
+     */
+    private function getAuditTypeForAction(string $action, array $context): string {
+        $base = isset(self::ACTION_TYPES[$action]) ? (string) self::ACTION_TYPES[$action] : '';
+        if ($base === '') {
+            return '';
+        }
+
+        if (strpos($action, 'plugins.') === 0) {
+            $networkWide = $this->getNetworkWideFlagFromContext($context);
+            return $networkWide ? 'cms' : 'site';
+        }
+
+        if ($action === 'auth.login') {
+            $actorRole = $this->getActorRoleFromContext($context);
+            return $actorRole === 'superadmin' ? 'cms' : 'site';
+        }
+
+        return $base;
+    }
+
+    /**
+     * Returns whether a given audit type is enabled.
+     * Default: all types enabled. Can be controlled later via Settings and/or filter.
+     */
+    private function isAuditTypeEnabled(string $type): bool {
+        $enabled = $this->getEnabledAuditTypes();
+        return isset($enabled[$type]) && $enabled[$type];
+    }
+
+    /**
+     * Returns enabled audit types as a map.
+     * Reads from plugin options (superadmin-controlled).
+     */
+    private function getEnabledAuditTypes(): array {
+        $options = Options::getOptions();
+
+        $types = isset($options->auditTypes) && is_array($options->auditTypes)
+            ? $options->auditTypes
+            : [];
+
+        $enabled = [
+            'cms' => !empty($types['cms']) ? true : false,
+            'site' => !empty($types['site']) ? true : false,
+            'editorial' => !empty($types['editorial']) ? true : false,
+        ];
+
+        return $enabled;
+    }
+
+
+    /**
+     * Returns the label for an audit type slug.
+     */
+    private function getAuditTypeLabel(string $type): string {
+        if (!isset(self::TYPES[$type])) {
+            return $type;
+        }
+
+        return (string) self::TYPES[$type];
+    }
+
+    /**
+     * Extracts a network_wide flag from the context object if present.
+     */
+    private function getNetworkWideFlagFromContext(array $context): bool {
+        if (!isset($context['object']) || !is_array($context['object'])) {
+            return false;
+        }
+
+        $obj = $context['object'];
+
+        if (!isset($obj['network_wide'])) {
+            return false;
+        }
+
+        return (int) $obj['network_wide'] === 1;
+    }
+
+    /**
+     * Extracts the actor role from context.
+     */
+    private function getActorRoleFromContext(array $context): string {
+        if (!isset($context['actor']) || !is_array($context['actor'])) {
+            return '';
+        }
+
+        $actor = $context['actor'];
+        if (!isset($actor['role'])) {
+            return '';
+        }
+
+        return (string) $actor['role'];
     }
 
     /**
@@ -660,18 +799,69 @@ class AdminAudit {
     }
 
     /**
+     * Returns the primary role for a user; superadmin is handled explicitly.
+     */
+    private function getPrimaryRoleForUser(\WP_User $user): string {
+        if (is_multisite() && is_super_admin((int) $user->ID)) {
+            return 'superadmin';
+        }
+
+        $roles = array_values((array) $user->roles);
+        return !empty($roles[0]) ? (string) $roles[0] : '';
+    }
+
+    /**
+     * Returns true if login events should be logged for this role.
+     */
+    private function shouldLogLoginForRole(string $role): bool {
+        $role = strtolower($role);
+
+        if ($role === 'superadmin') {
+            return true;
+        }
+        if ($role === 'administrator') {
+            return true;
+        }
+        if ($role === 'editor') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Builds actor context from a given WP_User instance.
+     * Needed for wp_login where wp_get_current_user() may not be ready yet.
+     */
+    private function buildActorContextFromUser(\WP_User $user, string $role): array {
+        $roles = array_values((array) $user->roles);
+
+        return [
+            'id' => (int) $user->ID,
+            'login' => (string) $user->user_login,
+            'display_name' => (string) $user->display_name,
+            'role' => $role !== '' ? $role : (!empty($roles[0]) ? (string) $roles[0] : ''),
+            'roles' => $roles,
+            'ip' => $this->getRemoteIp(),
+            'user_agent' => $this->getUserAgent(),
+        ];
+    }
+
+    /**
      * Builds a structured context describing the acting user.
-     * Adds last_login for superadmin/administrator/editor.
+     * Stores a single role string; superadmins are labeled "superadmin".
      */
     private function buildActorContext(): array {
         $user = wp_get_current_user();
         $roles = array_values((array) $user->roles);
 
         $role = '';
-        if (is_multisite() && is_super_admin()) {
+        if (is_multisite() && is_super_admin((int) $user->ID)) {
             $role = 'superadmin';
         } elseif (!empty($roles[0])) {
             $role = (string) $roles[0];
+        } else {
+            $role = 'unknown';
         }
 
         return [
@@ -683,29 +873,6 @@ class AdminAudit {
             'ip' => $this->getRemoteIp(),
             'user_agent' => $this->getUserAgent(),
         ];
-    }
-
-
-    /**
-     * Returns true if last login should be included for a given role.
-     */
-    private function shouldIncludeLastLogin(string $role): bool {
-        $role = strtolower($role);
-        return isset(self::LAST_LOGIN_ROLES[$role]) && self::LAST_LOGIN_ROLES[$role];
-    }
-
-    /**
-     * Reads last login timestamp from user meta.
-     */
-    private function getLastLoginTimestamp(int $userId): int {
-        $val = get_user_meta($userId, self::META_LAST_LOGIN, true);
-
-        if (is_numeric($val)) {
-            $ts = (int) $val;
-            return $ts > 0 ? $ts : 0;
-        }
-
-        return 0;
     }
 
     /**
@@ -752,9 +919,6 @@ class AdminAudit {
 
     /**
      * Builds a structured representation of a plugin.
-     *
-     * @param string    $plugin       Plugin main file, e.g. hello-dolly/hello.php
-     * @param bool|null $networkWide  true/false when provided, null if unknown
      */
     private function buildPluginObject(string $plugin, $networkWide): array {
         $data = $this->getPluginDataSafe($plugin);
@@ -932,36 +1096,4 @@ class AdminAudit {
 
         return $ua;
     }
-    
-    /**
-    * Returns the primary role for a user; superadmin is handled separately.
-    */
-   private function getPrimaryRoleForUser(\WP_User $user): string {
-       if (is_multisite() && is_super_admin($user->ID)) {
-           return 'superadmin';
-       }
-
-       $roles = array_values((array) $user->roles);
-       return !empty($roles[0]) ? (string) $roles[0] : '';
-   }
-
-   /**
-    * Returns true if login events should be logged for this role.
-    */
-   private function shouldLogLoginForRole(string $role): bool {
-       $role = strtolower($role);
-
-       if ($role === 'superadmin') {
-           return true;
-       }
-       if ($role === 'administrator') {
-           return true;
-       }
-       if ($role === 'editor') {
-           return true;
-       }
-
-       return false;
-   }
-
 }

@@ -1,6 +1,6 @@
 {
   "name": "RRZE Log",
-  "version": "2.7.5-3",
+  "version": "2.7.5-4",
   "description": "The plugin allows you to log certain actions of the plugins and themes in a log file, which are or may be necessary for further investigations.",
   "main": "rrze-log.php",
   "textdomain": "rrze-log",

@@ -1,99 +1,57 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RRZE\Log;
 
 defined('ABSPATH') || exit;
 
-class Settings {
-    /**
-     * Option name.
-     * @var string
-     */
-    protected $optionName;
+final class Settings {
 
-    /**
-     * Optiona values.
-     * @var object
-     */
-    protected $options;
+    protected string $optionName;
+    protected object $options;
 
-    /**
-     * WP_List_Table object.
-     * @var object
-     */
     protected $listTable;
-
-    /**
-     * WP_List_Table object.
-     * @var object
-     */
+    protected $auditListTable;
     protected $debugListTable;
-    
-    /**
-    * WP_List_Table object.
-    * @var object
-    */
-   protected $auditListTable;
 
-    /**
-     * List table notice messages.
-     * @var array
-     */
-    protected $messages = [];
+    protected array $messages = [];
+    protected bool $isDebugLog = false;
+    protected string $error = '';
 
-    /**
-     * Is Debug Log set?
-     * @var boolean|object
-     */
-    protected $isDebugLog;
-
-    /**
-     * Error message
-     * @var string
-     */
-    protected $error;
-
-    /**
-     * Constructor
-     * @return void
-     */
     public function __construct() {
         $this->optionName = Options::getOptionName();
         $this->options = Options::getOptions();
     }
 
-    /**
-     * Initiate hooks.
-     * @return void
-     */
-    public function loaded() {
+    public function loaded(): void {
         add_action('network_admin_menu', [$this, 'networkAdminMenu']);
         add_action('network_admin_menu', [$this, 'settingsSection']);
         add_action('network_admin_menu', [$this, 'settingsUpdate']);
 
-        if (is_super_admin() || $this->options->adminMenu) {
+        if (is_super_admin() || !empty($this->options->adminMenu)) {
             add_action('admin_menu', [$this, 'adminSubMenu']);
         }
 
         add_filter('set-screen-option', [$this, 'setScreenOption'], 10, 3);
 
-        $this->isDebugLog = Utils::isDebugLog();
-        if ($this->isDebugLog instanceof \WP_Error && is_wp_error($this->isDebugLog)) {
+        $debug = Utils::isDebugLog();
+        if ($debug instanceof \WP_Error && is_wp_error($debug)) {
             if (is_multisite()) {
                 add_action('network_admin_notices', [$this, 'adminErrorNotice']);
             } else {
                 add_action('admin_notices', [$this, 'adminErrorNotice']);
             }
-            $this->error = $this->isDebugLog->get_error_message();
+
+            $this->error = $debug->get_error_message();
             $this->isDebugLog = false;
+            return;
         }
+
+        $this->isDebugLog = (bool) $debug;
     }
 
-    /**
-     * Admin Notice
-     * @return void
-     */
-    public function adminErrorNotice() {
+    public function adminErrorNotice(): void {
         printf(
             '<div class="%1$s"><p>%2$s</p></div>',
             esc_attr('notice notice-error'),
@@ -101,10 +59,10 @@ class Settings {
         );
     }
 
-    /**
-     * Add network admin menu.
-     */
-    public function networkAdminMenu() {
+    public function networkAdminMenu(): void {
+        // IMPORTANT: always reload options so menu reflects current state.
+        $this->options = Options::getOptions();
+
         $logPage = add_menu_page(
             __('Log', 'rrze-log'),
             __('Log', 'rrze-log'),
@@ -115,20 +73,7 @@ class Settings {
         );
         add_action("load-$logPage", [$this, 'screenOptions']);
 
-        if ($this->isDebugLog && $this->isUserInDebugLogAccess()) {
-            $debugLogPage = add_submenu_page(
-                'rrze-log',
-                __('Debug', 'rrze-log'),
-                __('Debug', 'rrze-log'),
-                'manage_options',
-                'rrze-log-debug',
-                [$this, 'debugLogPage']
-            );
-            add_action("load-$debugLogPage", [$this, 'debugScreenOptions']);
-        }
-        
-        
-        if (!empty($this->options->auditEnabled) && is_super_admin()) {
+        if (is_super_admin() && !empty($this->options->auditEnabled)) {
             $auditPage = add_submenu_page(
                 'rrze-log',
                 __('Audit', 'rrze-log'),
@@ -137,21 +82,35 @@ class Settings {
                 'rrze-log-audit',
                 [$this, 'auditLogPage']
             );
-
             add_action("load-$auditPage", [$this, 'auditScreenOptions']);
+        }
+
+        if ($this->isDebugLog) {
+            $debugLogPage = add_submenu_page(
+                'rrze-log',
+                __('Debug', 'rrze-updater'),
+                __('Debug', 'rrze-updater'),
+                'manage_options',
+                'rrze-log-debug',
+                [$this, 'debugLogPage']
+            );
+            add_action("load-$debugLogPage", [$this, 'debugScreenOptions']);
         }
 
         add_submenu_page(
             'rrze-log',
-            __('Settings', 'rrze-log'),
-            __('Settings', 'rrze-log'),
+            __('Settings', 'rrze-updater'),
+            __('Settings', 'rrze-updater'),
             'manage_options',
             'rrze-log-settings',
             [$this, 'settingsPage']
         );
     }
 
-    public function adminSubMenu() {
+    public function adminSubMenu(): void {
+        // IMPORTANT: always reload options so menu reflects current state.
+        $this->options = Options::getOptions();
+
         $logPage = add_submenu_page(
             'tools.php',
             __('RRZE-Log', 'rrze-log'),
@@ -160,8 +119,19 @@ class Settings {
             'rrze-log',
             [$this, 'logPage']
         );
-
         add_action("load-$logPage", [$this, 'screenOptions']);
+
+        if (is_super_admin() && !empty($this->options->auditEnabled)) {
+            $auditPage = add_submenu_page(
+                'tools.php',
+                __('RRZE-Log Audit', 'rrze-log'),
+                __('RRZE-Log Audit', 'rrze-log'),
+                'manage_options',
+                'rrze-log-audit',
+                [$this, 'auditLogPage']
+            );
+            add_action("load-$auditPage", [$this, 'auditScreenOptions']);
+        }
 
         if ($this->isDebugLog && $this->isUserInDebugLogAccess()) {
             $debugLogPage = add_submenu_page(
@@ -172,30 +142,12 @@ class Settings {
                 'rrze-log-debug',
                 [$this, 'debugLogPage']
             );
-
             add_action("load-$debugLogPage", [$this, 'debugScreenOptions']);
         }
-        if (!empty($this->options->auditEnabled) && is_super_admin()) {
-            $auditPage = add_submenu_page(
-                'tools.php',
-                __('Audit', 'rrze-log'),
-                __('Audit', 'rrze-log'),
-                'manage_options',
-                'rrze-log-audit',
-                [$this, 'auditLogPage']
-            );
-
-            add_action("load-$auditPage", [$this, 'auditScreenOptions']);
-        }
-
     }
 
-    /**
-     * Display settings page.
-     */
-    public function settingsPage() {
-        global $title;
-        ?>
+    public function settingsPage(): void {
+        global $title; ?>
         <div class="wrap">
             <h1><?php echo esc_html($title); ?></h1>
             <form method="post">
@@ -207,10 +159,7 @@ class Settings {
         <?php
     }
 
-    /**
-     * Add settings sections.
-     */
-    public function settingsSection() {
+    public function settingsSection(): void {
         add_settings_section(
             'rrze-log-settings',
             __('RRZE Log', 'rrze-log'),
@@ -242,13 +191,28 @@ class Settings {
             'rrze-log-settings'
         );
 
-        if (is_multisite() && is_super_admin()) {
+        if (is_super_admin()) {
+            add_settings_section(
+                'rrze-log-audit-settings',
+                __('Admin Audit Log', 'rrze-log'),
+                '__return_false',
+                'rrze-log-settings'
+            );
+
             add_settings_field(
                 'rrze-log-auditEnabled',
                 __('Enable Admin Audit Log', 'rrze-log'),
                 [$this, 'auditEnabledField'],
                 'rrze-log-settings',
-                'rrze-log-settings'
+                'rrze-log-audit-settings'
+            );
+
+            add_settings_field(
+                'rrze-log-auditTypes',
+                __('Audit Types', 'rrze-log'),
+                [$this, 'auditTypesField'],
+                'rrze-log-settings',
+                'rrze-log-audit-settings'
             );
         }
 
@@ -261,7 +225,7 @@ class Settings {
             );
 
             add_settings_field(
-                'rrze-log-maxLines',
+                'rrze-log-debugMaxLines',
                 __('Truncate log file to last N lines', 'rrze-log'),
                 [$this, 'debugMaxLinesField'],
                 'rrze-log-settings',
@@ -278,11 +242,7 @@ class Settings {
         }
     }
 
-    /**
-     * Display enabled field.
-     */
-    public function enabledField() {
-        ?>
+    public function enabledField(): void { ?>
         <label>
             <input type="checkbox" id="rrze-log-enabled" name="<?php printf('%s[enabled]', $this->optionName); ?>" value="1" <?php checked($this->options->enabled, 1); ?>>
             <?php _e('Enables network-wide logging', 'rrze-log'); ?>
@@ -290,11 +250,7 @@ class Settings {
         <?php
     }
 
-    /**
-     * Display adminMenu field.
-     */
-    public function adminMenuField() {
-        ?>
+    public function adminMenuField(): void { ?>
         <label>
             <input type="checkbox" id="rrze-log-admin-menu" name="<?php printf('%s[adminMenu]', $this->optionName); ?>" value="1" <?php checked($this->options->adminMenu, 1); ?>>
             <?php _e('Enables network wide the Log menu for administrators', 'rrze-log'); ?>
@@ -302,63 +258,67 @@ class Settings {
         <?php
     }
 
-   /**
-    * Display auditEnabled field (Superadmins only).
-    */
-   public function auditEnabledField() {
-       $enforced = $this->isAuditEnabledEnforcedByNetwork();
-       $disabled = $enforced ? ' disabled="disabled"' : '';
-       ?>
-       <label>
-           <input type="checkbox" id="rrze-log-audit-enabled" name="<?php printf('%s[auditEnabled]', $this->optionName); ?>" value="1" <?php checked($enforced ? 1 : $this->options->auditEnabled, 1); ?><?php echo $disabled; ?>>
-           <?php _e('Enables admin/superadmin action logging to a separate audit log file.', 'rrze-log'); ?>
-       </label>
-       <?php if ($enforced) { ?>
-           <p class="description">
-               <?php _e('This setting is enforced by network configuration (rrze_settings) and cannot be disabled here.', 'rrze-log'); ?>
-           </p>
-       <?php } ?>
-       <?php
-   }
-
-
-    /**
-     * Display maxLines field.
-     */
-    public function maxLinesField() {
-        ?>
-        <label for="rrze-log-ttl">
-            <input type="number" min="1000" max="5000" step="1" name="<?php printf('%s[maxLines]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->maxLines); ?>" class="small-text">
+    public function maxLinesField(): void { ?>
+        <label for="rrze-log-maxLines">
+            <input type="number" min="1000" max="5000" step="1" id="rrze-log-maxLines" name="<?php printf('%s[maxLines]', $this->optionName); ?>" value="<?php echo esc_attr((string) $this->options->maxLines); ?>" class="small-text">
         </label>
         <p class="description"><?php _e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
         <?php
     }
 
-    /**
-     * Display debugMaxLines field.
-     */
-    public function debugMaxLinesField() {
-        ?>
-        <label for="rrze-log-ttl">
-            <input type="number" min="1000" max="5000" step="1" name="<?php printf('%s[debugMaxLines]', $this->optionName); ?>" value="<?php echo esc_attr($this->options->debugMaxLines); ?>" class="small-text">
+    public function auditEnabledField(): void { ?>
+        <label>
+            <input type="checkbox" id="rrze-log-audit-enabled" name="<?php printf('%s[auditEnabled]', $this->optionName); ?>" value="1" <?php checked($this->options->auditEnabled ?? 0, 1); ?>>
+            <?php _e('Enables logging of administrative actions (audit log).', 'rrze-log'); ?>
+        </label>
+        <?php
+    }
+
+    public function auditTypesField(): void {
+        $types = isset($this->options->auditTypes) && is_array($this->options->auditTypes) ? $this->options->auditTypes : [];
+        $cms = !empty($types['cms']) ? 1 : 0;
+        $site = !empty($types['site']) ? 1 : 0;
+        $editorial = !empty($types['editorial']) ? 1 : 0; ?>
+        <fieldset>
+            <label>
+                <input type="checkbox" name="<?php printf('%s[auditTypes][cms]', $this->optionName); ?>" value="1" <?php checked($cms, 1); ?>>
+                <?php _e('CMS-Administration', 'rrze-log'); ?>
+            </label>
+            <br>
+
+            <label>
+                <input type="checkbox" name="<?php printf('%s[auditTypes][site]', $this->optionName); ?>" value="1" <?php checked($site, 1); ?>>
+                <?php _e('Website-Administration', 'rrze-log'); ?>
+            </label>
+            <br>
+
+            <label>
+                <input type="checkbox" name="<?php printf('%s[auditTypes][editorial]', $this->optionName); ?>" value="1" <?php checked($editorial, 1); ?>>
+                <?php _e('Redaktion', 'rrze-log'); ?>
+            </label>
+
+            <p class="description">
+                <?php _e('Controls which categories are written to the audit log. Default when enabling audit: CMS + Website enabled, Editorial disabled.', 'rrze-log'); ?>
+            </p>
+        </fieldset>
+        <?php
+    }
+
+    public function debugMaxLinesField(): void { ?>
+        <label for="rrze-log-debugMaxLines">
+            <input type="number" min="1000" max="5000" step="1" id="rrze-log-debugMaxLines" name="<?php printf('%s[debugMaxLines]', $this->optionName); ?>" value="<?php echo esc_attr((string) $this->options->debugMaxLines); ?>" class="small-text">
         </label>
         <p class="description"><?php _e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
         <?php
     }
 
-    public function debugLogAccessField() {
-        ?>
+    public function debugLogAccessField(): void { ?>
         <textarea id="debug-log-access" cols="50" rows="5" name="<?php printf('%s[debugLogAccess]', $this->optionName); ?>"><?php echo esc_attr($this->getTextarea($this->options->debugLogAccess)); ?></textarea>
         <p class="description"><?php _e('List of usernames with access to view the wp debug log file. Enter one username per line.', 'rrze-log'); ?></p>
         <?php
     }
 
-    /**
-     * Validate options input.
-     * @param  array $input
-     * @return array
-     */
-    public function optionsValidate($input) {
+    public function optionsValidate(array $input): array {
         $input['enabled'] = !empty($input['enabled']) ? 1 : 0;
 
         $input['maxLines'] = !empty($input['maxLines']) && absint($input['maxLines'])
@@ -367,22 +327,47 @@ class Settings {
 
         $input['adminMenu'] = !empty($input['adminMenu']) ? 1 : 0;
 
-        $enforced = $this->isAuditEnabledEnforcedByNetwork();
+        if (is_super_admin()) {
+            $auditEnabled = !empty($input['auditEnabled']) ? 1 : 0;
+            $input['auditEnabled'] = $auditEnabled;
 
-        if ($enforced) {
-            $input['auditEnabled'] = 1;
-        } elseif (is_multisite() && is_super_admin()) {
-            $input['auditEnabled'] = !empty($input['auditEnabled']) ? 1 : 0;
+            if ($auditEnabled === 1) {
+                $types = isset($input['auditTypes']) && is_array($input['auditTypes']) ? $input['auditTypes'] : [];
+                $normalized = [
+                    'cms' => !empty($types['cms']) ? 1 : 0,
+                    'site' => !empty($types['site']) ? 1 : 0,
+                    'editorial' => !empty($types['editorial']) ? 1 : 0,
+                ];
+
+                $sum = (int) $normalized['cms'] + (int) $normalized['site'] + (int) $normalized['editorial'];
+                if ($sum <= 0) {
+                    $normalized = [
+                        'cms' => 1,
+                        'site' => 1,
+                        'editorial' => 0,
+                    ];
+                }
+
+                $input['auditTypes'] = $normalized;
+            } else {
+                $input['auditTypes'] = isset($this->options->auditTypes) && is_array($this->options->auditTypes)
+                    ? $this->options->auditTypes
+                    : [
+                        'cms' => 1,
+                        'site' => 1,
+                        'editorial' => 0,
+                    ];
+            }
         } else {
-            $input['auditEnabled'] = !empty($this->options->auditEnabled) ? 1 : 0;
+            unset($input['auditEnabled'], $input['auditTypes']);
         }
-        
+
         if ($this->isDebugLog) {
             $input['debugMaxLines'] = !empty($input['debugMaxLines']) && absint($input['debugMaxLines'])
                 ? min(absint($input['debugMaxLines']), 5000)
                 : $this->options->debugMaxLines;
 
-            $input['debugLogAccess'] = isset($input['debugLogAccess']) ? $input['debugLogAccess'] : '';
+            $input['debugLogAccess'] = isset($input['debugLogAccess']) ? (string) $input['debugLogAccess'] : '';
             $debugLogAccess = $this->sanitizeTextarea($input['debugLogAccess']);
             $debugLogAccess = !empty($debugLogAccess) ? $this->sanitizeWpLogAccess($debugLogAccess) : '';
             $input['debugLogAccess'] = !empty($debugLogAccess) ? $debugLogAccess : '';
@@ -392,84 +377,66 @@ class Settings {
         return (array) $this->options;
     }
 
-    /**
-     * Update network admin options.
-     * @return void
-     */
-    public function settingsUpdate() {
-        if (is_network_admin() && isset($_POST['rrze-log-settings-submit-primary'])) {
-            check_admin_referer('rrze-log-settings-options');
-            $input = isset($_POST[$this->optionName]) ? $_POST[$this->optionName] : [];
-            update_site_option($this->optionName, $this->optionsValidate($input));
-            $this->options = Options::getOptions();
-            add_action('network_admin_notices', [$this, 'settingsUpdateNotice']);
+    public function settingsUpdate(): void {
+        if (!is_network_admin() || !isset($_POST['rrze-log-settings-submit-primary'])) {
+            return;
         }
+
+        check_admin_referer('rrze-log-settings-options');
+
+        $input = isset($_POST[$this->optionName]) && is_array($_POST[$this->optionName]) ? $_POST[$this->optionName] : [];
+        update_site_option($this->optionName, $this->optionsValidate($input));
+
+        $this->options = Options::getOptions();
+
+        add_action('network_admin_notices', [$this, 'settingsUpdateNotice']);
     }
 
-    /**
-     * Update network admin notice.
-     * @return void
-     */
-    public function settingsUpdateNotice() {
+    public function settingsUpdateNotice(): void {
         $class = 'notice updated';
         $message = __("Settings saved.", 'rrze-settings');
 
         printf('<div class="%1s"><p>%2s</p></div>', esc_attr($class), esc_html($message));
     }
 
-    /**
-     * Set screen options.
-     * @param  boolean $status
-     * @param  string  $option
-     * @param  integer $value
-     * @return integer
-     */
     public function setScreenOption($status, $option, $value) {
-        if ('rrze_log_per_page' == $option) {
+        if ($option === 'rrze_log_per_page') {
             return $value;
         }
         return $status;
     }
 
-    /**
-     * Add screen options.
-     * @return void
-     */
-    public function screenOptions() {
-        $option = 'per_page';
-        $args = [
+    public function screenOptions(): void {
+        add_screen_option('per_page', [
             'label' => __('Number of items per page:', 'rrze-log'),
             'default' => 20,
             'option' => 'rrze_log_per_page',
-        ];
-
-        add_screen_option($option, $args);
+        ]);
 
         $this->listTable = new ListTable();
     }
 
-    /**
-     * Add debug screen options.
-     * @return void
-     */
-    public function debugScreenOptions() {
-        $option = 'per_page';
-        $args = [
+    public function auditScreenOptions(): void {
+        add_screen_option('per_page', [
             'label' => __('Number of items per page:', 'rrze-log'),
             'default' => 20,
             'option' => 'rrze_log_per_page',
-        ];
+        ]);
 
-        add_screen_option($option, $args);
+        $this->auditListTable = new AuditListTable();
+    }
+
+    public function debugScreenOptions(): void {
+        add_screen_option('per_page', [
+            'label' => __('Number of items per page:', 'rrze-log'),
+            'default' => 20,
+            'option' => 'rrze_log_per_page',
+        ]);
 
         $this->debugListTable = new DebugListTable();
     }
 
-    /**
-     * Display log list table page.
-     * @return void
-     */
-    public function logPage() {
+    public function logPage(): void {
         if (!current_user_can('manage_options')) {
             wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
         }
@@ -479,11 +446,11 @@ class Settings {
 
         $this->listTable->prepare_items();
 
-        $action = isset($_GET['action']) ? $_GET['action'] : 'index';
+        $action = isset($_GET['action']) ? (string) $_GET['action'] : 'index';
 
-        $s = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
-        $level = isset($_REQUEST['level']) && in_array($_REQUEST['level'], Constants::LEVELS) ? $_REQUEST['level'] : '';
-        $logFile = isset($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
+        $s = isset($_REQUEST['s']) ? (string) $_REQUEST['s'] : '';
+        $level = isset($_REQUEST['level']) && in_array($_REQUEST['level'], Constants::LEVELS, true) ? (string) $_REQUEST['level'] : '';
+        $logFile = isset($_REQUEST['logfile']) ? (string) $_REQUEST['logfile'] : date('Y-m-d');
 
         $data = [
             'action' => $action,
@@ -497,13 +464,34 @@ class Settings {
         $this->show('list-table', $data);
     }
 
-    /**
-     * Display WP debug log list table page.
-     * Direct access protection: deny if debug log not enabled or user not allowed.
-     * @return void
-     */
-    public function debugLogPage() {
-        if (!$this->isDebugLog || !current_user_can('manage_options') || !$this->isUserInDebugLogAccess()) {
+    public function auditLogPage(): void {
+        $this->options = Options::getOptions();
+
+        if (!is_super_admin() || empty($this->options->auditEnabled)) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
+        }
+
+        wp_enqueue_style('rrze-log-list-table');
+        wp_enqueue_script('rrze-log-list-table');
+
+        if (!$this->auditListTable instanceof AuditListTable) {
+            $this->auditListTable = new AuditListTable();
+        }
+
+        $this->auditListTable->prepare_items();
+
+        $data = [
+            'action' => 'audit',
+            's' => isset($_REQUEST['s']) ? (string) $_REQUEST['s'] : '',
+            'listTable' => $this->auditListTable,
+            'title' => __('Audit', 'rrze-log'),
+        ];
+
+        $this->show('list-table', $data);
+    }
+
+    public function debugLogPage(): void {
+        if (!current_user_can('manage_options') || !$this->isUserInDebugLogAccess()) {
             wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
         }
 
@@ -512,11 +500,11 @@ class Settings {
 
         $this->debugListTable->prepare_items();
 
-        $action = isset($_GET['action']) ? $_GET['action'] : 'index';
+        $action = isset($_GET['action']) ? (string) $_GET['action'] : 'index';
 
-        $s = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
-        $level = isset($_REQUEST['level']) && in_array($_REQUEST['level'], Constants::DEBUG_LEVELS) ? $_REQUEST['level'] : '';
-        $logFile = isset($_REQUEST['logfile']) ? $_REQUEST['logfile'] : date('Y-m-d');
+        $s = isset($_REQUEST['s']) ? (string) $_REQUEST['s'] : '';
+        $level = isset($_REQUEST['level']) && in_array($_REQUEST['level'], Constants::DEBUG_LEVELS, true) ? (string) $_REQUEST['level'] : '';
+        $logFile = isset($_REQUEST['logfile']) ? (string) $_REQUEST['logfile'] : date('Y-m-d');
 
         $data = [
             'action' => $action,
@@ -530,61 +518,44 @@ class Settings {
         $this->show('list-table', $data);
     }
 
-    /**
-     * Render a view.
-     * @param  string $view
-     * @param  array  $data
-     * @return void
-     */
-    protected function show($view, $data = []) {
+    protected function show(string $view, array $data = []): void {
         $data['messages'] = $this->messages;
         include 'Views/base.php';
     }
 
-    /**
-     * Get textarea value.
-     * @param  array|string $option
-     * @return string
-     */
-    protected function getTextarea($option) {
+    protected function getTextarea($option): string {
         if (!empty($option) && is_array($option)) {
             return implode(PHP_EOL, $option);
         }
         return '';
     }
 
-    /**
-     * Sanitize textarea input.
-     * @param  string  $input
-     * @param  boolean $sort
-     * @return string|array
-     */
     protected function sanitizeTextarea(string $input, bool $sort = true) {
-        if (!empty($input)) {
-            $inputAry = explode(PHP_EOL, sanitize_textarea_field($input));
-            $inputAry = array_filter(array_map('trim', $inputAry));
-            $inputAry = array_unique(array_values($inputAry));
-            if ($sort) {
-                sort($inputAry);
-            }
-            return !empty($inputAry) ? $inputAry : '';
+        if ($input === '') {
+            return '';
         }
-        return '';
+
+        $inputAry = explode(PHP_EOL, sanitize_textarea_field($input));
+        $inputAry = array_filter(array_map('trim', $inputAry));
+        $inputAry = array_unique(array_values($inputAry));
+
+        if ($sort) {
+            sort($inputAry);
+        }
+
+        return !empty($inputAry) ? $inputAry : '';
     }
 
-    /**
-     * Sanitize WP log access input.
-     * @param  array $data
-     * @return array
-     */
-    public function sanitizeWpLogAccess(array $data) {
+    public function sanitizeWpLogAccess(array $data): array {
         $debugLogAccess = [];
+
         foreach ($data as $row) {
             $aryRow = explode(' - ', $row);
             $userLogin = isset($aryRow[0]) ? trim($aryRow[0]) : '';
-            if (!$userLogin) {
+            if ($userLogin === '') {
                 continue;
             }
+
             $args = [
                 'blog_id' => 0,
                 'role' => 'administrator',
@@ -598,108 +569,41 @@ class Settings {
                     'user_login',
                 ],
             ];
+
             $users = get_users($args);
-            $user = !empty($users[0]) && is_object(($users[0])) ? $users[0] : null;
-            if (is_null($user)) {
+            $user = !empty($users[0]) && is_object($users[0]) ? $users[0] : null;
+            if (!$user) {
                 continue;
             }
+
             $userName = $user->display_name ?: $user->user_nicename;
             $debugLogAccess[$userLogin] = implode(' - ', [$userLogin, $userName]);
         }
+
         ksort($debugLogAccess);
+
         return $debugLogAccess;
     }
 
-    /**
-     * Check if current user is in debug log access list.
-     * @return boolean
-     */
-    protected function isUserInDebugLogAccess() {
+    protected function isUserInDebugLogAccess(): bool {
         if (is_super_admin()) {
             return true;
         }
+
         $debugLogAccess = $this->options->debugLogAccess;
+
         if (!empty($debugLogAccess) && is_array($debugLogAccess)) {
-            $currentUserLogin = wp_get_current_user()->data->user_login;
+            $currentUserLogin = (string) wp_get_current_user()->data->user_login;
+
             foreach ($debugLogAccess as $row) {
                 $aryRow = explode(' - ', $row);
                 $userLogin = isset($aryRow[0]) ? trim($aryRow[0]) : '';
-                if ($userLogin == $currentUserLogin) {
+                if ($userLogin === $currentUserLogin) {
                     return true;
                 }
             }
         }
+
         return false;
     }
-    
-    /**
-    * Check whether audit logging is enforced by network settings (rrze_settings).
-    * @return bool
-    */
-   protected function isAuditEnabledEnforcedByNetwork(): bool {
-       if (!is_multisite()) {
-           return false;
-       }
-
-       $settingsOptions = get_site_option('rrze_settings');
-
-       if (is_array($settingsOptions)) {
-           $settingsOptions = (object) $settingsOptions;
-       }
-
-       if (!is_object($settingsOptions) || !isset($settingsOptions->plugins) || !is_object($settingsOptions->plugins)) {
-           return false;
-       }
-
-       return !empty($settingsOptions->plugins->rrze_log_auditEnabled);
-   }
-
-   
-   /**
-    * Add audit screen options.
-    * @return void
-    */
-   public function auditScreenOptions() {
-       $option = 'per_page';
-       $args = [
-           'label' => __('Number of items per page:', 'rrze-log'),
-           'default' => 20,
-           'option' => 'rrze_log_per_page',
-       ];
-
-       add_screen_option($option, $args);
-
-       $this->auditListTable = new AuditListTable();
-   }
-
-   /**
-    * Display audit log list table page.
-    * Direct access protection: only super admins and only if audit is enabled.
-    * @return void
-    */
-   public function auditLogPage() {
-       if (!is_super_admin() || empty($this->options->auditEnabled)) {
-           wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
-       }
-
-       wp_enqueue_style('rrze-log-list-table');
-       wp_enqueue_script('rrze-log-list-table');
-
-       $this->auditListTable->prepare_items();
-
-       $action = isset($_GET['action']) ? $_GET['action'] : 'index';
-       $s = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
-
-       $data = [
-           'action' => $action,
-           's' => $s,
-           'level' => '',
-           'logfile' => date('Y-m-d'),
-           'listTable' => $this->auditListTable,
-           'title' => __('Audit', 'rrze-log'),
-       ];
-
-       $this->show('list-table', $data);
-   }
-
 }
