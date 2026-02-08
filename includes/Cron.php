@@ -69,6 +69,27 @@ class Cron {
      * Ensure the cron event is scheduled (idempotent).
      */
     public static function ensureScheduled(): void {
+         $options = Options::getOptions();
+
+        $need = false;
+
+        if (!empty($options->maxLines) && (int) $options->maxLines > 0) {
+            $need = true;
+        }
+
+        if (!empty($options->auditEnabled) && !empty($options->auditMaxLines) && (int) $options->auditMaxLines > 0) {
+            $need = true;
+        }
+
+        if (!empty($options->debugMaxLines) && (int) $options->debugMaxLines > 0) {
+            $need = true;
+        }
+
+        if (!$need) {
+            self::unschedule();
+            return;
+        }
+
         $intervalSlug = apply_filters('rrze_log/cron/interval_slug', self::DEFAULT_INTERVAL_SLUG);
 
         if (!wp_next_scheduled(self::EVENT_HOOK)) {
@@ -93,17 +114,20 @@ class Cron {
             [
                 'file' => Constants::LOG_FILE,
                 'lines' => $options->maxLines ?? 1000,
-            ],
-            [
-                'file' => Constants::DEBUG_LOG_FILE,
-                'lines' => $options->debugMaxLines ?? 1000,
-            ],
+            ]
         ];
-
+        
+        $debugLines = isset($options->debugMaxLines) ? (int) $options->debugMaxLines : 0;
+        if ($debugLines > 0) {
+            $targets[] = [
+                'file' => Constants::DEBUG_LOG_FILE,
+                'lines' => $debugLines,
+            ];
+        }
         if (!empty($options->auditEnabled)) {
             $targets[] = [
                 'file' => Constants::AUDIT_LOG_FILE,
-                'lines' => $options->maxLines ?? 1000,
+                'lines' => $options->auditMaxLines  ?? 1000,
             ];
         }
 

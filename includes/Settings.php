@@ -71,7 +71,14 @@ final class Settings {
         add_action('network_admin_menu', [$this, 'networkAdminMenu']);
         add_action('network_admin_menu', [$this, 'settingsSection']);
         add_action('network_admin_menu', [$this, 'settingsUpdate']);
-        add_action('admin_menu', [$this, 'adminMenu']);
+        
+        if (!is_multisite()) {
+            add_action('admin_menu', [$this, 'adminMenu']);
+        } else {
+            if (is_super_admin() || !empty($this->options->adminMenu)) {
+                add_action('admin_menu', [$this, 'adminMenu']);
+            }
+        }
 
         add_filter('set-screen-option', [$this, 'setScreenOption'], 10, 3);
 

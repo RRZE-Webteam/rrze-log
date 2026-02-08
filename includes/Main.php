@@ -47,9 +47,15 @@ class Main {
         $settings = new Settings();
         $settings->loaded();
 
-        if (!$this->options->enabled) {
+        $this->options = Options::getOptions();
+
+        $enabled = !empty($this->options->enabled);
+        $auditEnabled = !empty($this->options->auditEnabled);
+
+        if (!$enabled && !$auditEnabled) {
             return;
         }
+
 
         $this->logger = new Logger();
         $this->logger->loaded();
