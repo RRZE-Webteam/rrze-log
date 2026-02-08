@@ -250,7 +250,7 @@ final class Settings {
     public function settingsSection(): void {
         add_settings_section(
             'rrze-log-settings',
-            __('RRZE Log', 'rrze-log'),
+            __('RRZE Action Log', 'rrze-log'),
             '__return_false',
             'rrze-log-settings'
         );
@@ -270,15 +270,37 @@ final class Settings {
             'rrze-log-settings',
             'rrze-log-settings'
         );
+        
+        if ($this->isDebugLog) {
+            add_settings_section(
+                'rrze-log-wp-debug-settings',
+                __('WP Debug Log', 'rrze-log'),
+                '__return_false',
+                'rrze-log-settings'
+            );
 
+            add_settings_field(
+                'rrze-log-debugMaxLines',
+                __('Truncate log file to last N lines', 'rrze-log'),
+                [$this, 'debugMaxLinesField'],
+                'rrze-log-settings',
+                'rrze-log-wp-debug-settings'
+            );
+        }
+        add_settings_section(
+                'rrze-log-adminmenu-settings',
+                __('Admin Menu', 'rrze-log'),
+                '__return_false',
+                'rrze-log-settings'
+            );
         add_settings_field(
             'rrze-log-adminMenu',
             __('Enable administration menus', 'rrze-log'),
             [$this, 'adminMenuField'],
             'rrze-log-settings',
-            'rrze-log-settings'
+            'rrze-log-adminmenu-settings'
         );
-
+        
         if (is_super_admin()) {
             add_settings_section(
                 'rrze-log-audit-settings',
@@ -312,24 +334,7 @@ final class Settings {
             );
         }
 
-        if ($this->isDebugLog) {
-            add_settings_section(
-                'rrze-log-wp-debug-settings',
-                __('WP Debug Log', 'rrze-log'),
-                '__return_false',
-                'rrze-log-settings'
-            );
-
-            add_settings_field(
-                'rrze-log-debugMaxLines',
-                __('Truncate log file to last N lines', 'rrze-log'),
-                [$this, 'debugMaxLinesField'],
-                'rrze-log-settings',
-                'rrze-log-wp-debug-settings'
-            );
-
-           
-        }
+       
     }
 
     /**
