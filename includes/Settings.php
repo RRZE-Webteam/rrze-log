@@ -8,30 +8,70 @@ defined('ABSPATH') || exit;
 
 final class Settings {
 
+    /**
+     * Option name.
+     * @var string
+     */
     protected string $optionName;
+
+    /**
+     * Options values.
+     * @var object
+     */
     protected object $options;
 
+    /**
+     * WP_List_Table object.
+     * @var object
+     */
     protected $listTable;
+
+    /**
+     * WP_List_Table object.
+     * @var object
+     */
     protected $auditListTable;
+
+    /**
+     * WP_List_Table object.
+     * @var object
+     */
     protected $debugListTable;
 
+    /**
+     * List table notice messages.
+     * @var array
+     */
     protected array $messages = [];
+
+    /**
+     * Is Debug Log set?
+     * @var bool
+     */
     protected bool $isDebugLog = false;
+
+    /**
+     * Error message.
+     * @var string
+     */
     protected string $error = '';
 
+    /**
+     * Constructor.
+     */
     public function __construct() {
         $this->optionName = Options::getOptionName();
         $this->options = Options::getOptions();
     }
 
+    /**
+     * Initiate hooks.
+     */
     public function loaded(): void {
         add_action('network_admin_menu', [$this, 'networkAdminMenu']);
         add_action('network_admin_menu', [$this, 'settingsSection']);
         add_action('network_admin_menu', [$this, 'settingsUpdate']);
-
-        if (is_super_admin() || !empty($this->options->adminMenu)) {
-            add_action('admin_menu', [$this, 'adminSubMenu']);
-        }
+        add_action('admin_menu', [$this, 'adminMenu']);
 
         add_filter('set-screen-option', [$this, 'setScreenOption'], 10, 3);
 
@@ -51,6 +91,9 @@ final class Settings {
         $this->isDebugLog = (bool) $debug;
     }
 
+    /**
+     * Admin error notice.
+     */
     public function adminErrorNotice(): void {
         printf(
             '<div class="%1$s"><p>%2$s</p></div>',
@@ -59,13 +102,15 @@ final class Settings {
         );
     }
 
+    /**
+     * Add network admin menu.
+     */
     public function networkAdminMenu(): void {
-        // IMPORTANT: always reload options so menu reflects current state.
         $this->options = Options::getOptions();
 
         $logPage = add_menu_page(
-            __('Log', 'rrze-log'),
-            __('Log', 'rrze-log'),
+            __('Protokoll', 'rrze-log'),
+            __('Protokoll', 'rrze-log'),
             'manage_options',
             'rrze-log',
             [$this, 'logPage'],
@@ -73,6 +118,27 @@ final class Settings {
         );
         add_action("load-$logPage", [$this, 'screenOptions']);
 
+        add_submenu_page(
+            'rrze-log',
+            __('Action Log', 'rrze-log'),
+            __('Action Log', 'rrze-log'),
+            'manage_options',
+            'rrze-log',
+            [$this, 'logPage']
+        );
+        
+        if ($this->isDebugLog) {
+            $debugLogPage = add_submenu_page(
+                'rrze-log',
+                __('Debug', 'rrze-log'),
+                __('Debug', 'rrze-log'),
+                'manage_options',
+                'rrze-log-debug',
+                [$this, 'debugLogPage']
+            );
+            add_action("load-$debugLogPage", [$this, 'debugScreenOptions']);
+        }
+        
         if (is_super_admin() && !empty($this->options->auditEnabled)) {
             $auditPage = add_submenu_page(
                 'rrze-log',
@@ -85,47 +151,53 @@ final class Settings {
             add_action("load-$auditPage", [$this, 'auditScreenOptions']);
         }
 
-        if ($this->isDebugLog) {
-            $debugLogPage = add_submenu_page(
-                'rrze-log',
-                __('Debug', 'rrze-updater'),
-                __('Debug', 'rrze-updater'),
-                'manage_options',
-                'rrze-log-debug',
-                [$this, 'debugLogPage']
-            );
-            add_action("load-$debugLogPage", [$this, 'debugScreenOptions']);
-        }
+       
 
         add_submenu_page(
             'rrze-log',
-            __('Settings', 'rrze-updater'),
-            __('Settings', 'rrze-updater'),
+            __('Settings', 'rrze-log'),
+            __('Settings', 'rrze-log'),
             'manage_options',
             'rrze-log-settings',
             [$this, 'settingsPage']
         );
     }
 
-    public function adminSubMenu(): void {
-        // IMPORTANT: always reload options so menu reflects current state.
+
+    /**
+     * Add admin menu (Tools) if enabled.
+     */
+    public function adminMenu(): void {
+        if (is_multisite() && is_network_admin()) {
+            return;
+        }
+
         $this->options = Options::getOptions();
 
-        $logPage = add_submenu_page(
-            'tools.php',
-            __('RRZE-Log', 'rrze-log'),
-            __('RRZE-Log', 'rrze-log'),
+        $logPage = add_menu_page(
+            __('Protokoll', 'rrze-log'),
+            __('Protokoll', 'rrze-log'),
+            'manage_options',
+            'rrze-log',
+            [$this, 'logPage'],
+            'dashicons-list-view'
+        );
+        add_action("load-$logPage", [$this, 'screenOptions']);
+
+        add_submenu_page(
+            'rrze-log',
+            __('Action Log', 'rrze-log'),
+            __('Action Log', 'rrze-log'),
             'manage_options',
             'rrze-log',
             [$this, 'logPage']
         );
-        add_action("load-$logPage", [$this, 'screenOptions']);
 
-        if (is_super_admin() && !empty($this->options->auditEnabled)) {
+        if (!empty($this->options->auditEnabled)) {
             $auditPage = add_submenu_page(
-                'tools.php',
-                __('RRZE-Log Audit', 'rrze-log'),
-                __('RRZE-Log Audit', 'rrze-log'),
+                'rrze-log',
+                __('Audit', 'rrze-log'),
+                __('Audit', 'rrze-log'),
                 'manage_options',
                 'rrze-log-audit',
                 [$this, 'auditLogPage']
@@ -135,9 +207,9 @@ final class Settings {
 
         if ($this->isDebugLog && $this->isUserInDebugLogAccess()) {
             $debugLogPage = add_submenu_page(
-                'tools.php',
-                __('WP-Debug', 'rrze-log'),
-                __('WP-Debug', 'rrze-log'),
+                'rrze-log',
+                __('Debug', 'rrze-log'),
+                __('Debug', 'rrze-log'),
                 'manage_options',
                 'rrze-log-debug',
                 [$this, 'debugLogPage']
@@ -146,6 +218,12 @@ final class Settings {
         }
     }
 
+
+
+
+    /**
+     * Display settings page.
+     */
     public function settingsPage(): void {
         global $title; ?>
         <div class="wrap">
@@ -159,6 +237,9 @@ final class Settings {
         <?php
     }
 
+    /**
+     * Add settings sections and fields.
+     */
     public function settingsSection(): void {
         add_settings_section(
             'rrze-log-settings',
@@ -214,6 +295,14 @@ final class Settings {
                 'rrze-log-settings',
                 'rrze-log-audit-settings'
             );
+
+            add_settings_field(
+                'rrze-log-auditMaxLines',
+                __('Truncate audit log file to last N lines', 'rrze-log'),
+                [$this, 'auditMaxLinesField'],
+                'rrze-log-settings',
+                'rrze-log-audit-settings'
+            );
         }
 
         if ($this->isDebugLog) {
@@ -242,6 +331,9 @@ final class Settings {
         }
     }
 
+    /**
+     * Display enabled field.
+     */
     public function enabledField(): void { ?>
         <label>
             <input type="checkbox" id="rrze-log-enabled" name="<?php printf('%s[enabled]', $this->optionName); ?>" value="1" <?php checked($this->options->enabled, 1); ?>>
@@ -250,6 +342,9 @@ final class Settings {
         <?php
     }
 
+    /**
+     * Display adminMenu field.
+     */
     public function adminMenuField(): void { ?>
         <label>
             <input type="checkbox" id="rrze-log-admin-menu" name="<?php printf('%s[adminMenu]', $this->optionName); ?>" value="1" <?php checked($this->options->adminMenu, 1); ?>>
@@ -258,14 +353,29 @@ final class Settings {
         <?php
     }
 
+    /**
+     * Display maxLines field (main rrze-log file).
+     */
     public function maxLinesField(): void { ?>
         <label for="rrze-log-maxLines">
-            <input type="number" min="1000" max="5000" step="1" id="rrze-log-maxLines" name="<?php printf('%s[maxLines]', $this->optionName); ?>" value="<?php echo esc_attr((string) $this->options->maxLines); ?>" class="small-text">
+            <input
+                type="number"
+                min="1000"
+                max="50000"
+                step="1"
+                id="rrze-log-maxLines"
+                name="<?php printf('%s[maxLines]', $this->optionName); ?>"
+                value="<?php echo esc_attr((string) $this->options->maxLines); ?>"
+                class="small-text"
+            >
         </label>
-        <p class="description"><?php _e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
+        <p class="description"><?php _e('Keep only the newest lines in the main log file, up to the number specified here.', 'rrze-log'); ?></p>
         <?php
     }
 
+    /**
+     * Display auditEnabled field (superadmin only).
+     */
     public function auditEnabledField(): void { ?>
         <label>
             <input type="checkbox" id="rrze-log-audit-enabled" name="<?php printf('%s[auditEnabled]', $this->optionName); ?>" value="1" <?php checked($this->options->auditEnabled ?? 0, 1); ?>>
@@ -274,6 +384,9 @@ final class Settings {
         <?php
     }
 
+    /**
+     * Display auditTypes field (superadmin only).
+     */
     public function auditTypesField(): void {
         $types = isset($this->options->auditTypes) && is_array($this->options->auditTypes) ? $this->options->auditTypes : [];
         $cms = !empty($types['cms']) ? 1 : 0;
@@ -304,25 +417,58 @@ final class Settings {
         <?php
     }
 
+    /**
+     * Display auditMaxLines field (audit log file).
+     */
+    public function auditMaxLinesField(): void {
+        $value = isset($this->options->auditMaxLines) ? (int) $this->options->auditMaxLines : 1000; ?>
+        <label for="rrze-log-auditMaxLines">
+            <input
+                type="number"
+                min="1000"
+                max="50000"
+                step="1"
+                id="rrze-log-auditMaxLines"
+                name="<?php printf('%s[auditMaxLines]', $this->optionName); ?>"
+                value="<?php echo esc_attr((string) $value); ?>"
+                class="small-text"
+            >
+        </label>
+        <p class="description"><?php _e('Keep only the newest lines in the audit log file, up to the number specified here.', 'rrze-log'); ?></p>
+        <?php
+    }
+
+    /**
+     * Display debugMaxLines field.
+     */
     public function debugMaxLinesField(): void { ?>
         <label for="rrze-log-debugMaxLines">
-            <input type="number" min="1000" max="5000" step="1" id="rrze-log-debugMaxLines" name="<?php printf('%s[debugMaxLines]', $this->optionName); ?>" value="<?php echo esc_attr((string) $this->options->debugMaxLines); ?>" class="small-text">
+            <input type="number" min="1000" max="50000" step="1" id="rrze-log-debugMaxLines" name="<?php printf('%s[debugMaxLines]', $this->optionName); ?>" value="<?php echo esc_attr((string) $this->options->debugMaxLines); ?>" class="small-text">
         </label>
         <p class="description"><?php _e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
         <?php
     }
 
+    /**
+     * Display debugLogAccess field.
+     */
     public function debugLogAccessField(): void { ?>
         <textarea id="debug-log-access" cols="50" rows="5" name="<?php printf('%s[debugLogAccess]', $this->optionName); ?>"><?php echo esc_attr($this->getTextarea($this->options->debugLogAccess)); ?></textarea>
         <p class="description"><?php _e('List of usernames with access to view the wp debug log file. Enter one username per line.', 'rrze-log'); ?></p>
         <?php
     }
 
+    /**
+     * Validate options input.
+     *
+     * @param array $input
+     * @return array
+     */
     public function optionsValidate(array $input): array {
         $input['enabled'] = !empty($input['enabled']) ? 1 : 0;
 
         $input['maxLines'] = !empty($input['maxLines']) && absint($input['maxLines'])
-            ? min(absint($input['maxLines']), 5000)
+            ? min(absint($input['maxLines']), 50000)
             : $this->options->maxLines;
 
         $input['adminMenu'] = !empty($input['adminMenu']) ? 1 : 0;
@@ -358,13 +504,18 @@ final class Settings {
                         'editorial' => 0,
                     ];
             }
+
+            $currentAuditMaxLines = isset($this->options->auditMaxLines) ? (int) $this->options->auditMaxLines : 1000;
+            $input['auditMaxLines'] = !empty($input['auditMaxLines']) && absint($input['auditMaxLines'])
+                ? min(absint($input['auditMaxLines']), 50000)
+                : $currentAuditMaxLines;
         } else {
-            unset($input['auditEnabled'], $input['auditTypes']);
+            unset($input['auditEnabled'], $input['auditTypes'], $input['auditMaxLines']);
         }
 
         if ($this->isDebugLog) {
             $input['debugMaxLines'] = !empty($input['debugMaxLines']) && absint($input['debugMaxLines'])
-                ? min(absint($input['debugMaxLines']), 5000)
+                ? min(absint($input['debugMaxLines']), 50000)
                 : $this->options->debugMaxLines;
 
             $input['debugLogAccess'] = isset($input['debugLogAccess']) ? (string) $input['debugLogAccess'] : '';
@@ -377,6 +528,9 @@ final class Settings {
         return (array) $this->options;
     }
 
+    /**
+     * Update network admin options.
+     */
     public function settingsUpdate(): void {
         if (!is_network_admin() || !isset($_POST['rrze-log-settings-submit-primary'])) {
             return;
@@ -392,6 +546,9 @@ final class Settings {
         add_action('network_admin_notices', [$this, 'settingsUpdateNotice']);
     }
 
+    /**
+     * Update notice.
+     */
     public function settingsUpdateNotice(): void {
         $class = 'notice updated';
         $message = __("Settings saved.", 'rrze-settings');
@@ -399,6 +556,9 @@ final class Settings {
         printf('<div class="%1s"><p>%2s</p></div>', esc_attr($class), esc_html($message));
     }
 
+    /**
+     * Set screen options.
+     */
     public function setScreenOption($status, $option, $value) {
         if ($option === 'rrze_log_per_page') {
             return $value;
@@ -406,6 +566,9 @@ final class Settings {
         return $status;
     }
 
+    /**
+     * Add screen options for main log.
+     */
     public function screenOptions(): void {
         add_screen_option('per_page', [
             'label' => __('Number of items per page:', 'rrze-log'),
@@ -416,6 +579,9 @@ final class Settings {
         $this->listTable = new ListTable();
     }
 
+    /**
+     * Add screen options for audit log.
+     */
     public function auditScreenOptions(): void {
         add_screen_option('per_page', [
             'label' => __('Number of items per page:', 'rrze-log'),
@@ -426,6 +592,9 @@ final class Settings {
         $this->auditListTable = new AuditListTable();
     }
 
+    /**
+     * Add debug screen options.
+     */
     public function debugScreenOptions(): void {
         add_screen_option('per_page', [
             'label' => __('Number of items per page:', 'rrze-log'),
@@ -436,6 +605,9 @@ final class Settings {
         $this->debugListTable = new DebugListTable();
     }
 
+    /**
+     * Display log list table page.
+     */
     public function logPage(): void {
         if (!current_user_can('manage_options')) {
             wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
@@ -464,6 +636,9 @@ final class Settings {
         $this->show('list-table', $data);
     }
 
+    /**
+     * Display audit log list table page.
+     */
     public function auditLogPage(): void {
         $this->options = Options::getOptions();
 
@@ -490,6 +665,9 @@ final class Settings {
         $this->show('list-table', $data);
     }
 
+    /**
+     * Display WP debug log list table page.
+     */
     public function debugLogPage(): void {
         if (!current_user_can('manage_options') || !$this->isUserInDebugLogAccess()) {
             wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
@@ -518,11 +696,20 @@ final class Settings {
         $this->show('list-table', $data);
     }
 
+    /**
+     * Render a view.
+     */
     protected function show(string $view, array $data = []): void {
         $data['messages'] = $this->messages;
         include 'Views/base.php';
     }
 
+    /**
+     * Get textarea value.
+     *
+     * @param array|string $option
+     * @return string
+     */
     protected function getTextarea($option): string {
         if (!empty($option) && is_array($option)) {
             return implode(PHP_EOL, $option);
@@ -530,6 +717,13 @@ final class Settings {
         return '';
     }
 
+    /**
+     * Sanitize textarea input.
+     *
+     * @param string $input
+     * @param bool   $sort
+     * @return string|array
+     */
     protected function sanitizeTextarea(string $input, bool $sort = true) {
         if ($input === '') {
             return '';
@@ -546,6 +740,12 @@ final class Settings {
         return !empty($inputAry) ? $inputAry : '';
     }
 
+    /**
+     * Sanitize WP log access input.
+     *
+     * @param array $data
+     * @return array
+     */
     public function sanitizeWpLogAccess(array $data): array {
         $debugLogAccess = [];
 
@@ -585,6 +785,9 @@ final class Settings {
         return $debugLogAccess;
     }
 
+    /**
+     * Check if current user is in debug log access list.
+     */
     protected function isUserInDebugLogAccess(): bool {
         if (is_super_admin()) {
             return true;

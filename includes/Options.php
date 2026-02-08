@@ -33,6 +33,7 @@ final class Options {
                 'site' => 1,
                 'editorial' => 0,
             ],
+            'auditMaxLines' => 1000,
         ];
     }
 

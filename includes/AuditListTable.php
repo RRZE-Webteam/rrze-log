@@ -67,7 +67,7 @@ class AuditListTable extends WP_List_Table {
             'object' => __('Object', 'rrze-log'),
         ];
 
-        if (!is_network_admin() && $this->options->adminMenu) {
+        if (!is_network_admin()) {
             unset($columns['siteurl']);
         }
 
@@ -80,15 +80,21 @@ class AuditListTable extends WP_List_Table {
      * @return array
      */
     protected function get_sortable_columns() {
-        return [
+        $columns = [
             'time' => ['time', true],
-            'siteurl' => ['siteurl', false],
             'user' => ['user', false],
             'role' => ['role', false],
             'message' => ['message', false],
             'type' => ['type', false],
             'object' => ['object', false],
         ];
+
+        // Only Superadmins may sort by Website
+        if (is_super_admin()) {
+            $columns['siteurl'] = ['siteurl', false];
+        }
+
+        return $columns;
     }
 
     /**
@@ -245,9 +251,15 @@ class AuditListTable extends WP_List_Table {
         if (!is_wp_error($logItems)) {
             foreach ($logItems as $row) {
                 $decoded = json_decode($row, true);
-                if (is_array($decoded)) {
-                    $items[] = $decoded;
+                if (!is_array($decoded)) {
+                    continue;
                 }
+
+                if (!$this->canViewItem($decoded)) {
+                    continue;
+                }
+
+                $items[] = $decoded;
             }
         }
 
@@ -261,6 +273,80 @@ class AuditListTable extends WP_List_Table {
         ]);
     }
 
+    /**
+    * Decide whether the current user may see a specific audit log entry.
+    *
+    * Rules:
+    * - Actions performed by a Superadmin are only visible to Superadmins.
+    * - In multisite, non-superadmins may only see entries of the current site.
+    *
+    * @param array $item One decoded audit log entry
+    * @return bool
+    */
+   protected function canViewItem(array $item): bool {
+       if (is_multisite() && !is_super_admin()) {
+           $itemSiteUrl = '';
+           if (isset($item['siteurl']) && is_string($item['siteurl'])) {
+               $itemSiteUrl = $item['siteurl'];
+           }
+
+           if ($itemSiteUrl === '' || !$this->isSameSiteUrl($itemSiteUrl, site_url())) {
+               return false;
+           }
+       }
+
+       if (is_super_admin()) {
+           return true;
+       }
+
+       if (
+           !isset($item['context']['actor']) ||
+           !is_array($item['context']['actor'])
+       ) {
+           return true;
+       }
+
+       $actor = $item['context']['actor'];
+
+       $role = '';
+       if (isset($actor['role']) && is_string($actor['role'])) {
+           $role = strtolower($actor['role']);
+       } elseif (!empty($actor['is_super_admin'])) {
+           $role = 'superadmin';
+       }
+
+       if ($role === 'superadmin') {
+           return false;
+       }
+
+       return true;
+   }
+
+    /**
+     * Compare two site URLs by host (and optional path), ignoring scheme.
+     *
+     * @param string $a
+     * @param string $b
+     * @return bool
+     */
+    protected function isSameSiteUrl(string $a, string $b): bool {
+        $pa = wp_parse_url($a);
+        $pb = wp_parse_url($b);
+
+        $ha = is_array($pa) && !empty($pa['host']) ? strtolower((string) $pa['host']) : '';
+        $hb = is_array($pb) && !empty($pb['host']) ? strtolower((string) $pb['host']) : '';
+
+        if ($ha === '' || $hb === '' || $ha !== $hb) {
+            return false;
+        }
+
+        $pathA = is_array($pa) && isset($pa['path']) ? rtrim((string) $pa['path'], '/') : '';
+        $pathB = is_array($pb) && isset($pb['path']) ? rtrim((string) $pb['path'], '/') : '';
+
+        return $pathA === $pathB;
+    }
+
+    
     /**
      * Sorts decoded items based on current orderby/order.
      * Note: sorting applies to the current page only (file-based pagination).

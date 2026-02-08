@@ -37,20 +37,36 @@ class AdminAudit {
         'media.update' => true,
         'media.delete' => true,
 
+        'plugins.install' => true,
+        'plugins.update' => true,
         'plugins.activate' => true,
         'plugins.deactivate' => true,
         'plugins.delete' => true,
+        'plugins.edit_file' => true,
 
         'themes.install' => true,
+        'themes.update' => true,
         'themes.activate' => true,
         'themes.deactivate' => true,
         'themes.delete' => true,
+        'themes.edit_file' => true,
 
         'theme.customizer_save' => true,
         'theme.site_editor_change' => true,
 
         'settings.updated_option' => true,
         'settings.updated_site_option' => true,
+
+        'superadmins.grant' => true,
+        'superadmins.revoke' => true,
+
+        'sites.create' => true,
+        'sites.delete' => true,
+        'sites.archive' => true,
+        'sites.unarchive' => true,
+        'sites.spam' => true,
+        'sites.ham' => true,
+        'sites.public' => true,
     ];
 
     /**
@@ -85,22 +101,38 @@ class AdminAudit {
         'themes.activate' => 'site',
         'themes.deactivate' => 'site',
         'themes.install' => 'cms',
+        'themes.update' => 'cms',
         'themes.delete' => 'cms',
-
-        'settings.updated_option' => 'site',
-        'settings.updated_site_option' => 'cms',
+        'themes.edit_file' => 'cms',
 
         'plugins.activate' => 'site',
         'plugins.deactivate' => 'site',
         'plugins.delete' => 'site',
+        'plugins.install' => 'cms',
+        'plugins.update' => 'cms',
+        'plugins.edit_file' => 'cms',
+
+        'settings.updated_option' => 'site',
+        'settings.updated_site_option' => 'cms',
+
+        'superadmins.grant' => 'cms',
+        'superadmins.revoke' => 'cms',
+
+        'sites.create' => 'cms',
+        'sites.delete' => 'cms',
+        'sites.archive' => 'cms',
+        'sites.unarchive' => 'cms',
+        'sites.spam' => 'cms',
+        'sites.ham' => 'cms',
+        'sites.public' => 'cms',
 
         'auth.login' => 'site',
     ];
 
     /**
-     * Allowlist of option names that may be logged.
+     * Allowlist of option names that may be logged (site-level).
      */
-    private const SETTINGS_ALLOWLIST = [
+    private const SITE_SETTINGS_ALLOWLIST = [
         'blogname',
         'blogdescription',
         'admin_email',
@@ -113,6 +145,56 @@ class AdminAudit {
         'date_format',
         'time_format',
         'start_of_week',
+    ];
+
+    /**
+     * Allowlist of site_option names that may be logged (network-level / multisite).
+     *
+     * Conservative selection: security-impacting and governance-relevant network settings,
+     * while avoiding noisy/transient internals.
+     */
+    private const NETWORK_SETTINGS_ALLOWLIST = [
+        // Network identity / contact
+        'site_name',
+        'admin_email',
+
+        // Registration & onboarding (high risk)
+        'registration',
+        'registrationnotification',
+        'add_new_users',
+
+        // Default user role (network context)
+        'default_role',
+
+        // New site defaults (affects every newly created site)
+        'default_theme',
+        'first_post',
+        'first_page',
+        'first_comment',
+        'first_comment_author',
+        'first_comment_email',
+
+        // New user/site notification templates (phishing / governance relevance)
+        'welcome_email',
+        'welcome_user_email',
+        'welcome_blog_email',
+        'blogname',
+        'blogdescription',
+
+        // Upload / content policy knobs
+        'upload_filetypes',
+        'fileupload_maxk',
+        'site_upload_space',
+        'upload_space_check_disabled',
+
+        // Network operational toggles
+        'illegal_names',
+        'limited_email_domains',
+        'banned_email_domains',
+        'WPLANG',
+
+        // Deprecated in newer WP, but still present in some installs
+        'admin_notice_feed',
     ];
 
     /**
@@ -166,6 +248,25 @@ class AdminAudit {
 
         add_action('delete_theme', [$this, 'onDeleteTheme'], 10, 1);
         add_action('deleted_theme', [$this, 'onDeletedTheme'], 10, 2);
+
+        // Superadmin changes (multisite)
+        add_action('granted_super_admin', [$this, 'onGrantedSuperAdmin'], 10, 1);
+        add_action('revoked_super_admin', [$this, 'onRevokedSuperAdmin'], 10, 1);
+
+        // Multisite site lifecycle/status
+        add_action('wpmu_new_blog', [$this, 'onWpmuNewBlog'], 10, 6);
+        add_action('wp_delete_site', [$this, 'onWpDeleteSite'], 10, 1);
+
+        add_action('archive_blog', [$this, 'onArchiveBlog'], 10, 1);
+        add_action('unarchive_blog', [$this, 'onUnarchiveBlog'], 10, 1);
+
+        add_action('make_spam_blog', [$this, 'onMakeSpamBlog'], 10, 1);
+        add_action('make_ham_blog', [$this, 'onMakeHamBlog'], 10, 1);
+
+        add_action('update_blog_public', [$this, 'onUpdateBlogPublic'], 10, 2);
+
+        // Theme/Plugin editor (POST-based detection)
+        add_action('admin_init', [$this, 'maybeLogThemePluginFileEdit'], 10, 0);
     }
 
     /**
@@ -390,7 +491,7 @@ class AdminAudit {
             return;
         }
 
-        if (!$this->isAllowedSetting($option)) {
+        if (!$this->isAllowedSiteSetting($option)) {
             return;
         }
 
@@ -411,7 +512,7 @@ class AdminAudit {
             return;
         }
 
-        if (!$this->isAllowedSetting($option)) {
+        if (!$this->isAllowedNetworkSetting($option)) {
             return;
         }
 
@@ -497,37 +598,63 @@ class AdminAudit {
     }
 
     /**
-     * Handles theme installation via upgrader.
+     * Handles theme/plugin installation and updates via upgrader.
      */
     public function onUpgraderProcessComplete($upgrader, array $hookExtra): void {
-        if (!$this->isAllowedActorForThemes()) {
+        if (!$this->isUserLoggedIn()) {
             return;
         }
 
         $type = isset($hookExtra['type']) ? (string) $hookExtra['type'] : '';
         $action = isset($hookExtra['action']) ? (string) $hookExtra['action'] : '';
 
-        if ($type !== 'theme' || $action !== 'install') {
+        if ($type !== 'theme' && $type !== 'plugin') {
             return;
         }
 
-        $slug = '';
-
-        if (isset($hookExtra['theme'])) {
-            $slug = (string) $hookExtra['theme'];
-        } elseif (isset($hookExtra['themes']) && is_array($hookExtra['themes']) && !empty($hookExtra['themes'][0])) {
-            $slug = (string) $hookExtra['themes'][0];
-        }
-
-        if ($slug === '') {
+        if ($action !== 'install' && $action !== 'update') {
             return;
         }
 
-        $theme = wp_get_theme($slug);
+        if ($type === 'theme') {
+            if (!$this->isAllowedActorForThemes()) {
+                return;
+            }
 
-        $this->logIfEnabled('themes.install', 'Theme installed', [
-            'object' => $this->buildThemeObject($theme),
-        ]);
+            $slugs = $this->extractUpgraderSlugs($hookExtra, 'theme');
+            foreach ($slugs as $slug) {
+                $theme = wp_get_theme($slug);
+                if (!$theme instanceof \WP_Theme) {
+                    continue;
+                }
+
+                $this->logIfEnabled(
+                    $action === 'install' ? 'themes.install' : 'themes.update',
+                    $action === 'install' ? 'Theme installed' : 'Theme updated',
+                    [
+                        'object' => $this->buildThemeObject($theme),
+                    ]
+                );
+            }
+            return;
+        }
+
+        if ($type === 'plugin') {
+            if (!$this->isAllowedActorForPlugins()) {
+                return;
+            }
+
+            $plugins = $this->extractUpgraderSlugs($hookExtra, 'plugin');
+            foreach ($plugins as $plugin) {
+                $this->logIfEnabled(
+                    $action === 'install' ? 'plugins.install' : 'plugins.update',
+                    $action === 'install' ? 'Plugin installed' : 'Plugin updated',
+                    [
+                        'object' => $this->buildPluginObject($plugin, null),
+                    ]
+                );
+            }
+        }
     }
 
     /**
@@ -561,6 +688,200 @@ class AdminAudit {
             'phase' => 'post',
             'deleted' => $deleted ? 1 : 0,
         ]);
+    }
+
+    /**
+     * Handles granting super admin (multisite).
+     */
+    public function onGrantedSuperAdmin(int $userId): void {
+        if (!$this->isAllowedActorForUsers()) {
+            return;
+        }
+
+        $user = get_userdata($userId);
+        if (!$user) {
+            return;
+        }
+
+        $this->logIfEnabled('superadmins.grant', 'Super Admin granted', [
+            'object' => $this->buildUserObject($user),
+        ]);
+    }
+
+    /**
+     * Handles revoking super admin (multisite).
+     */
+    public function onRevokedSuperAdmin(int $userId): void {
+        if (!$this->isAllowedActorForUsers()) {
+            return;
+        }
+
+        $user = get_userdata($userId);
+        if (!$user) {
+            return;
+        }
+
+        $this->logIfEnabled('superadmins.revoke', 'Super Admin revoked', [
+            'object' => $this->buildUserObject($user),
+        ]);
+    }
+
+    /**
+     * Handles multisite site creation.
+     */
+    public function onWpmuNewBlog(int $siteId, int $userId, string $domain, string $path, int $networkId, array $meta): void {
+        if (!$this->isUserLoggedIn()) {
+            return;
+        }
+
+        if (!is_multisite()) {
+            return;
+        }
+
+        $site = get_site($siteId);
+        if (!$site instanceof \WP_Site) {
+            return;
+        }
+
+        $this->logIfEnabled('sites.create', 'Site created', [
+            'object' => $this->buildSiteObject($site),
+            'site_owner_user_id' => $userId,
+            'network_id' => $networkId,
+        ]);
+    }
+
+    /**
+     * Handles multisite site deletion.
+     */
+    public function onWpDeleteSite(\WP_Site $oldSite): void {
+        if (!$this->isUserLoggedIn()) {
+            return;
+        }
+
+        if (!is_multisite()) {
+            return;
+        }
+
+        $this->logIfEnabled('sites.delete', 'Site deleted', [
+            'object' => $this->buildSiteObject($oldSite),
+        ]);
+    }
+
+    /**
+     * Handles multisite site archived.
+     */
+    public function onArchiveBlog(int $siteId): void {
+        $this->logSiteStatusChangeIfAllowed('sites.archive', 'Site archived', $siteId);
+    }
+
+    /**
+     * Handles multisite site unarchived.
+     */
+    public function onUnarchiveBlog(int $siteId): void {
+        $this->logSiteStatusChangeIfAllowed('sites.unarchive', 'Site unarchived', $siteId);
+    }
+
+    /**
+     * Handles multisite site marked as spam.
+     */
+    public function onMakeSpamBlog(int $siteId): void {
+        $this->logSiteStatusChangeIfAllowed('sites.spam', 'Site marked as spam', $siteId);
+    }
+
+    /**
+     * Handles multisite site unmarked as spam.
+     */
+    public function onMakeHamBlog(int $siteId): void {
+        $this->logSiteStatusChangeIfAllowed('sites.ham', 'Site unmarked as spam', $siteId);
+    }
+
+    /**
+     * Handles multisite site public setting changed.
+     */
+    public function onUpdateBlogPublic(int $siteId, string $isPublic): void {
+        if (!$this->isUserLoggedIn() || !is_multisite()) {
+            return;
+        }
+
+        $site = get_site($siteId);
+        if (!$site instanceof \WP_Site) {
+            return;
+        }
+
+        $this->logIfEnabled('sites.public', 'Site public setting changed', [
+            'object' => $this->buildSiteObject($site),
+            'changes' => [
+                'public' => [
+                    'new' => $isPublic === '1' ? '1' : '0',
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Detects Theme/Plugin file editor save attempts (admin POST).
+     *
+     * Core editor handlers often terminate via wp_send_json_*() which makes "after" hooks unreliable.
+     * This handler logs the intent + new content hash.
+     */
+    public function maybeLogThemePluginFileEdit(): void {
+        if (!$this->isUserLoggedIn()) {
+            return;
+        }
+
+        if (!is_admin()) {
+            return;
+        }
+
+        if (!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return;
+        }
+
+        if (!isset($_POST['newcontent']) || !is_string($_POST['newcontent'])) {
+            return;
+        }
+
+        if (!isset($_POST['file']) || !is_string($_POST['file'])) {
+            return;
+        }
+
+        $file = (string) wp_unslash($_POST['file']);
+        $newContent = (string) wp_unslash($_POST['newcontent']);
+
+        $plugin = '';
+        if (isset($_POST['plugin']) && is_string($_POST['plugin'])) {
+            $plugin = (string) wp_unslash($_POST['plugin']);
+        }
+
+        $theme = '';
+        if (isset($_POST['theme']) && is_string($_POST['theme'])) {
+            $theme = (string) wp_unslash($_POST['theme']);
+        }
+
+        if ($plugin === '' && $theme === '') {
+            return;
+        }
+
+        if ($plugin !== '') {
+            if (!$this->isAllowedActorForPlugins()) {
+                return;
+            }
+
+            $this->logIfEnabled('plugins.edit_file', 'Plugin file edit requested', [
+                'object' => $this->buildFileEditObject('plugin', $plugin, $file, $newContent),
+            ]);
+            return;
+        }
+
+        if ($theme !== '') {
+            if (!$this->isAllowedActorForThemes()) {
+                return;
+            }
+
+            $this->logIfEnabled('themes.edit_file', 'Theme file edit requested', [
+                'object' => $this->buildFileEditObject('theme', $theme, $file, $newContent),
+            ]);
+        }
     }
 
     /**
@@ -644,7 +965,6 @@ class AdminAudit {
 
         return $enabled;
     }
-
 
     /**
      * Returns the label for an audit type slug.
@@ -953,10 +1273,64 @@ class AdminAudit {
     }
 
     /**
-     * Checks whether an option name is allowed to be logged.
+     * Builds a structured representation of a multisite site.
      */
-    private function isAllowedSetting(string $option): bool {
-        $allowlist = apply_filters('rrze_log/audit_settings_allowlist', self::SETTINGS_ALLOWLIST);
+    private function buildSiteObject(\WP_Site $site): array {
+        return [
+            'type' => 'site',
+            'id' => (int) $site->blog_id,
+            'domain' => (string) $site->domain,
+            'path' => (string) $site->path,
+            'network_id' => (int) $site->network_id,
+            'public' => isset($site->public) ? (string) $site->public : '',
+            'archived' => isset($site->archived) ? (string) $site->archived : '',
+            'spam' => isset($site->spam) ? (string) $site->spam : '',
+            'deleted' => isset($site->deleted) ? (string) $site->deleted : '',
+        ];
+    }
+
+    /**
+     * Builds a structured representation for a theme/plugin file edit attempt.
+     */
+    private function buildFileEditObject(string $kind, string $slugOrPlugin, string $file, string $newContent): array {
+        $obj = [
+            'type' => $kind . '_file',
+            'file' => $file,
+            'new_sha256' => hash('sha256', $newContent),
+        ];
+
+        if ($kind === 'plugin') {
+            $obj['plugin'] = $slugOrPlugin;
+            $data = $this->getPluginDataSafe($slugOrPlugin);
+            $obj['title'] = $data['name'];
+            $obj['version'] = $data['version'];
+            return $obj;
+        }
+
+        $obj['theme'] = $slugOrPlugin;
+        $theme = wp_get_theme($slugOrPlugin);
+        if ($theme instanceof \WP_Theme) {
+            $obj['name'] = (string) $theme->get('Name');
+            $obj['version'] = (string) $theme->get('Version');
+            $obj['stylesheet'] = (string) $theme->get_stylesheet();
+        }
+
+        return $obj;
+    }
+
+    /**
+     * Checks whether an option name is allowed to be logged (site-level).
+     */
+    private function isAllowedSiteSetting(string $option): bool {
+        $allowlist = apply_filters('rrze_log/audit_site_settings_allowlist', self::SITE_SETTINGS_ALLOWLIST);
+        return in_array($option, (array) $allowlist, true);
+    }
+
+    /**
+     * Checks whether a network (site_option) name is allowed to be logged (network-level).
+     */
+    private function isAllowedNetworkSetting(string $option): bool {
+        $allowlist = apply_filters('rrze_log/audit_network_settings_allowlist', self::NETWORK_SETTINGS_ALLOWLIST);
         return in_array($option, (array) $allowlist, true);
     }
 
@@ -1063,6 +1437,65 @@ class AdminAudit {
             'name' => $name,
             'version' => $version,
         ];
+    }
+
+    /**
+     * Extract slugs from upgrader hook_extra for themes/plugins (single + bulk).
+     *
+     * @return string[]
+     */
+    private function extractUpgraderSlugs(array $hookExtra, string $type): array {
+        $out = [];
+
+        if ($type === 'theme') {
+            if (isset($hookExtra['theme']) && is_string($hookExtra['theme']) && $hookExtra['theme'] !== '') {
+                $out[] = $hookExtra['theme'];
+            }
+
+            if (isset($hookExtra['themes']) && is_array($hookExtra['themes'])) {
+                foreach ($hookExtra['themes'] as $slug) {
+                    if (is_string($slug) && $slug !== '') {
+                        $out[] = $slug;
+                    }
+                }
+            }
+        }
+
+        if ($type === 'plugin') {
+            if (isset($hookExtra['plugin']) && is_string($hookExtra['plugin']) && $hookExtra['plugin'] !== '') {
+                $out[] = $hookExtra['plugin'];
+            }
+
+            if (isset($hookExtra['plugins']) && is_array($hookExtra['plugins'])) {
+                foreach ($hookExtra['plugins'] as $plugin) {
+                    if (is_string($plugin) && $plugin !== '') {
+                        $out[] = $plugin;
+                    }
+                }
+            }
+        }
+
+        $out = array_values(array_unique($out));
+
+        return $out;
+    }
+
+    /**
+     * Logs multisite site status changes.
+     */
+    private function logSiteStatusChangeIfAllowed(string $action, string $message, int $siteId): void {
+        if (!$this->isUserLoggedIn() || !is_multisite()) {
+            return;
+        }
+
+        $site = get_site($siteId);
+        if (!$site instanceof \WP_Site) {
+            return;
+        }
+
+        $this->logIfEnabled($action, $message, [
+            'object' => $this->buildSiteObject($site),
+        ]);
     }
 
     /**
