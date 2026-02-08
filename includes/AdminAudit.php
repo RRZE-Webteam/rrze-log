@@ -885,35 +885,42 @@ class AdminAudit {
     }
 
     /**
-     * Writes an audit log entry if the given action is enabled and its type is enabled.
-     */
-    private function logIfEnabled(string $action, string $message, array $context): void {
-        $actions = apply_filters('rrze_log/audit_actions', self::ACTIONS);
+    * Writes an audit log entry if the given action is enabled and its type is enabled.
+    * Routes multisite superadmin actions into the dedicated superadmin audit log.
+    */
+   private function logIfEnabled(string $action, string $message, array $context): void {
+       $actions = apply_filters('rrze_log/audit_actions', self::ACTIONS);
 
-        if (!isset($actions[$action]) || !$actions[$action]) {
-            return;
-        }
+       if (!isset($actions[$action]) || !$actions[$action]) {
+           return;
+       }
 
-        $context['action'] = $action;
+       $context['action'] = $action;
 
-        if (!isset($context['actor']) || !is_array($context['actor'])) {
-            $context['actor'] = $this->buildActorContext();
-        }
+       if (!isset($context['actor']) || !is_array($context['actor'])) {
+           $context['actor'] = $this->buildActorContext();
+       }
 
-        $type = $this->getAuditTypeForAction($action, $context);
-        if ($type === '') {
-            return;
-        }
+       $type = $this->getAuditTypeForAction($action, $context);
+       if ($type === '') {
+           return;
+       }
 
-        if (!$this->isAuditTypeEnabled($type)) {
-            return;
-        }
+       if (!$this->isAuditTypeEnabled($type)) {
+           return;
+       }
 
-        $context['audit_type'] = $type;
-        $context['audit_type_label'] = $this->getAuditTypeLabel($type);
+       $context['audit_type'] = $type;
+       $context['audit_type_label'] = $this->getAuditTypeLabel($type);
 
-        $this->logger->audit($message, $context);
-    }
+       if ($this->isSuperadminAudit($context)) {
+           $this->logger->auditSuperadmin($message, $context);
+           return;
+       }
+
+       $this->logger->audit($message, $context);
+   }
+
 
     /**
      * Returns the audit type slug for an action, with runtime refinements.
@@ -1117,6 +1124,27 @@ class AdminAudit {
 
         return current_user_can('manage_options');
     }
+
+    /**
+    * Decide whether this audit entry must be written to the superadmin audit log.
+    * Only applies in multisite and only when actor role is "superadmin".
+    */
+   private function isSuperadminAudit(array $context): bool {
+       if (!is_multisite()) {
+           return false;
+       }
+
+       if (!isset($context['actor']) || !is_array($context['actor'])) {
+           return false;
+       }
+
+       $actor = $context['actor'];
+       if (!isset($actor['role'])) {
+           return false;
+       }
+
+       return (string) $actor['role'] === 'superadmin';
+   }
 
     /**
      * Returns the primary role for a user; superadmin is handled explicitly.

@@ -49,6 +49,17 @@ class Logger {
     }
 
     /**
+        * Superadmin audit log (multisite only).
+        */
+    public function auditSuperadmin(string $message, array $context = []): bool {
+        if (!is_multisite()) {
+            return $this->audit($message, $context);
+        }
+        return $this->logToFile(Constants::SUPERADMIN_AUDIT_LOG_FILE, 'AUDIT', $message, $context);
+    }
+
+
+    /**
      * Default logger (rrze-log.log).
      */
     protected function log(string $level, string $message, array $context = []): bool {

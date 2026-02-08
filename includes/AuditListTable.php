@@ -27,9 +27,17 @@ class AuditListTable extends WP_List_Table {
     protected string $order = 'desc';
 
     /**
+    * Audit log file path used by this table.
+    * @var string
+    */
+   protected string $auditFile;
+   
+    /**
      * Constructor.
      */
-    public function __construct() {
+    public function __construct(string $auditFile = Constants::AUDIT_LOG_FILE) {
+        $this->auditFile = $auditFile;        
+        
         $this->options = Options::getOptions();
         $this->items = [];
 
@@ -67,10 +75,10 @@ class AuditListTable extends WP_List_Table {
             'object' => __('Object', 'rrze-log'),
         ];
 
-        if (!is_network_admin()) {
+        if (!is_network_admin() || !is_super_admin()) {
             unset($columns['siteurl']);
         }
-
+        
         return $columns;
     }
 
@@ -206,7 +214,7 @@ class AuditListTable extends WP_List_Table {
      */
     public function prepare_items() {
         $s = $_REQUEST['s'] ?? '';
-        $logFile = Constants::AUDIT_LOG_FILE;
+        $logFile =$this->auditFile;
 
         $columns = $this->get_columns();
         $hidden = [];
@@ -283,44 +291,42 @@ class AuditListTable extends WP_List_Table {
     * @param array $item One decoded audit log entry
     * @return bool
     */
-   protected function canViewItem(array $item): bool {
-       if (is_multisite() && !is_super_admin()) {
-           $itemSiteUrl = '';
-           if (isset($item['siteurl']) && is_string($item['siteurl'])) {
-               $itemSiteUrl = $item['siteurl'];
-           }
+    protected function canViewItem(array $item): bool {
+        if (!is_network_admin() && is_multisite() && !is_super_admin()) {
+            $itemSiteUrl = '';
+            if (isset($item['siteurl']) && is_string($item['siteurl'])) {
+                $itemSiteUrl = $item['siteurl'];
+            }
 
-           if ($itemSiteUrl === '' || !$this->isSameSiteUrl($itemSiteUrl, site_url())) {
-               return false;
-           }
-       }
+            if ($itemSiteUrl === '' || !$this->isSameSiteUrl($itemSiteUrl, site_url())) {
+                return false;
+            }
+        }
 
-       if (is_super_admin()) {
-           return true;
-       }
+        if (is_super_admin()) {
+            return true;
+        }
 
-       if (
-           !isset($item['context']['actor']) ||
-           !is_array($item['context']['actor'])
-       ) {
-           return true;
-       }
+        if (!isset($item['context']['actor']) || !is_array($item['context']['actor'])) {
+            return true;
+        }
 
-       $actor = $item['context']['actor'];
+        $actor = $item['context']['actor'];
 
-       $role = '';
-       if (isset($actor['role']) && is_string($actor['role'])) {
-           $role = strtolower($actor['role']);
-       } elseif (!empty($actor['is_super_admin'])) {
-           $role = 'superadmin';
-       }
+        $role = '';
+        if (isset($actor['role']) && is_string($actor['role'])) {
+            $role = strtolower($actor['role']);
+        } elseif (!empty($actor['is_super_admin'])) {
+            $role = 'superadmin';
+        }
 
-       if ($role === 'superadmin') {
-           return false;
-       }
+        if ($role === 'superadmin') {
+            return false;
+        }
 
-       return true;
-   }
+        return true;
+    }
+
 
     /**
      * Compare two site URLs by host (and optional path), ignoring scheme.
@@ -580,7 +586,7 @@ class AuditListTable extends WP_List_Table {
             return $dt;
         }
 
-        return gmdate('Y-m-d H:i:s', $ts);
+       return gmdate('Y-m-d H:i:s', $ts);
     }
 
     /**
@@ -594,14 +600,20 @@ class AuditListTable extends WP_List_Table {
 
         $parts = wp_parse_url($siteurl);
         if (is_array($parts) && !empty($parts['host'])) {
-            return (string) $parts['host'];
+            $host = (string) $parts['host'];
+            $path = isset($parts['path']) ? rtrim((string) $parts['path'], '/') : '';
+
+            if ($path !== '') {
+                return $host . $path;
+            }
+
+            return $host;
         }
 
         $fallback = preg_replace('#^https?://#i', '', $siteurl);
-        $fallback = preg_replace('#/.*$#', '', (string) $fallback);
-
         return (string) $fallback;
     }
+
 
     /**
      * Renders the "User" column:

@@ -57,6 +57,13 @@ final class Settings {
     protected string $error = '';
 
     /**
+    * WP_List_Table object for superadmin audit log.
+    * @var object
+    */
+    protected $superadminAuditListTable;
+    
+    
+    /**
      * Constructor.
      */
     public function __construct() {
@@ -157,8 +164,18 @@ final class Settings {
             );
             add_action("load-$auditPage", [$this, 'auditScreenOptions']);
         }
+        if (is_multisite() && is_super_admin()) {
+            $superAuditPage = add_submenu_page(
+                'rrze-log',
+                __('Superadmin Audit', 'rrze-log'),
+                __('Superadmin Audit', 'rrze-log'),
+                'manage_options',
+                'rrze-log-superadmin-audit',
+                [$this, 'superadminAuditLogPage']
+            );
+            add_action("load-$superAuditPage", [$this, 'superadminAuditScreenOptions']);
+        }
 
-       
 
         add_submenu_page(
             'rrze-log',
@@ -329,6 +346,14 @@ final class Settings {
                 'rrze-log-auditMaxLines',
                 __('Truncate audit log file to last N lines', 'rrze-log'),
                 [$this, 'auditMaxLinesField'],
+                'rrze-log-settings',
+                'rrze-log-audit-settings'
+            );
+            
+            add_settings_field(
+                'rrze-log-superadminAuditMaxLines',
+                __('Truncate superadmin audit log file to last N lines', 'rrze-log'),
+                [$this, 'superadminAuditMaxLinesField'],
                 'rrze-log-settings',
                 'rrze-log-audit-settings'
             );
@@ -508,8 +533,19 @@ final class Settings {
             $input['auditMaxLines'] = !empty($input['auditMaxLines']) && absint($input['auditMaxLines'])
                 ? min(absint($input['auditMaxLines']), 50000)
                 : $currentAuditMaxLines;
+            
+            $currentSuperMax = isset($this->options->superadminAuditMaxLines)
+                ? (int) $this->options->superadminAuditMaxLines
+                : 1000;
+
+            $input['superadminAuditMaxLines'] =
+                !empty($input['superadminAuditMaxLines']) && absint($input['superadminAuditMaxLines'])
+                    ? min(absint($input['superadminAuditMaxLines']), 500000)
+                    : $currentSuperMax;
+
         } else {
             unset($input['auditEnabled'], $input['auditTypes'], $input['auditMaxLines']);
+            unset($input['superadminAuditMaxLines']);
         }
 
         if ($this->isDebugLog) {
@@ -808,4 +844,76 @@ final class Settings {
 
         return false;
     }
+    
+    /**
+     * Add screen options for superadmin audit log.
+     */
+    public function superadminAuditScreenOptions(): void {
+        add_screen_option('per_page', [
+            'label' => __('Number of items per page:', 'rrze-log'),
+            'default' => 20,
+            'option' => 'rrze_log_per_page',
+        ]);
+
+        $this->superadminAuditListTable = new SuperadminAuditListTable();
+    }
+    
+ 
+    /**
+     * Display superadmin audit log list table page (network only).
+     */
+    public function superadminAuditLogPage(): void {
+        $this->options = Options::getOptions();
+
+        if (!is_multisite() || !is_super_admin() || empty($this->options->auditEnabled)) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
+        }
+
+        wp_enqueue_style('rrze-log-list-table');
+        wp_enqueue_script('rrze-log-list-table');
+
+        if (!$this->superadminAuditListTable instanceof SuperadminAuditListTable) {
+            $this->superadminAuditListTable = new SuperadminAuditListTable();
+        }
+
+        $this->superadminAuditListTable->prepare_items();
+
+        $data = [
+            'action' => 'superadmin-audit',
+            's' => isset($_REQUEST['s']) ? (string) $_REQUEST['s'] : '',
+            'logfile' => date('Y-m-d'),
+            'listTable' => $this->superadminAuditListTable,
+            'title' => __('Superadmin Audit', 'rrze-log'),
+        ];
+
+        $this->show('list-table', $data);
+    }
+    
+    /**
+    * Display superadminAuditMaxLines field (superadmin audit log file).
+    */
+    public function superadminAuditMaxLinesField(): void {
+       $value = isset($this->options->superadminAuditMaxLines)
+           ? (int) $this->options->superadminAuditMaxLines
+           : 1000;
+       ?>
+       <label for="rrze-log-superadminAuditMaxLines">
+           <input
+               type="number"
+               min="1000"
+               max="500000"
+               step="1"
+               id="rrze-log-superadminAuditMaxLines"
+               name="<?php printf('%s[superadminAuditMaxLines]', $this->optionName); ?>"
+               value="<?php echo esc_attr((string) $value); ?>"
+               class="small-text"
+           >
+       </label>
+       <p class="description">
+           <?php _e('Keep only the newest lines in the superadmin audit log file. Applies to multisite superadmin actions only.', 'rrze-log'); ?>
+       </p>
+       <?php
+   }
+
+    
 }

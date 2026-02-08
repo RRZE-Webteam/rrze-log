@@ -10,8 +10,7 @@ use WP_List_Table;
 /**
  * Debug List Table
  */
-class DebugListTable extends WP_List_Table
-{
+class DebugListTable extends WP_List_Table {
     /**
      * Options values.
      * @var object
@@ -22,7 +21,7 @@ class DebugListTable extends WP_List_Table
      * Constructor
      * @return void
      */
-    public function __construct()  {
+    public function __construct() {
         global $status, $page;
 
         $this->options = Options::getOptions();

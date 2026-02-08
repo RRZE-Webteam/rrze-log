@@ -69,7 +69,7 @@ class Cron {
      * Ensure the cron event is scheduled (idempotent).
      */
     public static function ensureScheduled(): void {
-         $options = Options::getOptions();
+        $options = Options::getOptions();
 
         $need = false;
 
@@ -77,11 +77,20 @@ class Cron {
             $need = true;
         }
 
+        if (!empty($options->debugMaxLines) && (int) $options->debugMaxLines > 0) {
+            $need = true;
+        }
+
         if (!empty($options->auditEnabled) && !empty($options->auditMaxLines) && (int) $options->auditMaxLines > 0) {
             $need = true;
         }
 
-        if (!empty($options->debugMaxLines) && (int) $options->debugMaxLines > 0) {
+        if (
+            is_multisite()
+            && !empty($options->auditEnabled)
+            && !empty($options->superadminAuditMaxLines)
+            && (int) $options->superadminAuditMaxLines > 0
+        ) {
             $need = true;
         }
 
@@ -96,6 +105,7 @@ class Cron {
             wp_schedule_event(time() + 60, $intervalSlug, self::EVENT_HOOK);
         }
     }
+
 
     /**
      * Handler: perform truncation for all configured targets.
@@ -116,7 +126,7 @@ class Cron {
                 'lines' => $options->maxLines ?? 1000,
             ]
         ];
-        
+
         $debugLines = isset($options->debugMaxLines) ? (int) $options->debugMaxLines : 0;
         if ($debugLines > 0) {
             $targets[] = [
@@ -124,11 +134,19 @@ class Cron {
                 'lines' => $debugLines,
             ];
         }
+
         if (!empty($options->auditEnabled)) {
             $targets[] = [
                 'file' => Constants::AUDIT_LOG_FILE,
-                'lines' => $options->auditMaxLines  ?? 1000,
+                'lines' => $options->auditMaxLines ?? 1000,
             ];
+
+            if (is_multisite()) {
+                $targets[] = [
+                    'file' => Constants::SUPERADMIN_AUDIT_LOG_FILE,
+                    'lines' => $options->superadminAuditMaxLines ?? 1000,
+                ];
+            }
         }
 
         $targets = apply_filters('rrze_log/truncate_targets', $targets);
@@ -151,13 +169,11 @@ class Cron {
                 continue;
             }
 
-            $ok = false;
-
             try {
                 $ok = $trunc->truncate($file, $lines);
             } catch (\Throwable $e) {
-                $ok = false;
                 error_log(sprintf('[RRZE-Log] Truncate failed for %s: %s', $file, $e->getMessage()));
+                continue;
             }
 
             if (!$ok) {
@@ -165,6 +181,7 @@ class Cron {
             }
         }
     }
+
 
     /**
      * Force re-scheduling: unschedule any existing instance and schedule a fresh one.
