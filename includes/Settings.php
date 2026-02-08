@@ -328,13 +328,7 @@ final class Settings {
                 'rrze-log-wp-debug-settings'
             );
 
-            add_settings_field(
-                'rrze-log-debugLogAccess',
-                __('Log Access', 'rrze-log'),
-                [$this, 'debugLogAccessField'],
-                'rrze-log-settings',
-                'rrze-log-wp-debug-settings'
-            );
+           
         }
     }
 
@@ -456,14 +450,7 @@ final class Settings {
         <?php
     }
 
-    /**
-     * Display debugLogAccess field.
-     */
-    public function debugLogAccessField(): void { ?>
-        <textarea id="debug-log-access" cols="50" rows="5" name="<?php printf('%s[debugLogAccess]', $this->optionName); ?>"><?php echo esc_attr($this->getTextarea($this->options->debugLogAccess)); ?></textarea>
-        <p class="description"><?php _e('List of usernames with access to view the wp debug log file. Enter one username per line.', 'rrze-log'); ?></p>
-        <?php
-    }
+
 
     /**
      * Validate options input.
