@@ -164,7 +164,7 @@ final class Settings {
             );
             add_action("load-$auditPage", [$this, 'auditScreenOptions']);
         }
-        if (is_multisite() && is_super_admin()) {
+        if (is_multisite() && is_super_admin() && !empty($this->options->auditEnabled)) {
             $superAuditPage = add_submenu_page(
                 'rrze-log',
                 __('Superadmin Audit', 'rrze-log'),

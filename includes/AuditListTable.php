@@ -69,7 +69,6 @@ class AuditListTable extends WP_List_Table {
             'time' => __('Time', 'rrze-log'),
             'siteurl' => __('Website', 'rrze-log'),
             'user' => __('User', 'rrze-log'),
-            'role' => __('Role', 'rrze-log'),
             'message' => __('Message', 'rrze-log'),
             'type' => __('Type', 'rrze-log'),
             'object' => __('Object', 'rrze-log'),
@@ -91,7 +90,6 @@ class AuditListTable extends WP_List_Table {
         $columns = [
             'time' => ['time', true],
             'user' => ['user', false],
-            'role' => ['role', false],
             'message' => ['message', false],
             'type' => ['type', false],
             'object' => ['object', false],
@@ -124,8 +122,6 @@ class AuditListTable extends WP_List_Table {
                 return esc_html($this->formatSiteDomain($item));
             case 'user':
                 return $this->renderUserColumn($item);
-            case 'role':
-                return esc_html($this->getContextRole($item));
             case 'message':
                 return esc_html($item['message'] ?? '');
             case 'type':
@@ -146,6 +142,8 @@ class AuditListTable extends WP_List_Table {
         if ($which !== 'top') {
             return;
         }
+
+        $isSuperadminAudit = ($this->auditFile === Constants::SUPERADMIN_AUDIT_LOG_FILE);
 
         $currentType = isset($_REQUEST['audit_type']) ? sanitize_key((string) $_REQUEST['audit_type']) : '';
         $currentRole = isset($_REQUEST['audit_role']) ? sanitize_key((string) $_REQUEST['audit_role']) : '';
@@ -183,19 +181,21 @@ class AuditListTable extends WP_List_Table {
         }
         echo '</select>';
 
-        echo '&nbsp;';
+        if (!$isSuperadminAudit) {
+            echo '&nbsp;';
 
-        echo '<label class="screen-reader-text" for="rrze-log-audit-role-filter">' . esc_html(__('Filter by role', 'rrze-log')) . '</label>';
-        echo '<select id="rrze-log-audit-role-filter" name="audit_role">';
-        foreach ($roles as $key => $label) {
-            printf(
-                '<option value="%s"%s>%s</option>',
-                esc_attr($key),
-                selected($currentRole, $key, false),
-                esc_html($label)
-            );
+            echo '<label class="screen-reader-text" for="rrze-log-audit-role-filter">' . esc_html(__('Filter by role', 'rrze-log')) . '</label>';
+            echo '<select id="rrze-log-audit-role-filter" name="audit_role">';
+            foreach ($roles as $key => $label) {
+                printf(
+                    '<option value="%s"%s>%s</option>',
+                    esc_attr($key),
+                    selected($currentRole, $key, false),
+                    esc_html($label)
+                );
+            }
+            echo '</select>';
         }
-        echo '</select>';
 
         if ($currentSearch !== '') {
             printf(
@@ -208,6 +208,7 @@ class AuditListTable extends WP_List_Table {
 
         echo '</div>';
     }
+
 
     /**
      * Prepare list table items (pagination, search, filter, sort).
@@ -237,9 +238,13 @@ class AuditListTable extends WP_List_Table {
             $search[] = '"audit_type":"' . $typeFilter . '"';
         }
 
-        $roleFilter = isset($_REQUEST['audit_role']) ? sanitize_key((string) $_REQUEST['audit_role']) : '';
-        if ($roleFilter !== '') {
-            $search[] = '"role":"' . $roleFilter . '"';
+       $isSuperadminAudit = ($this->auditFile === Constants::SUPERADMIN_AUDIT_LOG_FILE);
+
+        if (!$isSuperadminAudit) {
+            $roleFilter = isset($_REQUEST['audit_role']) ? sanitize_key((string) $_REQUEST['audit_role']) : '';
+            if ($roleFilter !== '') {
+                $search[] = '"role":"' . $roleFilter . '"';
+            }
         }
 
         $logParser = new LogParser(
@@ -409,8 +414,6 @@ class AuditListTable extends WP_List_Table {
                 return $this->formatSiteDomain($item);
             case 'user':
                 return $this->getActorLogin($item);
-            case 'role':
-                return strtolower($this->getActorRole($item));
             case 'type':
                 return strtolower($this->getContextAuditTypeLabel($item));
             case 'message':
@@ -632,7 +635,11 @@ class AuditListTable extends WP_List_Table {
 
         $login = isset($actor['login']) ? (string) $actor['login'] : '';
         $id = isset($actor['id']) ? (int) $actor['id'] : 0;
+
         $role = strtolower(isset($actor['role']) ? (string) $actor['role'] : '');
+        if ($role === '' && !empty($actor['is_super_admin'])) {
+            $role = 'superadmin';
+        }
 
         $ip = isset($actor['ip']) ? (string) $actor['ip'] : '';
         $ua = isset($actor['user_agent']) ? (string) $actor['user_agent'] : '';
@@ -642,9 +649,6 @@ class AuditListTable extends WP_List_Table {
         }
 
         $label = $login !== '' ? $login : (string) $id;
-        if ($id > 0) {
-            $label .= ' (' . $id . ')';
-        }
 
         $userUrl = '';
         if ($id > 0) {
@@ -666,6 +670,11 @@ class AuditListTable extends WP_List_Table {
             );
         }
 
+        $roleSuffix = '';
+        if ($role !== '') {
+            $roleSuffix = ' (' . esc_html($role) . ')';
+        }
+
         $ipIcon = '';
         if ($ip !== '') {
             $ipIcon = sprintf(
@@ -684,6 +693,7 @@ class AuditListTable extends WP_List_Table {
             );
         }
 
-        return $personIcon . ' ' . $userHtml . $ipIcon . $uaIcon;
+        return $personIcon . ' ' . $userHtml . $roleSuffix . $ipIcon . $uaIcon;
     }
+
 }
