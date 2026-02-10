@@ -12,41 +12,59 @@ table.wp-list-table {
         background: rgba(0, 0, 0, 0.02);
     }
 
-    td.column-toggle {
-        width: 32px;
-        text-align: center;
+    td.column-occurrences {
+	text-align: center;
         vertical-align: middle;
-    }
-    td.column-message {
-
-    }
-    .rrze-log-toggle {
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 14px;
-        line-height: 1;
-        padding: 0;
-    }
-
-    tr.metadata {
-        display: none;
-         td {
-                white-space: pre-wrap;
-                font-family: monospace;
-                font-size: 12px;
-                line-height: 1.4em;
-            }
-        &.is-open {
-          display: table-row;
-        } 
-    }
-
-    tr.data.is-open {
-      .rrze-log-toggle {
-        transform: rotate(90deg);
       }
+
+    
+    a.rrze-log-message-toggle {
+       text-decoration: none;
+       color: inherit;
+   }
+
+   a.rrze-log-message-toggle:hover,
+   a.rrze-log-message-toggle:focus {
+       text-decoration: underline;
+   }
+
+   .rrze-log-message-full {
+       display: none;
+       margin-top: 6px;
+   }
+
+   td.column-message.rrze-log-expanded .rrze-log-message-full {
+       display: block;
+       pre {
+          white-space: pre-wrap;
+          font-family: monospace;
+	    font-size: 0.9rem;
+	    line-height: 1.5;
+       }
+   }
+
+    td.column-message .rrze-log-message-full .rrze-log-copy {
+	display: inline-block;
+	margin-top: 6px;
     }
+
+    td.column-message .rrze-log-message-full .rrze-log-copy .dashicons {
+	vertical-align: middle;
+    }
+
 }
 
 
+table.rrze-log-audit {
+    td.siteurl {
+	white-space: pre-wrap;
+	font-family: monospace;
+	font-size: 0.9rem;
+	line-height: 1.5;
+    }
+    td.column-time {
+	width: auto;
+	text-wrap: nowrap;
+      }
+    
+}

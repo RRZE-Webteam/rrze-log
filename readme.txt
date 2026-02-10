@@ -1,5 +1,5 @@
 === Plugin Name: RRZE Log ===
-Version: 2.7.6-1
+Version: 2.7.7
 Plugin URI: https://github.com/RRZE-Webteam/rrze-log
 GitHub Issue URL: https://github.com/RRZE-Webteam/rrze-log/issues
 Author: RRZE-Webteam <webmaster@fau.de> (https://www.rrze.fau.de)
