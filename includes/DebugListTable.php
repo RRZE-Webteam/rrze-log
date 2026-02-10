@@ -38,25 +38,10 @@ class DebugListTable extends WP_List_Table {
         return isset($item[$columnName]) ? $item[$columnName] : '';
     }
 
-    public function column_datetime($item)
-    {
+    
+    public function column_datetime($item) {
         $raw = (string) ($item['datetime'] ?? '');
-        $ts  = strtotime($raw);
-        if (!$ts) {
-            return '—';
-        }
-
-        $utc = gmdate('Y/m/d G:i:s \U\T\C', $ts);
-
-        $dt = new \DateTimeImmutable('@' . $ts);
-        $dt = $dt->setTimezone(wp_timezone());
-        $local = $dt->format('Y/m/d G:i:s');
-
-        return sprintf(
-            '<span title="%s">%s</span>',
-            esc_attr($utc),
-            esc_html($local)
-        );
+        return Utils::formatDatetimeWithUtcTooltip($raw);
     }
 
     /**

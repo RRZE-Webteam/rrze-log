@@ -117,7 +117,7 @@ class AuditListTable extends WP_List_Table {
 
         switch ($columnName) {
             case 'time':
-                return esc_html($this->formatTime($item));
+                return Utils::formatDatetimeWithUtcTooltip((string) ($item['datetime'] ?? ''), 'Y-m-d H:i:s', 'Y-m-d H:i:s \U\T\C');
             case 'siteurl':
                 return esc_html($this->formatSiteDomain($item));
             case 'user':

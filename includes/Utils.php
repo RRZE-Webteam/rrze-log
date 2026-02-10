@@ -105,8 +105,7 @@ class Utils
      * @param  array $array
      * @return boolean
      */
-    public static function isNotMultidimensional($array)
-    {
+    public static function isNotMultidimensional($array)  {
         foreach ($array as $value) {
             if (is_array($value)) {
                 return false;
@@ -114,4 +113,32 @@ class Utils
         }
         return true;
     }
+    
+    /*
+     * Display form for log times
+     */
+    public static function formatDatetimeWithUtcTooltip(string $raw, string $localFormat = 'Y/m/d G:i:s', string $utcFormat = 'Y/m/d G:i:s \U\T\C'): string {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return '—';
+        }
+
+        $ts = strtotime($raw);
+        if (!$ts) {
+            return '—';
+        }
+
+        $utc = gmdate($utcFormat, $ts);
+
+        $dt = new \DateTimeImmutable('@' . $ts);
+        $dt = $dt->setTimezone(wp_timezone());
+        $local = $dt->format($localFormat);
+
+        return sprintf(
+            '<span title="%s">%s</span>',
+            esc_attr($utc),
+            esc_html($local)
+        );
+    }
+
 }

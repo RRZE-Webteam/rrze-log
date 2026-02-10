@@ -47,11 +47,8 @@ class ListTable extends WP_List_Table {
     }
 
     public function column_datetime($item)  {
-        return sprintf(
-            '<span title="%1$s">%2$s</span>',
-            gmdate('Y/m/d G:i:s \U\T\C', strtotime($item['datetime'])),
-            get_date_from_gmt($item['datetime'], __('Y/m/d') . ' G:i:s'),
-        );
+        $raw = (string) ($item['datetime'] ?? '');
+        return Utils::formatDatetimeWithUtcTooltip($raw);
     }
 
     /**
