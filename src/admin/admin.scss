@@ -140,7 +140,11 @@ table.rrze-log-actionlog {
 
 
      .rrze-log-tree-body {
-	padding: 6px 0 0 14px;
+	padding: 0.5em 0 0 1.5em;
+	border-left: 1px solid #111;
+	margin-top:  0.3em;
+	margin-left: 0.2em;
+	margin-bottom: 1em;
     }
 
     .rrze-log-tree-leaf {
