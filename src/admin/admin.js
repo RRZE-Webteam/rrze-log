@@ -2,6 +2,8 @@
 
 function rrzeLogToggleCell($cell) {
     var $full;
+    var $toggle;
+    var $copy;
     var isOpen;
 
     $full = $cell.find(".rrze-log-message-full").first();
@@ -9,21 +11,37 @@ function rrzeLogToggleCell($cell) {
         return;
     }
 
+    $toggle = $cell.find("a.rrze-log-message-toggle").first();
+    $copy = $cell.find("button.rrze-log-copy").first();
+
     isOpen = $cell.hasClass("rrze-log-expanded");
 
     if (isOpen) {
         $cell.removeClass("rrze-log-expanded");
-        $cell.find("a.rrze-log-message-toggle").attr("aria-expanded", "false");
+
+        if ($toggle.length) {
+            $toggle.attr("aria-expanded", "false");
+        }
+
         $full.attr("aria-hidden", "true");
+
+        if ($copy.length) {
+            $copy.hide();
+        }
     } else {
         $cell.addClass("rrze-log-expanded");
-        $cell.find("a.rrze-log-message-toggle").attr("aria-expanded", "true");
+
+        if ($toggle.length) {
+            $toggle.attr("aria-expanded", "true");
+        }
+
         $full.attr("aria-hidden", "false");
+
+        if ($copy.length) {
+            $copy.show();
+        }
     }
-
 }
-
-
 
 function rrzeLogCopyToClipboard(text) {
     var $tmp;
@@ -60,16 +78,13 @@ function rrzeLogInit($) {
     });
 
     $(document).on("click", "button.rrze-log-copy", function (e) {
-	var text;
+        var text;
 
-	e.preventDefault();
+        e.preventDefault();
 
-	text = $(this).attr("data-copy") || "";
-	rrzeLogCopyToClipboard(text);
+        text = $(this).attr("data-copy") || "";
+        rrzeLogCopyToClipboard(text);
     });
-
-
-
 }
 
 jQuery(rrzeLogInit);

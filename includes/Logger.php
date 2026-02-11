@@ -25,33 +25,33 @@ class Logger {
         $this->siteUrl = site_url();
     }
 
-    public function error(string $message, array $context = []): bool {
+    public function error(string $message, array|object $context = []): bool {
         return $this->log('ERROR', $message, $context);
     }
 
-    public function warning(string $message, array $context = []): bool {
+    public function warning(string $message, array|object $context = []): bool {
         return $this->log('WARNING', $message, $context);
     }
 
-    public function notice(string $message, array $context = []): bool {
+    public function notice(string $message, array|object $context = []): bool {
         return $this->log('NOTICE', $message, $context);
     }
 
-    public function info(string $message, array $context = []): bool {
+    public function info(string $message, array|object $context = []): bool {
         return $this->log('INFO', $message, $context);
     }
 
     /**
      * Audit log (admin/superadmin actions).
      */
-    public function audit(string $message, array $context = []): bool {
+    public function audit(string $message, array|object $context = []): bool {
         return $this->logToFile(Constants::AUDIT_LOG_FILE, 'AUDIT', $message, $context);
     }
 
     /**
         * Superadmin audit log (multisite only).
         */
-    public function auditSuperadmin(string $message, array $context = []): bool {
+    public function auditSuperadmin(string $message, array|object $context = []): bool {
         if (!is_multisite()) {
             return $this->audit($message, $context);
         }
@@ -62,14 +62,14 @@ class Logger {
     /**
      * Default logger (rrze-log.log).
      */
-    protected function log(string $level, string $message, array $context = []): bool {
+    protected function log(string $level, string $message, array|object $context = []): bool {
         return $this->logToFile(Constants::LOG_FILE, $level, $message, $context);
     }
 
     /**
      * Core implementation: write a single entry to the given file.
      */
-    protected function logToFile(string $file, string $level, string $message, array $context = []): bool {
+    protected function logToFile(string $file, string $level, string $message, array|object $context = []): bool {
         $this->logFile = $file;
 
         $entry = [
@@ -125,7 +125,15 @@ class Logger {
         return $json;
     }
 
-    protected function normalizeContext(array $ctx): array  {
+    protected function normalizeContext(array|object $ctx): array{
+        if (is_object($ctx)) {
+            $ctx = $this->objectToArray($ctx);
+        }
+
+        if (!is_array($ctx)) {
+            return [];
+        }
+
         foreach ($ctx as $k => $v) {
             if ($v instanceof \Throwable) {
                 $ctx[$k] = [
@@ -135,14 +143,32 @@ class Logger {
                     'file'      => $v->getFile(),
                     'line'      => $v->getLine(),
                 ];
+            } elseif (is_object($v)) {
+                $ctx[$k] = $this->objectToArray($v);
             } elseif (is_resource($v)) {
                 $ctx[$k] = 'RESOURCE(' . get_resource_type($v) . ')';
-            } elseif (is_object($v) && !method_exists($v, '__toString')) {
-                $ctx[$k] = ['object' => get_class($v)];
             }
         }
 
         return $ctx;
+    }
+    
+    protected function objectToArray(object $obj): array {
+        if ($obj instanceof \JsonSerializable) {
+            $data = $obj->jsonSerialize();
+            return is_array($data) ? $data : ['value' => $data];
+        }
+
+        if (method_exists($obj, 'toArray')) {
+            $data = $obj->toArray();
+            return is_array($data) ? $data : ['value' => $data];
+        }
+
+        if (method_exists($obj, '__toString')) {
+            return ['value' => (string) $obj];
+        }
+
+        return get_object_vars($obj);
     }
 
     protected function nowMicro(): string {

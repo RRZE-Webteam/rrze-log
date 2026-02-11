@@ -1,5 +1,6 @@
 /* RRZE Log – List Table */
 
+table.rrze-log-actionlog,
 table.rrze-log-debug {
     table-layout: auto;
     tr.data {
@@ -25,7 +26,7 @@ table.rrze-log-debug {
     
     th.column-level,
     td.column-level {
-	min-width: 6em;
+	width: 4em;
     }
     
     
@@ -72,6 +73,26 @@ table.rrze-log-debug {
 	vertical-align: middle;
     }
 
+}
+table.rrze-log-actionlog {
+    
+    .column-datetime,
+    .column-level {
+	min-width: inherit;
+	width: 10%;
+    }
+    .column-siteurl {
+	width: 20%;
+    }
+    .column-message {
+	min-width: 50%;
+	width: 60%;
+	.rrze-log-message-full {
+	    margin-left: -40%;
+	}
+    
+	
+    }
 }
 
 

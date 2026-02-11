@@ -153,7 +153,7 @@ class Main {
      * @param mixed $context
      * @return array|false
      */
-    protected function sanitizeArgs($message, $context) {
+    protected function sanitizeArgs($message, $context): array|false {
         if (empty($message)) {
             return false;
         }
@@ -163,6 +163,10 @@ class Main {
         } elseif (is_array($message) && empty($context)) {
             $context = $message;
             $message = '';
+        }
+
+        if (is_object($context)) {
+            $context = $this->objectToArray($context);
         }
 
         if (!is_array($context)) {
@@ -176,6 +180,24 @@ class Main {
             'message' => trim((string) $message),
             'context' => $context,
         ];
+    }
+    
+    protected function objectToArray(object $obj): array {
+        if ($obj instanceof \JsonSerializable) {
+            $data = $obj->jsonSerialize();
+            return is_array($data) ? $data : ['value' => $data];
+        }
+
+        if (method_exists($obj, 'toArray')) {
+            $data = $obj->toArray();
+            return is_array($data) ? $data : ['value' => $data];
+        }
+
+        if (method_exists($obj, '__toString')) {
+            return ['value' => (string) $obj];
+        }
+
+        return get_object_vars($obj);
     }
 
     /**
