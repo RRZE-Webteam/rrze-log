@@ -208,8 +208,14 @@ class ListTable extends WP_List_Table {
                         . esc_html($msg)
                         . '</a>';
 
+                    $contextHtml = Utils::renderContextTree($context);
+                    $copyText = $this->stringifyContext($context);
+
                     echo '<div class="rrze-log-message-full" aria-hidden="true">';
-                    echo '<pre>' . esc_html($full) . '</pre>';
+
+                    echo '<div class="rrze-log-context-tree">';
+                    echo $contextHtml;
+                    echo '</div>';
 
                     echo '<button type="button" class="button-link rrze-log-copy dashicons-before dashicons-clipboard"'
                         . ' data-copy="' . esc_attr($full) . '"'

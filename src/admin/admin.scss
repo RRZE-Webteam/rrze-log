@@ -1,8 +1,25 @@
 /* RRZE Log – List Table */
 
 table.rrze-log-actionlog,
+table.rrze-log-debug,
+table.rrze-log-audit {
+    &.fixed {
+	 table-layout: auto;
+    }
+    &.widefat th,
+    &.widefat td {
+	padding: 5px;
+    }
+    
+}
+
+
+table.rrze-log-actionlog,
 table.rrze-log-debug {
     table-layout: auto;
+    
+    
+    
     tr.data {
         &:hover td {
             background: rgba(0, 0, 0, 0.04);
@@ -19,14 +36,14 @@ table.rrze-log-debug {
     &.widefat td {
 	color: black;
     }
-    
+
     td.column-datetime {
 	text-wrap: nowrap;	
     }
     
     th.column-level,
     td.column-level {
-	width: 4em;
+	// width: auto;
     }
     
     
@@ -90,13 +107,60 @@ table.rrze-log-actionlog {
 	.rrze-log-message-full {
 	    margin-left: -40%;
 	}
-    
-	
     }
+    
+    details.rrze-log-tree {
+	margin: 6px 0 0;
+    }
+
+    details > summary {
+        list-style: none;
+        cursor: pointer;
+    }
+
+    details > summary::-webkit-details-marker {
+        display: none;
+    }
+
+    details > summary::marker {
+        content: "";
+    }
+    
+     details > summary::before {
+        content: " [+] ";
+        font-weight: 600;
+        font-family: monospace;
+    }
+
+    details[open] > summary::before {
+        content: " [-] ";
+    }
+    
+    
+
+
+     .rrze-log-tree-body {
+	padding: 6px 0 0 14px;
+    }
+
+    .rrze-log-tree-leaf {
+	margin: 2px 0;
+    }
+    .rrze-log-tree-leaf-val,
+    .rrze-log-tree-leaf-key {
+	font-family: monospace;
+	font-size: 0.9rem;
+	line-height: 1.5;
+    }
+    .rrze-log-tree-leaf-key {
+	font-weight: 600;
+    }
+    
 }
 
 
 table.rrze-log-audit {
+
     td.siteurl {
 	white-space: pre-wrap;
 	font-family: monospace;
