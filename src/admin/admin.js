@@ -21,7 +21,6 @@ function rrzeLogToggleCell($cell) {
         $full.attr("aria-hidden", "false");
     }
 
-    rrzeLogUpdateCopyVisibility($cell.closest("tr"));
 }
 
 
@@ -70,9 +69,7 @@ function rrzeLogInit($) {
     });
 
 
-    $("table.wp-list-table tbody tr.data").each(function () {
-        rrzeLogUpdateCopyVisibility($(this));
-    });
+
 }
 
 jQuery(rrzeLogInit);

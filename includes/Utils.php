@@ -141,4 +141,24 @@ class Utils
         );
     }
 
+    /*
+     * Schwere-Level Für Fehlermeldungen sortierbar machen und global festlegen
+     */
+    public static function levelWeight(string $level): int {
+        $map = [
+            'FATAL' => 0,
+            'PARSE' => 1,
+            'EXCEPTION' => 2,
+            'DATABASE' => 3,
+            'WARNING' => 4,
+            'NOTICE' => 5,
+            'DEPRECATED' => 6,
+            'JAVASCRIPT' => 7,
+            'OTHER' => 99,
+        ];
+
+        $level = strtoupper($level);
+
+        return $map[$level] ?? 999;
+    }
 }

@@ -19,6 +19,18 @@ class DebugListTable extends WP_List_Table {
     public $options;
 
     /**
+    * Current orderby.
+    * @var string
+    */
+   protected string $orderby = 'datetime';
+
+   /**
+    * Current order.
+    * @var string
+    */
+   protected string $order = 'desc';
+    
+    /**
      * Constructor
      */
     public function __construct() {
@@ -32,6 +44,15 @@ class DebugListTable extends WP_List_Table {
         ]);
     }
 
+    /*
+     * Table Class
+     */
+    protected function get_table_classes() {
+        $classes = parent::get_table_classes();
+        $classes[] = 'rrze-log-debug';
+        return $classes;
+    }
+    
     /**
      * Columns.
      */
@@ -234,11 +255,23 @@ class DebugListTable extends WP_List_Table {
         $search = array_map('trim', explode(' ', trim((string) $s)));
         $search = array_filter($search);
 
-        if ($level) {
-            $search[] = '"level":"' . trim((string) $level) . '"';
+        $levelFilter = is_string($level) ? strtoupper(trim($level)) : '';
+        if ($levelFilter !== '') {
+            // Fallback (wirksam auch ohne Parser-Upgrade):
+            $search[] = '"level":"' . $levelFilter . '"';
         }
 
-        $logParser = new DebugLogParser($logFile, $search, (($currentPage - 1) * $perPage), $perPage);
+        $useTailChunk = ($levelFilter === '');
+
+        $logParser = new DebugLogParser(
+            $logFile,
+            $search,
+            (($currentPage - 1) * $perPage),
+            $perPage,
+            $useTailChunk,
+            null,
+            $levelFilter
+        );
 
         $items = $logParser->getItems();
         if (!is_wp_error($items)) {
@@ -246,7 +279,12 @@ class DebugListTable extends WP_List_Table {
                 $this->items[] = $value;
             }
         }
+        $this->orderby = isset($_REQUEST['orderby']) ? sanitize_key((string) $_REQUEST['orderby']) : 'datetime';
+        $this->order = isset($_REQUEST['order']) ? strtolower((string) $_REQUEST['order']) : 'desc';
+        $this->order = $this->order === 'asc' ? 'asc' : 'desc';
 
+        $this->sortItems();
+        
         $totalItems = $logParser->getTotalLines();
 
         $this->set_pagination_args([
@@ -255,7 +293,75 @@ class DebugListTable extends WP_List_Table {
             'total_pages' => (int) ceil($totalItems / $perPage),
         ]);
     }
+    /*
+     * Sortable Columns
+     */
+    public function get_sortable_columns() {
+        return [
+            'datetime' => ['datetime', true],
+            'level' => ['level', false],
+            'message' => ['message', false],
+            'occurrences' => ['occurrences', false],
+        ];
+    }
+    
+    protected function sortItems(): void {
+        if (empty($this->items)) {
+            return;
+        }
 
+        usort($this->items, [$this, 'compareItems']);
+    }
+
+    protected function compareItems(array $a, array $b): int {
+        $dir = $this->order === 'asc' ? 1 : -1;
+
+        $va = $this->getSortValue($a, $this->orderby);
+        $vb = $this->getSortValue($b, $this->orderby);
+
+        if ($va === $vb) {
+            return 0;
+        }
+
+        if (is_numeric($va) && is_numeric($vb)) {
+            return ($va < $vb ? -1 : 1) * $dir;
+        }
+
+        $cmp = strcasecmp((string) $va, (string) $vb);
+        return ($cmp < 0 ? -1 : 1) * $dir;
+    }
+
+    protected function getSortValue(array $item, string $key) {
+        switch ($key) {
+            case 'datetime':
+                return $this->getUnixTime($item);
+            case 'level':
+                return Utils::levelWeight((string) ($item['level'] ?? ''));
+            case 'message':
+                return (string) ($item['message_short'] ?? ($item['message'] ?? ''));
+            case 'occurrences':
+                return (int) ($item['occurrences'] ?? 1);
+            default:
+                return $this->getUnixTime($item);
+        }
+    }
+
+    protected function getUnixTime(array $item): int {
+        $raw = (string) ($item['datetime'] ?? '');
+        if ($raw === '') {
+            return 0;
+        }
+
+        $ts = strtotime($raw);
+        if ($ts === false) {
+            return 0;
+        }
+
+        return (int) $ts;
+    }
+
+    
+    
     /**
      * Filter dropdown.
      */
@@ -284,15 +390,33 @@ class DebugListTable extends WP_List_Table {
      * Dropdown with error levels.
      */
     protected function levelsDropdown() {
-        $levelFilter = isset($_REQUEST['level']) ? (string) $_REQUEST['level'] : '';
-        ?>
-        <select id="levels-filter" name="level">
-            <option value=""><?php _e('All error levels', 'rrze-log'); ?></option>
-            <?php foreach (Constants::DEBUG_LEVELS as $lvl) : ?>
-                <?php $selected = ($levelFilter === $lvl) ? ' selected="selected"' : ''; ?>
-                <option value="<?php echo esc_attr($lvl); ?>"<?php echo $selected; ?>><?php echo esc_html($lvl); ?></option>
-            <?php endforeach; ?>
-        </select>
-        <?php
+        $levelFilter = isset($_REQUEST['level']) ? strtoupper(trim((string) $_REQUEST['level'])) : '';
+
+        $parser = new DebugLogParser(
+            Constants::DEBUG_LOG_FILE,
+            [],
+            0,
+            -1,
+            false,
+            null,
+            ''
+        );
+
+        $available = $parser->getAvailableLevels();
+
+        echo '<select id="levels-filter" name="level">';
+        echo '<option value="">' . esc_html(__('All error levels', 'rrze-log')) . '</option>';
+
+        foreach ($available as $level => $count) {
+            printf(
+                '<option value="%s"%s>%s (%d)</option>',
+                esc_attr($level),
+                selected($levelFilter, $level, false),
+                esc_html($level),
+                (int) $count
+            );
+        }
+
+        echo '</select>';
     }
 }

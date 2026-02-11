@@ -1,6 +1,6 @@
 /* RRZE Log – List Table */
 
-table.wp-list-table {
+table.rrze-log-debug {
     table-layout: auto;
     tr.data {
         &:hover td {
@@ -11,7 +11,24 @@ table.wp-list-table {
     tr.data:nth-of-type(even) td {
         background: rgba(0, 0, 0, 0.02);
     }
-
+    tr.data.level-fatal {
+	background: rgba(255, 0, 0, 0.2);
+    }
+    
+    &.widefat td {
+	color: black;
+    }
+    
+    td.column-datetime {
+	text-wrap: nowrap;	
+    }
+    
+    th.column-level,
+    td.column-level {
+	min-width: 6em;
+    }
+    
+    
     td.column-occurrences {
 	text-align: center;
         vertical-align: middle;
@@ -21,27 +38,30 @@ table.wp-list-table {
     a.rrze-log-message-toggle {
        text-decoration: none;
        color: inherit;
-   }
+    }
 
-   a.rrze-log-message-toggle:hover,
-   a.rrze-log-message-toggle:focus {
-       text-decoration: underline;
-   }
+    a.rrze-log-message-toggle:hover,
+    a.rrze-log-message-toggle:focus {
+	text-decoration: underline;
+    }
 
-   .rrze-log-message-full {
-       display: none;
-       margin-top: 6px;
-   }
+    .rrze-log-message-full {
+	display: none;
+	margin-top: 6px;
+    }
 
-   td.column-message.rrze-log-expanded .rrze-log-message-full {
-       display: block;
-       pre {
-          white-space: pre-wrap;
-          font-family: monospace;
+    td.column-message.rrze-log-expanded .rrze-log-message-full {
+	display: block;
+	pre {
+	    white-space: pre-wrap;
+	    font-family: monospace;
 	    font-size: 0.9rem;
 	    line-height: 1.5;
-       }
-   }
+	    background: antiquewhite;
+	    padding: 0.5rem;
+	    margin: 0;
+	}
+    }
 
     td.column-message .rrze-log-message-full .rrze-log-copy {
 	display: inline-block;
