@@ -1,3 +1,8 @@
+[![Aktuelle Version](https://img.shields.io/github/package-json/v/rrze-webteam/rrze-log/main?label=Version)](https://github.com/RRZE-Webteam/rrze-log)
+[![Release Version](https://img.shields.io/github/v/release/rrze-webteam/rrze-log?label=Release+Version)](https://github.com/rrze-webteam/rrze-log/releases/)
+[![GitHub License](https://img.shields.io/github/license/rrze-webteam/rrze-log)](https://github.com/RRZE-Webteam/rrze-log)
+[![GitHub issues](https://img.shields.io/github/issues/RRZE-Webteam/rrze-log)](https://github.com/RRZE-Webteam/rrze-log/issues)
+
 # RRZE Log
 
 ## WordPress Plugin
@@ -35,7 +40,7 @@ Can be a string or an array. If it is an array, the parameter `$context` will be
 
 **$context**
 
-An array that can be interpolated into the string value of the `$message` parameter.
+An array or object that can be interpolated into the string value of the `$message` parameter.
 
 #### Examples
 

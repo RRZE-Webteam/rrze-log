@@ -10,8 +10,8 @@ use WP_List_Table;
 /**
  * Debug List Table
  */
-class DebugListTable extends WP_List_Table
-{
+class DebugListTable extends WP_List_Table {
+
     /**
      * Options values.
      * @var object
@@ -19,94 +19,225 @@ class DebugListTable extends WP_List_Table
     public $options;
 
     /**
-     * Constructor
-     * @return void
-     */
-    public function __construct()
-    {
-        global $status, $page;
+    * Current orderby.
+    * @var string
+    */
+   protected string $orderby = 'datetime';
 
+   /**
+    * Current order.
+    * @var string
+    */
+   protected string $order = 'desc';
+    
+    /**
+     * Constructor
+     */
+    public function __construct() {
         $this->options = Options::getOptions();
         $this->items = [];
 
         parent::__construct([
             'singular' => 'log',
             'plural' => 'logs',
-            'ajax' => false
+            'ajax' => false,
         ]);
     }
 
-    public function column_default($item, $columnName)
-    {
-        return isset($item[$columnName]) ? $item[$columnName] : '';
+    /*
+     * Table Class
+     */
+    protected function get_table_classes() {
+        $classes = parent::get_table_classes();
+        $classes[] = 'rrze-log-debug';
+        return $classes;
     }
-
-    public function column_datetime($item)
-    {
-        $raw = (string) ($item['datetime'] ?? '');
-        $ts  = strtotime($raw);
-        if (!$ts) {
-            return '—';
-        }
-
-        $utc = gmdate('Y/m/d G:i:s \U\T\C', $ts);
-
-        $dt = new \DateTimeImmutable('@' . $ts);
-        $dt = $dt->setTimezone(wp_timezone());
-        $local = $dt->format('Y/m/d G:i:s');
-
-        return sprintf(
-            '<span title="%s">%s</span>',
-            esc_attr($utc),
-            esc_html($local)
-        );
+    
+    /**
+     * Columns.
+     */
+    public function get_columns() {
+        return [
+            'datetime' => __('Time', 'rrze-log'),
+            'level' => __('Level', 'rrze-log'),
+            'message' => __('Message', 'rrze-log'),
+            'occurrences' => __('#', 'rrze-log'),
+        ];
     }
 
     /**
-     * Render the "message" column.
-     *
-     * @param array|object $item Current row item.
-     * @return string
+     * Default column renderer.
      */
-    public function column_message($item)
-    {
-        $text = is_array($item) ? ($item['message'] ?? '') : ($item->message ?? '');
-        $excerpt = wp_html_excerpt($text, 400, '…');
-        return esc_html($excerpt);
-    }
-
-    public function get_columns()
-    {
-        $columns = [
-            'level' => __('Error level', 'rrze-log'),
-            'message' => __('Message', 'rrze-log'),
-            'datetime' => __('Date', 'rrze-log')
-        ];
-        if (!is_network_admin() && $this->options->adminMenu) {
-            unset($columns['siteurl']);
+    public function column_default($item, $columnName) {
+        if (!is_array($item)) {
+            return '';
         }
-        return $columns;
+
+        switch ($columnName) {
+            case 'datetime':
+                return Utils::formatDatetimeWithUtcTooltip(
+                    (string) ($item['datetime'] ?? ''),
+                    'Y-m-d H:i:s',
+                    'Y-m-d H:i:s \U\T\C'
+                );
+            case 'level':
+                return esc_html((string) ($item['level'] ?? ''));
+            case 'message':
+                return $this->renderMessageCell($item);
+            case 'occurrences':
+                return esc_html((string) (isset($item['occurrences']) ? (int) $item['occurrences'] : 1));
+            default:
+                return '';
+        }
     }
 
-    public function single_row($item)
-    {
-        $message = $item['message'] ?? '';
-        $safe = esc_html($message);
-        $safe = preg_replace('/[ \t]+/', ' ', $safe);
-        $item['message'] = nl2br($safe);
+    /**
+     * Render a single row with a level class and inline details inside the message cell.
+     */
+    public function single_row($item) {
+        if (!is_array($item)) {
+            return;
+        }
 
-        echo '<tr class="data">';
-        $this->single_row_columns($item);
+        $level = strtolower((string) ($item['level'] ?? ''));
+        $level = preg_replace('/[^a-z0-9_\-]/', '', $level);
+        if ($level === '') {
+            $level = 'unknown';
+        }
+
+        echo '<tr class="data level-' . esc_attr($level) . '">';
+
+        $columns = $this->get_columns();
+        foreach (array_keys($columns) as $col) {
+            $classes = 'column-' . $col;
+            echo '<td class="' . esc_attr($classes) . '">';
+
+            if ($col === 'datetime') {
+                echo Utils::formatDatetimeWithUtcTooltip(
+                    (string) ($item['datetime'] ?? ''),
+                    'Y-m-d H:i:s',
+                    'Y-m-d H:i:s \U\T\C'
+                );
+            } elseif ($col === 'level') {
+                echo esc_html((string) ($item['level'] ?? ''));
+            } elseif ($col === 'message') {
+                echo $this->renderMessageCell($item);
+            } elseif ($col === 'occurrences') {
+                echo esc_html((string) (isset($item['occurrences']) ? (int) $item['occurrences'] : 1));
+            }
+
+            echo '</td>';
+        }
+
         echo '</tr>';
-        printf('<tr class="metadata metadata-hidden"> <td colspan=%d>', count($this->get_columns()));
-        $item['datetime'] = get_date_from_gmt($item['datetime'], __('Y/m/d') . ' G:i:s');
-        print_r($item);
-        echo '</td> </tr>';
-        echo '<tr class="hidden"> </tr>';
     }
 
-    public function prepare_items()
-    {
+    /**
+     * Renders the message cell with:
+     * - short message as toggle link (only if expandable)
+     * - full message hidden in same cell (<pre>)
+     */
+    protected function renderMessageCell(array $item): string {
+        $full = trim((string) ($item['message'] ?? ''));
+        $fullMessage = $this->buildFullMessage($item);
+        $short = $this->buildShortMessage($item, $fullMessage);
+
+        
+        if ($short === '') {
+            return '';
+        }
+
+        $expandable = $this->isExpandable($short, $full);
+
+        $out = '';
+
+        if ($expandable) {
+            $out .= '<a href="#" class="rrze-log-message-toggle" aria-expanded="false">'
+                . esc_html($short)
+                . '</a>';
+            
+            $out .= '<div class="rrze-log-message-full" aria-hidden="true">'
+                    . '<pre>' . esc_html($fullMessage) . '</pre>'
+                    . $this->renderCopyButton($fullMessage)
+                    . '</div>';
+            
+        } else {
+            $out .= esc_html($short);
+        }
+
+        return $out;
+    }
+
+    protected function buildFullMessage(array $item): string {
+        if (isset($item['details']) && is_array($item['details']) && !empty($item['details'])) {
+            $lines = [];
+
+            foreach ($item['details'] as $line) {
+                if (!is_scalar($line)) {
+                    continue;
+                }
+                $lines[] = (string) $line;
+            }
+
+            return trim(implode("\n", $lines));
+        }
+
+        return trim((string) ($item['message'] ?? ''));
+    }
+
+    protected function buildShortMessage(array $item, string $full): string {
+        if (isset($item['message_short']) && is_string($item['message_short']) && $item['message_short'] !== '') {
+            return (string) $item['message_short'];
+        }
+
+        return $full;
+    }
+
+
+    /**
+     * Copy link in last column, only visible when row is expanded.
+     */
+   protected function renderCopyButton(string $fullMessage): string {
+        if ($fullMessage === '') {
+            return '';
+        }
+
+        return sprintf(
+            '<button type="button" class="button-link rrze-log-copy" aria-label="%s" title="%s" data-copy="%s">'
+                . '<span class="dashicons dashicons-clipboard" aria-hidden="true"></span>'
+            . '</button>',
+            esc_attr__('Copy full message', 'rrze-log'),
+            esc_attr__('Copy', 'rrze-log'),
+            esc_attr($fullMessage)
+        );
+    }
+
+
+
+    /**
+     * Expand only if there is a meaningful difference.
+     * - If short == full -> no toggle.
+     */
+    protected function isExpandable(string $short, string $full): bool {
+        if ($full === '') {
+            return false;
+        }
+
+        if ($short === $full) {
+            return false;
+        }
+
+        if (mb_strlen($short) === mb_strlen($full)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Prepare list items.
+     */
+    public function prepare_items() {
         $s = $_REQUEST['s'] ?? '';
         $level = $_REQUEST['level'] ?? '';
 
@@ -114,20 +245,33 @@ class DebugListTable extends WP_List_Table
         $hidden = [];
         $sortable = $this->get_sortable_columns();
 
-        $this->_column_headers = array($columns, $hidden, $sortable);
+        $this->_column_headers = [$columns, $hidden, $sortable];
 
         $perPage = $this->get_items_per_page('rrze_log_per_page');
         $currentPage = $this->get_pagenum();
 
         $logFile = Constants::DEBUG_LOG_FILE;
 
-        $search = array_map('trim', explode(' ', trim($s)));
+        $search = array_map('trim', explode(' ', trim((string) $s)));
+        $search = array_filter($search);
 
-        if ($level) {
-            $search[] = '"level":"' . trim($level) . '"';
+        $levelFilter = is_string($level) ? strtoupper(trim($level)) : '';
+        if ($levelFilter !== '') {
+            // Fallback (wirksam auch ohne Parser-Upgrade):
+            $search[] = '"level":"' . $levelFilter . '"';
         }
 
-        $logParser = new DebugLogParser($logFile, $search, (($currentPage - 1) * $perPage), $perPage);
+        $useTailChunk = ($levelFilter === '');
+
+        $logParser = new DebugLogParser(
+            $logFile,
+            $search,
+            (($currentPage - 1) * $perPage),
+            $perPage,
+            $useTailChunk,
+            null,
+            $levelFilter
+        );
 
         $items = $logParser->getItems();
         if (!is_wp_error($items)) {
@@ -135,20 +279,94 @@ class DebugListTable extends WP_List_Table
                 $this->items[] = $value;
             }
         }
+        $this->orderby = isset($_REQUEST['orderby']) ? sanitize_key((string) $_REQUEST['orderby']) : 'datetime';
+        $this->order = isset($_REQUEST['order']) ? strtolower((string) $_REQUEST['order']) : 'desc';
+        $this->order = $this->order === 'asc' ? 'asc' : 'desc';
+
+        $this->sortItems();
+        
         $totalItems = $logParser->getTotalLines();
 
-        $this->set_pagination_args(
-            [
-                'total_items' => $totalItems, // Total number of items
-                'per_page' => $perPage, // How many items to show on a page
-                'total_pages' => ceil($totalItems / $perPage)   // Total number of pages
-            ]
-        );
+        $this->set_pagination_args([
+            'total_items' => $totalItems,
+            'per_page' => $perPage,
+            'total_pages' => (int) ceil($totalItems / $perPage),
+        ]);
+    }
+    /*
+     * Sortable Columns
+     */
+    public function get_sortable_columns() {
+        return [
+            'datetime' => ['datetime', true],
+            'level' => ['level', false],
+            'message' => ['message', false],
+            'occurrences' => ['occurrences', false],
+        ];
+    }
+    
+    protected function sortItems(): void {
+        if (empty($this->items)) {
+            return;
+        }
+
+        usort($this->items, [$this, 'compareItems']);
     }
 
-    protected function extra_tablenav($which)
-    {
-?>
+    protected function compareItems(array $a, array $b): int {
+        $dir = $this->order === 'asc' ? 1 : -1;
+
+        $va = $this->getSortValue($a, $this->orderby);
+        $vb = $this->getSortValue($b, $this->orderby);
+
+        if ($va === $vb) {
+            return 0;
+        }
+
+        if (is_numeric($va) && is_numeric($vb)) {
+            return ($va < $vb ? -1 : 1) * $dir;
+        }
+
+        $cmp = strcasecmp((string) $va, (string) $vb);
+        return ($cmp < 0 ? -1 : 1) * $dir;
+    }
+
+    protected function getSortValue(array $item, string $key) {
+        switch ($key) {
+            case 'datetime':
+                return $this->getUnixTime($item);
+            case 'level':
+                return Utils::levelWeight((string) ($item['level'] ?? ''));
+            case 'message':
+                return (string) ($item['message_short'] ?? ($item['message'] ?? ''));
+            case 'occurrences':
+                return (int) ($item['occurrences'] ?? 1);
+            default:
+                return $this->getUnixTime($item);
+        }
+    }
+
+    protected function getUnixTime(array $item): int {
+        $raw = (string) ($item['datetime'] ?? '');
+        if ($raw === '') {
+            return 0;
+        }
+
+        $ts = strtotime($raw);
+        if ($ts === false) {
+            return 0;
+        }
+
+        return (int) $ts;
+    }
+
+    
+    
+    /**
+     * Filter dropdown.
+     */
+    protected function extra_tablenav($which) {
+        ?>
         <div class="alignleft actions">
             <?php
             if ('top' === $which) {
@@ -162,24 +380,43 @@ class DebugListTable extends WP_List_Table
                     echo $output;
                     submit_button(__('Filter'), '', 'filter_action', false, ['id' => 'rrze-log-level-submit']);
                 }
-            } ?>
+            }
+            ?>
         </div>
-    <?php
+        <?php
     }
 
     /**
      * Dropdown with error levels.
      */
-    protected function levelsDropdown()
-    {
-        $levelFilter = isset($_REQUEST['level']) ? $_REQUEST['level'] : ''; ?>
-        <select id="levels-filter" name="level">
-            <option value=""><?php _e('All error levels', 'rrze-log'); ?></option>
-            <?php foreach (Constants::DEBUG_LEVELS as $level) :
-                $selected = $levelFilter == $level ? ' selected = "selected"' : ''; ?>
-                <option value="<?php echo $level; ?>" <?php echo $selected; ?>><?php echo $level; ?></option>
-            <?php endforeach; ?>
-        </select>
-<?php
+    protected function levelsDropdown() {
+        $levelFilter = isset($_REQUEST['level']) ? strtoupper(trim((string) $_REQUEST['level'])) : '';
+
+        $parser = new DebugLogParser(
+            Constants::DEBUG_LOG_FILE,
+            [],
+            0,
+            -1,
+            false,
+            null,
+            ''
+        );
+
+        $available = $parser->getAvailableLevels();
+
+        echo '<select id="levels-filter" name="level">';
+        echo '<option value="">' . esc_html(__('All error levels', 'rrze-log')) . '</option>';
+
+        foreach ($available as $level => $count) {
+            printf(
+                '<option value="%s"%s>%s (%d)</option>',
+                esc_attr($level),
+                selected($levelFilter, $level, false),
+                esc_html($level),
+                (int) $count
+            );
+        }
+
+        echo '</select>';
     }
 }

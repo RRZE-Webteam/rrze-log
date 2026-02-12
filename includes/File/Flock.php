@@ -180,8 +180,7 @@ class Flock
     /**
      * Release the lock and close the file.
      */
-    public function release(): self
-    {
+    public function release(): self   {
         if ($this->locked && is_resource($this->fp)) {
             @flock($this->fp, LOCK_UN);
             @fclose($this->fp);

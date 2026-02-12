@@ -1,10 +1,7 @@
-### vscode ###
+### IDES ###
 .vscode/
-### NetBeans ###
 **/nbproject/
-### PhpStorm ###
 .idea/
-*.css.map
 ### macOS ###
 .DS_Store
 ### Node ###
@@ -14,3 +11,11 @@ node_modules/
 /languages/*.mo
 ### Tmp ###
 /_tmp/
+composer.phar
+/vendor/
+node_modules/
+package-lock.json
+*.css.map
+*.js.map
+package-lock.json
+assets/js/rrze-log.js.map

@@ -19,8 +19,7 @@ defined('ABSPATH') || exit;
  * - getItems(): returns an iterator over grouped/normalized entries (newest → oldest)
  * - getTotalLines(): number of items after filtering (for the last getItems() call)
  */
-class DebugLogParser
-{
+class DebugLogParser {
     /** @var \WP_Error|null Constructor error holder */
     protected $error = null;
 
@@ -51,6 +50,10 @@ class DebugLogParser
     /** @var int Bytes to read from the file tail in fast mode (default 10 MB) */
     protected int $tailBytes = 10485760; // 10 * 1024 * 1024
 
+    
+    protected string $orderby = 'datetime';
+    protected string $order = 'desc';
+    protected string $levelFilter = '';
     /**
      * Constructor.
      *
@@ -61,18 +64,30 @@ class DebugLogParser
      * @param bool     $useTailChunk Whether to use tail-chunk mode (default: true).
      * @param int|null $tailBytes    Custom tail size in bytes (null = default 10 MB).
      */
-    public function __construct($filename, $search = [], $offset = 0, $count = -1, bool $useTailChunk = false, ?int $tailBytes = null)
-    {
+    public function __construct($filename, $search = [], $offset = 0, $count = -1, bool $useTailChunk = false, ?int $tailBytes = null, string $levelFilter = '') {
         $this->offset = max(0, (int) $offset);
         $this->count  = (int) $count;
         $this->useTailChunk  = $useTailChunk;
+
+        $this->levelFilter = strtoupper(trim($levelFilter));
+        if ($this->levelFilter !== '') {
+            $this->useTailChunk = false;
+        }
 
         if ($tailBytes !== null && $tailBytes > 0) {
             $this->tailBytes = $tailBytes;
         }
 
         $search = array_map('mb_strtolower', (array) $search);
-        $this->search = array_filter($search, static fn($v) => $v !== '' && $v !== null);
+
+        $clean = [];
+        foreach ($search as $v) {
+            if ($v === '' || $v === null) {
+                continue;
+            }
+            $clean[] = $v;
+        }
+        $this->search = $clean;
 
         if (!file_exists($filename)) {
             $this->error = new \WP_Error('rrze_log_file', __('Log file not found.', 'rrze-log'));
@@ -85,12 +100,31 @@ class DebugLogParser
             $this->error = new \WP_Error(
                 'rrze_log_file',
                 sprintf(
-                    /* translators: %s: error message */
                     __('Cannot open log: %s', 'rrze-log'),
                     $e->getMessage()
                 )
             );
         }
+    }
+
+    
+    /*
+     * Helper Function
+     */
+    protected function filterNonEmptySearch($v): bool {
+        if ($v === '' || $v === null) {
+            return false;
+        }
+
+        return true;
+    }
+    
+    protected function passesLevelFilter(string $level): bool {
+        if ($this->levelFilter === '') {
+            return true;
+        }
+
+        return strtoupper(trim($level)) === $this->levelFilter;
     }
 
     /**
@@ -107,8 +141,7 @@ class DebugLogParser
      *
      * @return \Iterator|\WP_Error
      */
-    public function getItems()
-    {
+    public function getItems() {
         if (is_wp_error($this->error)) {
             return $this->error;
         }
@@ -121,12 +154,18 @@ class DebugLogParser
         $rows = [];
         foreach ($groupsNewestFirst as $entry) {
             $detailsArr = explode('@@@', $entry['details']);
+            $detailsArr = array_map('trim', $detailsArr);
+            $detailsArr = array_values(array_filter($detailsArr, [$this, 'filterNonEmptySearch']));
+
+            $message = isset($detailsArr[0]) ? (string) $detailsArr[0] : '';
+            
             $row = [
                 'datetime'    => $entry['occurrences'][0], // newest
                 'level'       => $entry['level'],
                 'occurrences' => count($entry['occurrences']),
-                'message'     => $detailsArr[0],
-                // 'details'     => $detailsArr,
+                'message'     => $message,
+                'message_short' => $this->shortenMessage($message, 180),
+                'details'       => $detailsArr,
             ];
 
             $searchStr = json_encode($row);
@@ -136,7 +175,7 @@ class DebugLogParser
         }
 
         $rows = array_reverse($rows);
-
+        $rows = $this->sortRows($rows);
         $this->totalLines = count($rows);
 
         // Pagination
@@ -150,15 +189,99 @@ class DebugLogParser
         return new \LimitIterator(new \ArrayIterator([]));
     }
 
+    
+    /*
+    * Sort function
+    */
+    protected function sortRows(array $rows): array {
+        if (count($rows) <= 1) {
+            return $rows;
+        }
+
+        usort($rows, [$this, 'compareRows']);
+
+        return $rows;
+    }
+
+    public function compareRows(array $a, array $b): int {
+        $dir = ($this->order === 'asc') ? 1 : -1;
+
+        $va = $this->getSortValue($a, $this->orderby);
+        $vb = $this->getSortValue($b, $this->orderby);
+
+        if ($va === $vb) {
+            return 0;
+        }
+
+        if (is_numeric($va) && is_numeric($vb)) {
+            return (($va < $vb) ? -1 : 1) * $dir;
+        }
+
+        $cmp = strcasecmp((string) $va, (string) $vb);
+        return (($cmp < 0) ? -1 : 1) * $dir;
+    }
+
+    protected function getSortValue(array $row, string $key) {
+        switch ($key) {
+            case 'datetime':
+                return $this->toTimestamp((string) ($row['datetime'] ?? ''));
+            case 'level':
+                return $this->levelWeight((string) ($row['level'] ?? ''));
+            case 'message':
+                return (string) ($row['message'] ?? '');
+            case 'occurrences':
+                return (int) ($row['occurrences'] ?? 0);
+            default:
+                return $this->toTimestamp((string) ($row['datetime'] ?? ''));
+        }
+    }
+
+    /*
+     * Sort bei Level nach Schweregrad
+     */
+    protected function levelWeight(string $level): int {
+        return Utils::levelWeight($level);
+    }
+
+    protected function toTimestamp(string $raw): int {
+        if ($raw === '') {
+            return 0;
+        }
+
+        $ts = strtotime($raw);
+        if ($ts === false) {
+            return 0;
+        }
+
+        return (int) $ts;
+    }
+    /*
+     * Helper Function to shorten debug message
+     */
+    protected function shortenMessage(string $message, int $maxLen): string {
+        $message = trim($message);
+        if ($message === '') {
+            return '';
+        }
+
+        if ($maxLen < 10) {
+            $maxLen = 10;
+        }
+
+        if (mb_strlen($message) <= $maxLen) {
+            return $message;
+        }
+
+        return mb_substr($message, 0, $maxLen - 1) . '...';
+    }
+
+    
     /**
      * Returns the total number of filtered items (for the last getItems()).
      */
-    public function getTotalLines()
-    {
+    public function getTotalLines() {
         return (int) $this->totalLines;
     }
-
-    /* =========================== FAST MODE (TAIL-CHUNK) =========================== */
 
     /**
      * Fast path: read only the last $tailBytes of the file and parse with preg_split.
@@ -166,8 +289,7 @@ class DebugLogParser
      *
      * @return array Grouped entries (newest → oldest)
      */
-    protected function parseTailChunk(): array
-    {
+    protected function parseTailChunk(): array {
         $fh = $this->file;
         if (!is_object($fh)) {
             return [];
@@ -214,7 +336,7 @@ class DebugLogParser
 
             $normalized = $this->normalizeEntryMessage($message);
             [$level, $details] = $this->classifyAndExtractDetails($normalized);
-            $details = trim(preg_replace('/([\r\n\t])/', '', wp_kses_post($details)));
+            $details = $this->sanitizeDetails($details);
 
             if (!isset($groups[$details])) {
                 $groups[$details] = [
@@ -242,8 +364,7 @@ class DebugLogParser
      *
      * @return array Grouped entries (newest → oldest)
      */
-    protected function parseAndGroupReverseWithEarlyExit(): array
-    {
+    protected function parseAndGroupReverseWithEarlyExit(): array {
         $fh = $this->file;
         if (!is_object($fh)) {
             return [];
@@ -297,9 +418,6 @@ class DebugLogParser
                         ? $inlineMsg . ($body !== '' ? "\n" . $body : '')
                         : $body;
 
-                    $fullMessage = ($inlineMsg !== '')
-                        ? $inlineMsg . ($body !== '' ? "\n" . $body : '')
-                        : $body;
 
                     if ($fullMessage === '') {
                         $currentEntryLines = [];
@@ -342,31 +460,43 @@ class DebugLogParser
      * Normalize, classify and group a single entry (used by full reverse mode).
      * Keeps newest-first order of groups via $order (array of details keys).
      */
-    protected function finalizeGroupEntry(string $timestamp, string $fullMessage, array &$groups, array &$order): void
-    {
+    protected function finalizeGroupEntry(string $timestamp, string $fullMessage, array &$groups, array &$order): void {
         $normalized = $this->normalizeEntryMessage($fullMessage);
         [$level, $details] = $this->classifyAndExtractDetails($normalized);
+
+        if (!$this->passesLevelFilter($level)) {
+            return;
+        }
+
         $details = trim(preg_replace('/([\r\n\t])/', '', wp_kses_post($details)));
 
         if (!isset($groups[$details])) {
             $groups[$details] = [
                 'level'       => $level,
                 'details'     => $details,
-                'occurrences' => [$timestamp], // newest first
+                'occurrences' => [$timestamp],
             ];
             array_unshift($order, $details);
         } else {
-            $groups[$details]['occurrences'][] = $timestamp; // older appended at the end
+            $groups[$details]['occurrences'][] = $timestamp;
         }
     }
 
-    /* =========================== SHARED UTILS =========================== */
+
+    /*
+     * Details sanitizen
+     */
+    protected function sanitizeDetails(string $details): string {
+        $details = wp_kses_post($details);
+        $details = str_replace(["\r\n", "\r"], "\n", $details);
+        return trim($details);
+    }
+
 
     /**
      * Case-insensitive AND-search (nested arrays also AND).
      */
-    protected function matchesSearch(string $haystack): bool
-    {
+    protected function matchesSearch(string $haystack): bool {
         $haystack = mb_strtolower($haystack);
         foreach ($this->search as $needle) {
             if (is_array($needle) && !empty($needle)) {
@@ -387,8 +517,7 @@ class DebugLogParser
     /**
      * Normalize a raw message: hide absolute paths and add "@@@" markers for UI splitting.
      */
-    protected function normalizeEntryMessage(string $message): string
-    {
+    protected function normalizeEntryMessage(string $message): string {
         if (defined('ABSPATH')) {
             $message = str_replace(ABSPATH, ".../", $message);
         }
@@ -407,8 +536,7 @@ class DebugLogParser
      *
      * @return array [ level, details ]
      */
-    protected function classifyAndExtractDetails(string $error): array
-    {
+    protected function classifyAndExtractDetails(string $error): array {
         if ((false !== strpos($error, 'PHP Fatal')) || (false !== strpos($error, 'FATAL')) || (false !== strpos($error, 'E_ERROR'))) {
             return ['FATAL', str_replace(["PHP Fatal error: ", "PHP Fatal: ", "FATAL ", "E_ERROR: "], "", $error)];
         } elseif ((false !== strpos($error, 'PHP Warning')) || (false !== strpos($error, 'E_WARNING'))) {
@@ -435,4 +563,78 @@ class DebugLogParser
             return ['OTHER', $details];
         }
     }
+    
+    public function getAvailableLevels(): array {
+        if (is_wp_error($this->error)) {
+            return [];
+        }
+
+        $counts = [];
+
+        if ($this->useTailChunk) {
+            $groups = $this->parseTailChunk();
+        } else {
+            $groups = $this->parseAndGroupReverseWithEarlyExitNoLimit();
+        }
+
+        foreach ($groups as $entry) {
+            $level = isset($entry['level']) ? strtoupper((string) $entry['level']) : '';
+            if ($level === '') {
+                continue;
+            }
+
+            if (!isset($counts[$level])) {
+                $counts[$level] = 0;
+            }
+
+            $occ = 1;
+            if (isset($entry['occurrences']) && is_array($entry['occurrences'])) {
+                $occ = count($entry['occurrences']);
+                if ($occ < 1) {
+                    $occ = 1;
+                }
+            }
+
+            $counts[$level] += $occ;
+        }
+
+        $levels = array_keys($counts);
+        usort($levels, [$this, 'compareLevelsBySeverity']);
+
+        $sorted = [];
+        foreach ($levels as $lvl) {
+            $sorted[$lvl] = $counts[$lvl];
+        }
+
+        return $sorted;
+    }
+
+    protected function compareLevelsBySeverity(string $a, string $b): int {
+        $wa = Utils::levelWeight($a);
+        $wb = Utils::levelWeight($b);
+
+        if ($wa === $wb) {
+            return strcmp($a, $b);
+        }
+
+        return $wa < $wb ? -1 : 1;
+    }
+    
+    protected function parseAndGroupReverseWithEarlyExitNoLimit(): array {
+        $oldOffset = $this->offset;
+        $oldCount = $this->count;
+
+        $this->offset = 0;
+        $this->count = -1;
+
+        $result = $this->parseAndGroupReverseWithEarlyExit();
+
+        $this->offset = $oldOffset;
+        $this->count = $oldCount;
+
+        return $result;
+    }
+
+    
+    
 }
