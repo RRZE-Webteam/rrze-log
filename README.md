@@ -40,7 +40,7 @@ Can be a string or an array. If it is an array, the parameter `$context` will be
 
 **$context**
 
-An array that can be interpolated into the string value of the `$message` parameter.
+An array or object that can be interpolated into the string value of the `$message` parameter.
 
 #### Examples
 

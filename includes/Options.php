@@ -24,8 +24,10 @@ final class Options {
             'enabled' => '0',
             'maxLines' => 1000,
             'adminMenu' => '0',
+
+            'logAccess' => '',
+
             'debugMaxLines' => 1000,
-            'debugLogAccess' => '',
 
             'auditEnabled' => '0',
             'auditTypes' => [
@@ -34,6 +36,8 @@ final class Options {
                 'editorial' => 0,
             ],
             'auditMaxLines' => 1000,
+
+            'superadminAuditMaxLines' => 1000,
         ];
     }
 
@@ -45,9 +49,17 @@ final class Options {
     public static function getOptions(): object {
         $defaults = self::defaultOptions();
 
-        $options = (array) get_site_option(self::$optionName);
+        if (is_multisite()) {
+            $options = (array) get_site_option(self::$optionName, []);
+        } else {
+            $options = (array) get_option(self::$optionName, []);
+        }
+
         $options = wp_parse_args($options, $defaults);
         $options = array_intersect_key($options, $defaults);
+
+        $options['enabled'] = !empty($options['enabled']) ? 1 : 0;
+        $options['adminMenu'] = !empty($options['adminMenu']) ? 1 : 0;
 
         $options['auditEnabled'] = !empty($options['auditEnabled']) ? 1 : 0;
 

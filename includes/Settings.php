@@ -75,18 +75,6 @@ final class Settings {
      * Initiate hooks.
      */
     public function loaded(): void {
-        add_action('network_admin_menu', [$this, 'networkAdminMenu']);
-        add_action('network_admin_menu', [$this, 'settingsSection']);
-        add_action('network_admin_menu', [$this, 'settingsUpdate']);
-        
-        if (!is_multisite()) {
-            add_action('admin_menu', [$this, 'adminMenu']);
-        } else {
-            if (is_super_admin() || !empty($this->options->adminMenu)) {
-                add_action('admin_menu', [$this, 'adminMenu']);
-            }
-        }
-
         add_filter('set-screen-option', [$this, 'setScreenOption'], 10, 3);
 
         $debug = Utils::isDebugLog();
@@ -103,6 +91,25 @@ final class Settings {
         }
 
         $this->isDebugLog = (bool) $debug;
+
+        if (is_multisite()) {
+            add_action('network_admin_menu', [$this, 'networkAdminMenu']);
+            if ($this->canAccessSettings()) {
+                add_action('network_admin_menu', [$this, 'settingsSection']);
+                add_action('network_admin_menu', [$this, 'settingsUpdate']);
+            }
+            
+           // Site: Menü für Action Log + Debug (keine Settings!)
+            add_action('admin_menu', [$this, 'singleSiteMenu']);
+            return;
+        }
+
+        // Single site
+        add_action('admin_menu', [$this, 'singleSiteMenu']);
+        if ($this->canAccessSettings()) {
+            add_action('admin_menu', [$this, 'settingsSection']);
+            add_action('admin_menu', [$this, 'settingsUpdate']);
+        }
     }
 
     /**
@@ -122,10 +129,12 @@ final class Settings {
     public function networkAdminMenu(): void {
         $this->options = Options::getOptions();
 
+        $cap = 'manage_network_options';
+        
         $logPage = add_menu_page(
             __('Protokoll', 'rrze-log'),
             __('Protokoll', 'rrze-log'),
-            'manage_options',
+            $cap,
             'rrze-log',
             [$this, 'logPage'],
             'dashicons-list-view'
@@ -136,7 +145,7 @@ final class Settings {
             'rrze-log',
             __('Action Log', 'rrze-log'),
             __('Action Log', 'rrze-log'),
-            'manage_options',
+            $cap,
             'rrze-log',
             [$this, 'logPage']
         );
@@ -146,7 +155,7 @@ final class Settings {
                 'rrze-log',
                 __('Debug', 'rrze-log'),
                 __('Debug', 'rrze-log'),
-                'manage_options',
+                $cap,
                 'rrze-log-debug',
                 [$this, 'debugLogPage']
             );
@@ -158,7 +167,7 @@ final class Settings {
                 'rrze-log',
                 __('Audit', 'rrze-log'),
                 __('Audit', 'rrze-log'),
-                'manage_options',
+               $cap,
                 'rrze-log-audit',
                 [$this, 'auditLogPage']
             );
@@ -169,33 +178,34 @@ final class Settings {
                 'rrze-log',
                 __('Superadmin Audit', 'rrze-log'),
                 __('Superadmin Audit', 'rrze-log'),
-                'manage_options',
+                $cap,
                 'rrze-log-superadmin-audit',
                 [$this, 'superadminAuditLogPage']
             );
             add_action("load-$superAuditPage", [$this, 'superadminAuditScreenOptions']);
         }
 
-
-        add_submenu_page(
-            'rrze-log',
-            __('Settings', 'rrze-log'),
-            __('Settings', 'rrze-log'),
-            'manage_options',
-            'rrze-log-settings',
-            [$this, 'settingsPage']
-        );
+        if ($this->canAccessSettings()) {
+            add_submenu_page(
+                'rrze-log',
+                __('Settings', 'rrze-log'),
+                __('Settings', 'rrze-log'),
+                $cap,
+                'rrze-log-settings',
+                [$this, 'settingsPage']
+            );
+        }
     }
 
 
     /**
      * Add admin menu (Tools) if enabled.
      */
-    public function adminMenu(): void {
-        if (is_multisite() && is_network_admin()) {
+    public function singleSiteMenu(): void {
+        if (!$this->canAdminSeeSiteLogs()) {
             return;
         }
-
+        
         $this->options = Options::getOptions();
 
         $logPage = add_menu_page(
@@ -216,19 +226,7 @@ final class Settings {
             'rrze-log',
             [$this, 'logPage']
         );
-
-        if (!empty($this->options->auditEnabled)) {
-            $auditPage = add_submenu_page(
-                'rrze-log',
-                __('Audit', 'rrze-log'),
-                __('Audit', 'rrze-log'),
-                'manage_options',
-                'rrze-log-audit',
-                [$this, 'auditLogPage']
-            );
-            add_action("load-$auditPage", [$this, 'auditScreenOptions']);
-        }
-
+       
         if ($this->isDebugLog && $this->isUserInDebugLogAccess()) {
             $debugLogPage = add_submenu_page(
                 'rrze-log',
@@ -240,6 +238,19 @@ final class Settings {
             );
             add_action("load-$debugLogPage", [$this, 'debugScreenOptions']);
         }
+         // Audit nur für Superadmins und nur wenn Audit aktiviert ist
+        if (is_super_admin() && !empty($this->options->auditEnabled)) {
+            $auditPage = add_submenu_page(
+                'rrze-log',
+                __('Audit', 'rrze-log'),
+                __('Audit', 'rrze-log'),
+                'manage_options',
+                'rrze-log-audit',
+                [$this, 'auditLogPage']
+            );
+            add_action("load-$auditPage", [$this, 'auditScreenOptions']);
+        }
+
     }
 
 
@@ -249,6 +260,10 @@ final class Settings {
      * Display settings page.
      */
     public function settingsPage(): void {
+        if (!$this->canAccessSettings()) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
+        }
+
         global $title; ?>
         <div class="wrap">
             <h1><?php echo esc_html($title); ?></h1>
@@ -317,7 +332,14 @@ final class Settings {
             'rrze-log-settings',
             'rrze-log-adminmenu-settings'
         );
-        
+         add_settings_field(
+            'rrze-log-logAccess',
+            __('Admin log access (allowlist)', 'rrze-log'),
+            [$this, 'logAccessField'],
+            'rrze-log-settings',
+            'rrze-log-adminmenu-settings'
+        );
+
         if (is_super_admin()) {
             add_settings_section(
                 'rrze-log-audit-settings',
@@ -362,6 +384,8 @@ final class Settings {
        
     }
 
+    
+    
     /**
      * Display enabled field.
      */
@@ -479,6 +503,32 @@ final class Settings {
         <p class="description"><?php _e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
         <?php
     }
+    
+    /**
+    * Display logAccess field.
+    *
+    * If empty: all administrators can see Action Log + Debug (site level).
+    * If filled: only listed admins (and superadmins) can see them.
+    */
+    public function logAccessField(): void {
+        $val = '';
+        if (isset($this->options->logAccess)) {
+            $val = $this->getTextarea($this->options->logAccess);
+        }
+
+        echo '<textarea id="rrze-log-logAccess" cols="50" rows="5" name="';
+        printf('%s[logAccess]', $this->optionName);
+        echo '">';
+        echo esc_textarea($val);
+        echo '</textarea>';
+
+        echo '<p class="description">';
+        echo esc_html__(
+            'Optional allowlist for viewing admin logs (Action Log + Debug) and their menus on site level. One username per line. If empty: all administrators can access.',
+            'rrze-log'
+        );
+        echo '</p>';
+    }
 
 
 
@@ -543,20 +593,33 @@ final class Settings {
                     ? min(absint($input['superadminAuditMaxLines']), 500000)
                     : $currentSuperMax;
 
+            
         } else {
             unset($input['auditEnabled'], $input['auditTypes'], $input['auditMaxLines']);
             unset($input['superadminAuditMaxLines']);
         }
 
+        // logAccess (allowlist)
+        // Multisite: only superadmins may set it (settings page is blocked anyway, but keep it strict).
+        // Single: admins may set it.
+        if (!is_multisite() || is_super_admin()) {
+            $rawLogAccess = isset($input['logAccess']) ? (string) $input['logAccess'] : '';
+            $logAccess = $this->sanitizeTextarea($rawLogAccess);
+            if (!empty($logAccess) && is_array($logAccess)) {
+                $logAccess = $this->sanitizeWpLogAccess($logAccess);
+            }
+            $input['logAccess'] = !empty($logAccess) ? $logAccess : '';
+        } else {
+            unset($input['logAccess']);
+        }
+        
+        
         if ($this->isDebugLog) {
             $input['debugMaxLines'] = !empty($input['debugMaxLines']) && absint($input['debugMaxLines'])
                 ? min(absint($input['debugMaxLines']), 50000)
                 : $this->options->debugMaxLines;
 
-            $input['debugLogAccess'] = isset($input['debugLogAccess']) ? (string) $input['debugLogAccess'] : '';
-            $debugLogAccess = $this->sanitizeTextarea($input['debugLogAccess']);
-            $debugLogAccess = !empty($debugLogAccess) ? $this->sanitizeWpLogAccess($debugLogAccess) : '';
-            $input['debugLogAccess'] = !empty($debugLogAccess) ? $debugLogAccess : '';
+
         }
 
         $this->options = (object) wp_parse_args($input, (array) $this->options);
@@ -567,18 +630,29 @@ final class Settings {
      * Update network admin options.
      */
     public function settingsUpdate(): void {
-        if (!is_network_admin() || !isset($_POST['rrze-log-settings-submit-primary'])) {
+        if (!$this->canAccessSettings()) {
+            return;
+        }
+
+
+        if (!isset($_POST['rrze-log-settings-submit-primary'])) {
             return;
         }
 
         check_admin_referer('rrze-log-settings-options');
 
         $input = isset($_POST[$this->optionName]) && is_array($_POST[$this->optionName]) ? $_POST[$this->optionName] : [];
-        update_site_option($this->optionName, $this->optionsValidate($input));
 
+        if (is_multisite()) {
+            update_site_option($this->optionName, $this->optionsValidate($input));
+            $this->options = Options::getOptions();
+            add_action('network_admin_notices', [$this, 'settingsUpdateNotice']);
+            return;
+        }
+
+        update_option($this->optionName, $this->optionsValidate($input));
         $this->options = Options::getOptions();
-
-        add_action('network_admin_notices', [$this, 'settingsUpdateNotice']);
+        add_action('admin_notices', [$this, 'settingsUpdateNotice']);
     }
 
     /**
@@ -704,7 +778,7 @@ final class Settings {
      * Display WP debug log list table page.
      */
     public function debugLogPage(): void {
-        if (!current_user_can('manage_options') || !$this->isUserInDebugLogAccess()) {
+        if (!$this->canAdminSeeSiteLogs()) {
             wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
         }
 
@@ -828,8 +902,11 @@ final class Settings {
             return true;
         }
 
-        $debugLogAccess = $this->options->debugLogAccess;
-
+        if (empty($this->options->logAccess)) {
+            return current_user_can('manage_options');
+        }
+        $debugLogAccess = $this->options->logAccess;
+        
         if (!empty($debugLogAccess) && is_array($debugLogAccess)) {
             $currentUserLogin = (string) wp_get_current_user()->data->user_login;
 
@@ -844,6 +921,51 @@ final class Settings {
 
         return false;
     }
+    
+    /*
+     * Check, ob alle Admins die Logs sehen dürfen oder ob man
+     * zusätzlich auch in der logAcess Liste sein muss.
+     * Wenn die Liste allerdings leer ist, darf jeder mit der Rolle Admin
+     */
+    protected function canAdminSeeSiteLogs(): bool {
+        if (!current_user_can('manage_options')) {
+            return false;
+        }
+
+        // Superadmins immer
+        if (is_multisite() && is_super_admin()) {
+            return true;
+        }
+
+        
+        if (empty($this->options->adminMenu)) {
+            return false;
+        }
+        
+        $list = $this->options->logAccess ?? '';
+
+        // Leer => alle Admins
+        if (empty($list)) {
+            return true;
+        }
+
+        if (!is_array($list)) {
+            return false;
+        }
+
+        $login = (string) wp_get_current_user()->user_login;
+
+        foreach ($list as $row) {
+            $ary = explode(' - ', (string) $row);
+            $allowedLogin = isset($ary[0]) ? trim((string) $ary[0]) : '';
+            if ($allowedLogin !== '' && $allowedLogin === $login) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    
     
     /**
      * Add screen options for superadmin audit log.
@@ -915,5 +1037,14 @@ final class Settings {
        <?php
    }
 
-    
+   /*
+    * Check wr die Settings sehen kann
+    */
+    protected function canAccessSettings(): bool {
+        if (is_multisite()) {
+            return is_super_admin() && is_network_admin() && current_user_can('manage_network_options');
+        }
+
+        return current_user_can('manage_options');
+    }
 }
