@@ -35,7 +35,9 @@ class ListTable extends WP_List_Table {
             'siteurl'  => __('Website', 'rrze-log'),
             'message' => __('Message', 'rrze-log'),
         ];
-
+        if (!is_network_admin()) {
+            unset($columns['siteurl']);
+        }
         return $columns;
     }
 
