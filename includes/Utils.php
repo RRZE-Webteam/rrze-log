@@ -80,7 +80,7 @@ class Utils
         $logParser = new LogParser($logFile, $search, $offset, $count);
 
         if (!is_network_admin()) {
-            $logItems = $logParser->getItems('siteurl', site_url());
+            $logItems = $logParser->getItems('siteurl', untrailingslashit(site_url()));
         } else {
             $logItems = $logParser->getItems();
         }
