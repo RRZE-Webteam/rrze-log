@@ -116,7 +116,12 @@ class LogParser {
      * @return \Iterator|WP_Error
      */
     public function getItemsDecoded(string $key = '', string $search = '') {
-        $it = $this->getItems($key, $search);
+        if (!is_network_admin()) {
+            $it = $this->getItems('siteurl', untrailingslashit(site_url()));
+        } else {
+            $it = $this->getItems();
+        }        
+        // $it = $this->getItems($key, $search);
         if (is_wp_error($it)) {
             return $it;
         }
