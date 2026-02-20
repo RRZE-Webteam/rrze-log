@@ -255,7 +255,7 @@ class AuditListTable extends WP_List_Table {
         );
 
         if (!is_network_admin()) {
-            $logItems = $logParser->getItems('siteurl', site_url());
+            $logItems = $logParser->getItems('siteurl', untrailingslashit(site_url()));
         } else {
             $logItems = $logParser->getItems();
         }
