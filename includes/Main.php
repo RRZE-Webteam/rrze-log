@@ -232,20 +232,22 @@ class Main {
             !str_contains($hook, 'page_rrze-log')
             && !str_contains($hook, 'page_rrze-log-debug')
             && !str_contains($hook, 'page_rrze-log-audit')
+            && !str_contains($hook, 'page_rrze-log-superadmin-audit')
+            && !str_contains($hook, 'page_rrze-log-websupport-audit')
         ) {
             return;
         }
 
         $version = plugin()->getVersion();
 
-        wp_register_style(
+        wp_enqueue_style(
             'rrze-log-list-table',
             plugins_url('assets/css/rrze-log.css', plugin()->getBasename()),
             [],
             $version
         );
 
-        wp_register_script(
+        wp_enqueue_script(
             'rrze-log-list-table',
             plugins_url('assets/js/rrze-log.js', plugin()->getBasename()),
             ['jquery'],

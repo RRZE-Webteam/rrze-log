@@ -7,6 +7,8 @@ namespace RRZE\Log;
 defined('ABSPATH') || exit;
 
 final class Settings {
+    private const SITE_LOG_ACCESS_CAP = 'rrze_log_view_site_logs';
+
 
     /**
      * Option name.
@@ -61,6 +63,12 @@ final class Settings {
     * @var object
     */
     protected $superadminAuditListTable;
+
+    /**
+    * WP_List_Table object for websupport audit log.
+    * @var object
+    */
+    protected $websupportAuditListTable;
     
     
     /**
@@ -75,6 +83,7 @@ final class Settings {
      * Initiate hooks.
      */
     public function loaded(): void {
+        add_filter('user_has_cap', [$this, 'grantSiteLogAccessCap'], 10, 4);
         add_filter('set-screen-option', [$this, 'setScreenOption'], 10, 3);
 
         $debug = Utils::isDebugLog();
@@ -183,6 +192,16 @@ final class Settings {
                 [$this, 'superadminAuditLogPage']
             );
             add_action("load-$superAuditPage", [$this, 'superadminAuditScreenOptions']);
+
+            $websupportAuditPage = add_submenu_page(
+                'rrze-log',
+                __('Websupport Audit', 'rrze-log'),
+                __('Websupport Audit', 'rrze-log'),
+                $cap,
+                'rrze-log-websupport-audit',
+                [$this, 'websupportAuditLogPage']
+            );
+            add_action("load-$websupportAuditPage", [$this, 'websupportAuditScreenOptions']);
         }
 
         if ($this->canAccessSettings()) {
@@ -202,16 +221,16 @@ final class Settings {
      * Add admin menu (Tools) if enabled.
      */
     public function singleSiteMenu(): void {
+        $this->options = Options::getOptions();
+
         if (!$this->canAdminSeeSiteLogs()) {
             return;
         }
-        
-        $this->options = Options::getOptions();
 
         $logPage = add_menu_page(
             __('Protokoll', 'rrze-log'),
             __('Protokoll', 'rrze-log'),
-            'manage_options',
+            self::SITE_LOG_ACCESS_CAP,
             'rrze-log',
             [$this, 'logPage'],
             'dashicons-list-view'
@@ -222,7 +241,7 @@ final class Settings {
             'rrze-log',
             __('Action Log', 'rrze-log'),
             __('Action Log', 'rrze-log'),
-            'manage_options',
+            self::SITE_LOG_ACCESS_CAP,
             'rrze-log',
             [$this, 'logPage']
         );
@@ -232,7 +251,7 @@ final class Settings {
                 'rrze-log',
                 __('Debug', 'rrze-log'),
                 __('Debug', 'rrze-log'),
-                'manage_options',
+                self::SITE_LOG_ACCESS_CAP,
                 'rrze-log-debug',
                 [$this, 'debugLogPage']
             );
@@ -379,6 +398,14 @@ final class Settings {
                 'rrze-log-settings',
                 'rrze-log-audit-settings'
             );
+
+            add_settings_field(
+                'rrze-log-websupportAuditMaxLines',
+                __('Truncate websupport audit log file to last N lines', 'rrze-log'),
+                [$this, 'websupportAuditMaxLinesField'],
+                'rrze-log-settings',
+                'rrze-log-audit-settings'
+            );
         }
 
        
@@ -507,8 +534,8 @@ final class Settings {
     /**
     * Display logAccess field.
     *
-    * If empty: all administrators can see Action Log + Debug (site level).
-    * If filled: only listed admins (and superadmins) can see them.
+    * Admins and Websupport users can see Action Log + Debug on site level.
+    * Listed users get additional access.
     */
     public function logAccessField(): void {
         $val = '';
@@ -524,7 +551,7 @@ final class Settings {
 
         echo '<p class="description">';
         echo esc_html__(
-            'Optional allowlist for viewing admin logs (Action Log + Debug) and their menus on site level. One username per line. If empty: all administrators can access.',
+            'Optional allowlist for additional users who may view admin logs (Action Log + Debug) and their menus on site level. One username per line. Administrators and Websupport users do not need to be listed.',
             'rrze-log'
         );
         echo '</p>';
@@ -593,10 +620,20 @@ final class Settings {
                     ? min(absint($input['superadminAuditMaxLines']), 500000)
                     : $currentSuperMax;
 
+            $currentWebsupportMax = isset($this->options->websupportAuditMaxLines)
+                ? (int) $this->options->websupportAuditMaxLines
+                : 1000;
+
+            $input['websupportAuditMaxLines'] =
+                !empty($input['websupportAuditMaxLines']) && absint($input['websupportAuditMaxLines'])
+                    ? min(absint($input['websupportAuditMaxLines']), 500000)
+                    : $currentWebsupportMax;
+
             
         } else {
             unset($input['auditEnabled'], $input['auditTypes'], $input['auditMaxLines']);
             unset($input['superadminAuditMaxLines']);
+            unset($input['websupportAuditMaxLines']);
         }
 
         // logAccess (allowlist)
@@ -718,7 +755,7 @@ final class Settings {
      * Display log list table page.
      */
     public function logPage(): void {
-        if (!current_user_can('manage_options')) {
+        if (!$this->canAdminSeeSiteLogs()) {
             wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
         }
 
@@ -865,22 +902,7 @@ final class Settings {
                 continue;
             }
 
-            $args = [
-                'blog_id' => 0,
-                'role' => 'administrator',
-                'fields' => [
-                    'user_login',
-                    'user_nicename',
-                    'display_name',
-                ],
-                'search' => $userLogin,
-                'search_columns' => [
-                    'user_login',
-                ],
-            ];
-
-            $users = get_users($args);
-            $user = !empty($users[0]) && is_object($users[0]) ? $users[0] : null;
+            $user = get_user_by('login', $userLogin);
             if (!$user) {
                 continue;
             }
@@ -898,62 +920,108 @@ final class Settings {
      * Check if current user is in debug log access list.
      */
     protected function isUserInDebugLogAccess(): bool {
-        if (is_super_admin()) {
-            return true;
-        }
-
-        if (empty($this->options->logAccess)) {
-            return current_user_can('manage_options');
-        }
-        $debugLogAccess = $this->options->logAccess;
-        
-        if (!empty($debugLogAccess) && is_array($debugLogAccess)) {
-            $currentUserLogin = (string) wp_get_current_user()->data->user_login;
-
-            foreach ($debugLogAccess as $row) {
-                $aryRow = explode(' - ', $row);
-                $userLogin = isset($aryRow[0]) ? trim($aryRow[0]) : '';
-                if ($userLogin === $currentUserLogin) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return $this->currentUserCanAccessSiteLogs();
     }
-    
+
     /*
-     * Check, ob alle Admins die Logs sehen dürfen oder ob man
-     * zusätzlich auch in der logAcess Liste sein muss.
-     * Wenn die Liste allerdings leer ist, darf jeder mit der Rolle Admin
+     * Check, ob der aktuelle User Logs sehen darf.
+     * Admins/Websupport brauchen keinen logAccess-Eintrag.
+     * logAccess erweitert den Zugriff für normale User.
      */
     protected function canAdminSeeSiteLogs(): bool {
-        if (!current_user_can('manage_options')) {
+        return $this->currentUserCanAccessSiteLogs();
+    }
+
+    /**
+     * Grants the internal site log view capability to allowed site log users.
+     *
+     * @param array $allCaps
+     * @param array $caps
+     * @param array $args
+     * @param \WP_User $user
+     * @return array
+     */
+    public function grantSiteLogAccessCap(array $allCaps, array $caps, array $args, \WP_User $user): array {
+        if (empty($args[0]) || $args[0] !== self::SITE_LOG_ACCESS_CAP) {
+            return $allCaps;
+        }
+
+        if ($this->userCanAccessSiteLogs($user)) {
+            $allCaps[self::SITE_LOG_ACCESS_CAP] = true;
+        }
+
+        return $allCaps;
+    }
+
+    /**
+     * Checks whether the current user may access site logs and their menus.
+     */
+    protected function currentUserCanAccessSiteLogs(): bool {
+        return $this->userCanAccessSiteLogs(wp_get_current_user());
+    }
+
+    /**
+     * Checks whether a user may access site logs and their menus.
+     */
+    protected function userCanAccessSiteLogs(\WP_User $user): bool {
+        if (empty($user->ID)) {
             return false;
         }
 
-        // Superadmins immer
-        if (is_multisite() && is_super_admin()) {
+        if (is_multisite() && is_super_admin((int) $user->ID)) {
             return true;
         }
 
-        
+        $this->options = Options::getOptions();
+
         if (empty($this->options->adminMenu)) {
             return false;
         }
-        
+
+        if ($this->userCanSeeSiteLogs($user)) {
+            return true;
+        }
+
         $list = $this->options->logAccess ?? '';
 
-        // Leer => alle Admins
         if (empty($list)) {
-            return true;
+            return false;
         }
 
         if (!is_array($list)) {
             return false;
         }
 
-        $login = (string) wp_get_current_user()->user_login;
+        return $this->userIsInLogAccessList($user, $list);
+    }
+
+    /**
+     * Checks whether the current user has the base site log access role/capability.
+     */
+    protected function currentUserCanSeeSiteLogs(): bool {
+        return $this->userCanSeeSiteLogs(wp_get_current_user());
+    }
+
+    /**
+     * Checks whether a user is a local admin or Websupport user.
+     */
+    protected function userCanSeeSiteLogs(\WP_User $user): bool {
+        if (empty($user->ID)) {
+            return false;
+        }
+
+        if ($user->has_cap('manage_options')) {
+            return true;
+        }
+
+        return Utils::userIsWebsupport($user);
+    }
+
+    /**
+     * Checks whether a user is explicitly listed in the log access allowlist.
+     */
+    protected function userIsInLogAccessList(\WP_User $user, array $list): bool {
+        $login = (string) $user->user_login;
 
         foreach ($list as $row) {
             $ary = explode(' - ', (string) $row);
@@ -978,6 +1046,19 @@ final class Settings {
         ]);
 
         $this->superadminAuditListTable = new SuperadminAuditListTable();
+    }
+
+    /**
+     * Add screen options for websupport audit log.
+     */
+    public function websupportAuditScreenOptions(): void {
+        add_screen_option('per_page', [
+            'label' => __('Number of items per page:', 'rrze-log'),
+            'default' => 20,
+            'option' => 'rrze_log_per_page',
+        ]);
+
+        $this->websupportAuditListTable = new WebsupportAuditListTable();
     }
     
  
@@ -1010,11 +1091,41 @@ final class Settings {
 
         $this->show('list-table', $data);
     }
+
+    /**
+     * Display websupport audit log list table page (network only).
+     */
+    public function websupportAuditLogPage(): void {
+        $this->options = Options::getOptions();
+
+        if (!is_multisite() || !is_super_admin() || empty($this->options->auditEnabled)) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
+        }
+
+        wp_enqueue_style('rrze-log-list-table');
+        wp_enqueue_script('rrze-log-list-table');
+
+        if (!$this->websupportAuditListTable instanceof WebsupportAuditListTable) {
+            $this->websupportAuditListTable = new WebsupportAuditListTable();
+        }
+
+        $this->websupportAuditListTable->prepare_items();
+
+        $data = [
+            'action' => 'websupport-audit',
+            's' => isset($_REQUEST['s']) ? (string) $_REQUEST['s'] : '',
+            'logfile' => date('Y-m-d'),
+            'listTable' => $this->websupportAuditListTable,
+            'title' => __('Websupport Audit', 'rrze-log'),
+        ];
+
+        $this->show('list-table', $data);
+    }
     
     /**
     * Display superadminAuditMaxLines field (superadmin audit log file).
     */
-    public function superadminAuditMaxLinesField(): void {
+   public function superadminAuditMaxLinesField(): void {
        $value = isset($this->options->superadminAuditMaxLines)
            ? (int) $this->options->superadminAuditMaxLines
            : 1000;
@@ -1036,6 +1147,32 @@ final class Settings {
        </p>
        <?php
    }
+
+   /*
+    * Display websupportAuditMaxLines field (websupport audit log file).
+    */
+    public function websupportAuditMaxLinesField(): void {
+        $value = isset($this->options->websupportAuditMaxLines)
+            ? (int) $this->options->websupportAuditMaxLines
+            : 1000;
+        ?>
+        <label for="rrze-log-websupportAuditMaxLines">
+            <input
+                type="number"
+                min="1000"
+                max="500000"
+                step="1"
+                id="rrze-log-websupportAuditMaxLines"
+                name="<?php printf('%s[websupportAuditMaxLines]', $this->optionName); ?>"
+                value="<?php echo esc_attr((string) $value); ?>"
+                class="small-text"
+            >
+        </label>
+        <p class="description">
+            <?php _e('Keep only the newest lines in the websupport audit log file. Applies to multisite websupport role actions only.', 'rrze-log'); ?>
+        </p>
+        <?php
+    }
 
    /*
     * Check wr die Settings sehen kann

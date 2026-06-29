@@ -40,18 +40,9 @@ class StrayOutputSniffer {
         $this->guard   = isset($args['guard'])   ? (bool) $args['guard']   : true;
         $this->site    = isset($args['site'])    ? (int)  $args['site']    : 0;
 
-        $defaultLogger = function (string $message): void {
-            $dir  = WP_CONTENT_DIR . '/log';
-            $file = $dir . '/rrze-log.log';
-            if (!is_dir($dir)) {
-                @wp_mkdir_p($dir);
-            }
-            $ts = gmdate('Y-m-d H:i:s');
-            @error_log("[$ts] [rrze-rest-sniffer] $message\n", 3, $file);
-        };
         $this->logger = isset($args['logger']) && is_callable($args['logger'])
             ? $args['logger']
-            : $defaultLogger;
+            : [$this, 'defaultLog'];
     }
 
     /** Initialize hooks */
@@ -64,37 +55,55 @@ class StrayOutputSniffer {
         }
 
         // Track last hook when inside REST
-        add_action('all', function (string $tag): void {
-            if ($this->isRest()) {
-                $this->lastHook = $tag;
-            }
-        }, 1);
+        add_action('all', [$this, 'trackHook'], 1);
 
         // Open an output buffer at REST init; never flush, only inspect
-        add_action('rest_api_init', function (): void {
-            if (!$this->isRest()) {
-                return;
-            }
-            $this->obLevelStart = ob_get_level();
-            ob_start([$this, 'inspectBuffer']);
-        }, 0);
+        add_action('rest_api_init', [$this, 'startBuffer'], 0);
 
         // Optional guard: drop any stray output before serving JSON
         if ($this->guard) {
-            add_filter('rest_pre_serve_request', function ($served) {
-                if (!$this->isRest()) {
-                    return $served;
-                }
-                $this->dropAllBuffers();
-                return $served; // let WP serve normally
-            }, 0);
+            add_filter('rest_pre_serve_request', [$this, 'guardPreServeRequest'], 0);
         }
 
         // Close buffers we opened (clean, no flush)
-        add_action('rest_request_after_callbacks', function ($response) {
-            $this->dropAllBuffers();
-            return $response;
-        }, PHP_INT_MAX);
+        add_action('rest_request_after_callbacks', [$this, 'afterCallbacks'], PHP_INT_MAX);
+    }
+
+    public function defaultLog(string $message): void {
+        $dir  = WP_CONTENT_DIR . '/log';
+        $file = $dir . '/rrze-log.log';
+        if (!is_dir($dir)) {
+            @wp_mkdir_p($dir);
+        }
+        $ts = gmdate('Y-m-d H:i:s');
+        @error_log("[$ts] [rrze-rest-sniffer] $message\n", 3, $file);
+    }
+
+    public function trackHook(string $tag): void {
+        if ($this->isRest()) {
+            $this->lastHook = $tag;
+        }
+    }
+
+    public function startBuffer(): void {
+        if (!$this->isRest()) {
+            return;
+        }
+        $this->obLevelStart = ob_get_level();
+        ob_start([$this, 'inspectBuffer']);
+    }
+
+    public function guardPreServeRequest($served) {
+        if (!$this->isRest()) {
+            return $served;
+        }
+        $this->dropAllBuffers();
+        return $served;
+    }
+
+    public function afterCallbacks($response) {
+        $this->dropAllBuffers();
+        return $response;
     }
 
     /** Output buffer callback: inspect but return unchanged */

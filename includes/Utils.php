@@ -10,6 +10,30 @@ defined('ABSPATH') || exit;
 class Utils
 {
     /**
+     * Role slugs treated as websupport actors.
+     */
+    public const WEBSUPPORT_ROLES = [
+        'websupport',
+        'web_support',
+        'rrze-websupport',
+        'rrze_websupport',
+        'rrze-web-support',
+        'rrze_web_support',
+    ];
+
+    /**
+     * Capability slugs treated as websupport actor markers.
+     */
+    public const WEBSUPPORT_CAPABILITIES = [
+        'websupport',
+        'web_support',
+        'rrze-websupport',
+        'rrze_websupport',
+        'rrze-web-support',
+        'rrze_web_support',
+    ];
+
+    /**
      * Check if a string is valid JSON.
      *
      * @param string $string
@@ -51,11 +75,12 @@ class Utils
      */
     public static function getLogs($args = [])
     {
+        $logFile = $args['logfile'] ?? '';
         $search = $args['search'] ?? [];
         $limit = $args['limit'] ?? -1;
         $offset = $args['offset'] ?? 0;
 
-        return self::getLog('', $search, $offset, $limit)['items'] ?? [];
+        return self::getLog((string) $logFile, $search, $offset, $limit)['items'] ?? [];
     }
 
     /**
@@ -68,7 +93,7 @@ class Utils
      */
     public static function getLog($logFile = '', $search = [], $offset = 0, $count = -1)
     {
-        $logFile = Constants::LOG_FILE;
+        $logFile = self::normalizeLogFile((string) $logFile);
 
         $search = is_array($search) && self::isNotMultidimensional($search) ?
             array_map('trim', $search) :
@@ -77,7 +102,7 @@ class Utils
         $offset = absint($offset);
         $count = $count < 0 ? -1 : absint($count);
 
-        $logParser = new LogParser($logFile, $search, $offset, $count);
+        $logParser = new LogParser($logFile, $search, $offset, $count, false);
 
         if (!is_network_admin()) {
             $logItems = $logParser->getItems('siteurl', untrailingslashit(site_url()));
@@ -101,6 +126,30 @@ class Utils
     }
 
     /**
+     * Normalize publicly supplied log file paths to known log files.
+     */
+    protected static function normalizeLogFile(string $logFile): string {
+        $allowed = [
+            Constants::LOG_FILE,
+            Constants::AUDIT_LOG_FILE,
+            Constants::SUPERADMIN_AUDIT_LOG_FILE,
+            Constants::WEBSUPPORT_AUDIT_LOG_FILE,
+        ];
+
+        if ($logFile === '') {
+            return Constants::LOG_FILE;
+        }
+
+        foreach ($allowed as $allowedFile) {
+            if ($logFile === $allowedFile || basename($logFile) === basename($allowedFile)) {
+                return $allowedFile;
+            }
+        }
+
+        return Constants::LOG_FILE;
+    }
+
+    /**
      * Check if the array is multidimensional.
      * @param  array $array
      * @return boolean
@@ -112,6 +161,76 @@ class Utils
             }
         }
         return true;
+    }
+
+    /**
+     * Checks whether a role set contains a configured websupport role.
+     */
+    public static function hasWebsupportRole(array $roles, string $role = ''): bool {
+        if ($role !== '') {
+            $roles[] = $role;
+        }
+
+        $roles = array_map('strtolower', array_map('strval', $roles));
+        $websupportRoles = apply_filters('rrze_log/websupport_roles', self::WEBSUPPORT_ROLES);
+        $websupportRoles = array_map('strtolower', array_map('strval', (array) $websupportRoles));
+
+        foreach ($roles as $candidate) {
+            if (in_array($candidate, $websupportRoles, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks whether a user has a configured websupport capability marker.
+     */
+    public static function userHasWebsupportCapability(\WP_User $user): bool {
+        $websupportCaps = apply_filters('rrze_log/websupport_capabilities', self::WEBSUPPORT_CAPABILITIES);
+
+        foreach ((array) $websupportCaps as $cap) {
+            $cap = (string) $cap;
+            if ($cap === '') {
+                continue;
+            }
+
+            if ($user->has_cap($cap)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks whether the user is a configured websupport user.
+     */
+    public static function userIsWebsupport(\WP_User $user): bool {
+        return self::rrzeSettingsUserIsWebsupport($user)
+            || self::hasWebsupportRole(array_values((array) $user->roles))
+            || self::userHasWebsupportCapability($user);
+    }
+
+    /**
+     * Checks RRZE-Settings directly when available.
+     */
+    protected static function rrzeSettingsUserIsWebsupport(\WP_User $user): bool {
+        if (empty($user->ID)) {
+            return false;
+        }
+
+        $helper = 'RRZE\Settings\Helper';
+        if (!class_exists($helper) || !method_exists($helper, 'isWebsupportUser')) {
+            return false;
+        }
+
+        try {
+            return (bool) $helper::isWebsupportUser((int) $user->ID);
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
     
     /*

@@ -58,6 +58,16 @@ class Logger {
         return $this->logToFile(Constants::SUPERADMIN_AUDIT_LOG_FILE, 'AUDIT', $message, $context);
     }
 
+    /**
+     * Websupport audit log (multisite only).
+     */
+    public function auditWebsupport(string $message, array|object $context = []): bool {
+        if (!is_multisite()) {
+            return $this->audit($message, $context);
+        }
+        return $this->logToFile(Constants::WEBSUPPORT_AUDIT_LOG_FILE, 'AUDIT', $message, $context);
+    }
+
 
     /**
      * Default logger (rrze-log.log).

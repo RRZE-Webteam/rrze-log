@@ -30,6 +30,11 @@ final class Constants {
     public const SUPERADMIN_AUDIT_LOG_FILE = self::LOG_DIR . '/rrze-superadmin-audit.log';
 
     /**
+     * Websupport audit log file name (multisite websupport actors).
+     */
+    public const WEBSUPPORT_AUDIT_LOG_FILE = self::LOG_DIR . '/rrze-websupport-audit.log';
+
+    /**
      * Debug log file name.
      */
     public const DEBUG_LOG_FILE = self::LOG_DIR . '/wp-debug.log';

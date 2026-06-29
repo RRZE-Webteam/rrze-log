@@ -275,7 +275,7 @@ class ListTable extends WP_List_Table {
             $search,
             (($currentPage - 1) * $perPage),
             $perPage,
-            true
+            false
         );
 
         $items = $parser->getItemsDecoded();

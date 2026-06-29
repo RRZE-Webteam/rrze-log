@@ -94,6 +94,15 @@ class Cron {
             $need = true;
         }
 
+        if (
+            is_multisite()
+            && !empty($options->auditEnabled)
+            && !empty($options->websupportAuditMaxLines)
+            && (int) $options->websupportAuditMaxLines > 0
+        ) {
+            $need = true;
+        }
+
         if (!$need) {
             self::unschedule();
             return;
@@ -145,6 +154,11 @@ class Cron {
                 $targets[] = [
                     'file' => Constants::SUPERADMIN_AUDIT_LOG_FILE,
                     'lines' => $options->superadminAuditMaxLines ?? 1000,
+                ];
+
+                $targets[] = [
+                    'file' => Constants::WEBSUPPORT_AUDIT_LOG_FILE,
+                    'lines' => $options->websupportAuditMaxLines ?? 1000,
                 ];
             }
         }

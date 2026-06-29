@@ -80,32 +80,8 @@ class LogParser {
             return new \LimitIterator(new \ArrayIterator($slice), 0, -1);
         }
 
-        if ($this->count >= 0) {
-            $slice = $this->tailSlice($this->count, $this->offset, $key !== '' ? $key : null, $search !== '' ? $search : null);
-            return new \LimitIterator(new \ArrayIterator($slice), 0, -1);
-        }
-
-        $buffer = [];
-        foreach ($this->iterateFile() as $line) {
-            if ($key !== '' && $search !== '') {
-                $lineObj = json_decode($line);
-                $value = isset($lineObj->$key) ? mb_strtolower(untrailingslashit((string) $lineObj->$key)) : '';
-                if ($value === '' || $value !== untrailingslashit($search)) {
-                    continue;
-                }
-            }
-            $buffer[] = $line;
-        }
-
-        $this->totalLines = count($buffer);
-        $buffer = array_reverse($buffer, false);
-
-        if (count($buffer) >= $this->offset) {
-            $buffer = array_slice($buffer, $this->offset);
-            return new \LimitIterator(new \ArrayIterator($buffer), 0, -1);
-        }
-
-        return new \LimitIterator(new \ArrayIterator([]));
+        $slice = $this->tailSlice($this->count, $this->offset, $key !== '' ? $key : null, $search !== '' ? $search : null);
+        return new \LimitIterator(new \ArrayIterator($slice), 0, -1);
     }
 
     /**
@@ -116,12 +92,14 @@ class LogParser {
      * @return \Iterator|WP_Error
      */
     public function getItemsDecoded(string $key = '', string $search = '') {
-        if (!is_network_admin()) {
+        if ($key !== '' && $search !== '') {
+            $it = $this->getItems($key, $search);
+        } elseif (!is_network_admin()) {
             $it = $this->getItems('siteurl', untrailingslashit(site_url()));
         } else {
             $it = $this->getItems();
-        }        
-        // $it = $this->getItems($key, $search);
+        }
+
         if (is_wp_error($it)) {
             return $it;
         }
@@ -260,10 +238,11 @@ class LogParser {
 
         $pos = $size;
         $buffer = '';
-        $collected = [];
-        $need = ($limit < 0) ? PHP_INT_MAX : ($skip + $limit);
+        $page = [];
+        $matched = 0;
+        $end = ($limit < 0) ? PHP_INT_MAX : ($skip + $limit);
 
-        while ($pos > 0 && count($collected) < $need) {
+        while ($pos > 0) {
             $read = min($this->chunkSize, $pos);
             $pos -= $read;
 
@@ -298,14 +277,15 @@ class LogParser {
                     }
                 }
 
-                $collected[] = $line;
-                if (count($collected) >= $need) {
-                    break;
+                if ($matched >= $skip && $matched < $end) {
+                    $page[] = $line;
                 }
+
+                $matched++;
             }
         }
 
-        if ($buffer !== '' && count($collected) < $need) {
+        if ($buffer !== '') {
             $line = rtrim($buffer, "\r");
             if ($line !== '') {
                 if (!$this->search || $this->matchesSearch($line)) {
@@ -314,25 +294,24 @@ class LogParser {
                         if ($obj && isset($obj->{$key})) {
                             $val = mb_strtolower(untrailingslashit((string) $obj->{$key}));
                             if ($val === $searchExact) {
-                                $collected[] = $line;
+                                if ($matched >= $skip && $matched < $end) {
+                                    $page[] = $line;
+                                }
+                                $matched++;
                             }
                         }
                     } else {
-                        $collected[] = $line;
+                        if ($matched >= $skip && $matched < $end) {
+                            $page[] = $line;
+                        }
+                        $matched++;
                     }
                 }
             }
         }
 
-        $this->totalLines = $this->offset + min(($limit >= 0 ? $limit : count($collected)), count($collected));
+        $this->totalLines = $matched;
 
-        if ($skip > 0) {
-            $collected = array_slice($collected, $skip);
-        }
-        if ($limit >= 0) {
-            $collected = array_slice($collected, 0, $limit);
-        }
-
-        return $collected;
+        return $page;
     }
 }

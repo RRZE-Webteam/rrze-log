@@ -38,6 +38,7 @@ final class Options {
             'auditMaxLines' => 1000,
 
             'superadminAuditMaxLines' => 1000,
+            'websupportAuditMaxLines' => 1000,
         ];
     }
 
