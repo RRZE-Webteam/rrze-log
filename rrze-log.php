@@ -4,7 +4,7 @@
 Plugin Name:        RRZE Log
 Plugin URI:         https://github.com/RRZE-Webteam/rrze-log
 Description:        The plugin allows you to log certain actions of the plugins and themes in a log file, which are or may be necessary for further investigations.
-Version:            2.8.2
+Version:            2.8.5
 Author:             RRZE Webteam
 Author URI:         https://www.wp.rrze.fau.de/
 License:            GNU General Public License Version 3
@@ -31,7 +31,9 @@ use RRZE\Log\Cron;
  * @param string $class The fully-qualified class name.
  * @return void
  */
-spl_autoload_register(function ($class) {
+spl_autoload_register(__NAMESPACE__ . '\autoload');
+
+function autoload($class) {
     $prefix = __NAMESPACE__;
     $baseDir = __DIR__ . '/includes/';
 
@@ -46,7 +48,7 @@ spl_autoload_register(function ($class) {
     if (file_exists($file)) {
         require $file;
     }
-});
+}
 
 // Register activation and deactivation hooks.
 register_activation_hook(__FILE__, __NAMESPACE__ . '\activation');
@@ -160,29 +162,7 @@ function loaded() {
 
     // Check system requirements and store any error messages.
     if ($error = systemRequirements()) {
-        // If there is an error, add an action to display an admin notice with the error message.
-        add_action('admin_init', function () use ($error) {
-            // Check if the current user has the capability to activate plugins.
-            if (current_user_can('activate_plugins')) {
-                // Get plugin data to retrieve the plugin's name.
-                $pluginName = plugin()->getName();
-
-                // Determine the admin notice tag based on network-wide activation.
-                $tag = is_plugin_active_for_network(plugin()->getBaseName()) ? 'network_admin_notices' : 'admin_notices';
-
-                // Add an action to display the admin notice.
-                add_action($tag, function () use ($pluginName, $error) {
-                    printf(
-                        '<div class="notice notice-error"><p>' .
-                            /* translators: 1: The plugin name, 2: The error string. */
-                            esc_html__('Plugins: %1$s: %2$s', 'rrze-log') .
-                            '</p></div>',
-                        $pluginName,
-                        $error
-                    );
-                });
-            }
-        });
+        add_action('admin_init', __NAMESPACE__ . '\systemRequirementsAdminNotice');
 
         // Return to prevent further initialization if there is an error.
         return;
@@ -190,4 +170,29 @@ function loaded() {
 
     // If there are no errors, create an instance of the 'Main' class and trigger its 'loaded' method.
     (new Main)->loaded();
+}
+
+function systemRequirementsAdminNotice() {
+    if (!current_user_can('activate_plugins')) {
+        return;
+    }
+
+    $tag = is_plugin_active_for_network(plugin()->getBaseName()) ? 'network_admin_notices' : 'admin_notices';
+    add_action($tag, __NAMESPACE__ . '\displaySystemRequirementsNotice');
+}
+
+function displaySystemRequirementsNotice() {
+    $error = systemRequirements();
+    if (!$error) {
+        return;
+    }
+
+    printf(
+        '<div class="notice notice-error"><p>' .
+            /* translators: 1: The plugin name, 2: The error string. */
+            esc_html__('Plugins: %1$s: %2$s', 'rrze-log') .
+            '</p></div>',
+        esc_html(plugin()->getName()),
+        esc_html($error)
+    );
 }

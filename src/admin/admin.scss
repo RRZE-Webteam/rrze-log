@@ -10,7 +10,6 @@ table.rrze-log-audit {
     &.widefat td {
 	padding: 5px;
     }
-    
 }
 
 
@@ -89,7 +88,46 @@ table.rrze-log-debug {
     td.column-message .rrze-log-message-full .rrze-log-copy .dashicons {
 	vertical-align: middle;
     }
+}
 
+.rrze-log-action-level-settings {
+    .rrze-log-rotation-status {
+	background: #f6f7f7;
+	border-left: 4px solid #72aee6;
+	margin: 12px 0 0;
+	padding: 8px 10px;
+    }
+
+    .rrze-log-rotation-status-active {
+	display: none;
+    }
+
+    .rrze-log-rotation-status-inactive {
+	display: inline;
+    }
+
+}
+
+.rrze-log-action-level-settings.rrze-log-has-rotation {
+    .rrze-log-rotation-status {
+	background: #fcf9e8;
+	border-left-color: #dba617;
+	font-weight: 600;
+    }
+
+    .rrze-log-rotation-status-active {
+	display: inline;
+    }
+
+    .rrze-log-rotation-status-inactive {
+	display: none;
+    }
+
+    [data-rrze-log-max-lines] {
+	background: #fff;
+	border-color: #dba617;
+	box-shadow: 0 0 0 1px #dba617;
+    }
 }
 table.rrze-log-actionlog {
     
@@ -104,9 +142,7 @@ table.rrze-log-actionlog {
     .column-message {
 	min-width: 50%;
 	width: 60%;
-	.rrze-log-message-full {
-	    margin-left: -40%;
-	}
+
     }
     
     details.rrze-log-tree {

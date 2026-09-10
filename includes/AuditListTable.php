@@ -143,7 +143,7 @@ class AuditListTable extends WP_List_Table {
             return;
         }
 
-        $isSuperadminAudit = ($this->auditFile === Constants::SUPERADMIN_AUDIT_LOG_FILE);
+        $isDedicatedRoleAudit = $this->isDedicatedRoleAudit();
 
         $currentType = isset($_REQUEST['audit_type']) ? sanitize_key((string) $_REQUEST['audit_type']) : '';
         $currentRole = isset($_REQUEST['audit_role']) ? sanitize_key((string) $_REQUEST['audit_role']) : '';
@@ -159,6 +159,7 @@ class AuditListTable extends WP_List_Table {
         $roles = [
             '' => __('All roles', 'rrze-log'),
             'superadmin' => __('Superadmin', 'rrze-log'),
+            'websupport' => __('Websupport', 'rrze-log'),
             'administrator' => __('Administrator', 'rrze-log'),
             'editor' => __('Editor', 'rrze-log'),
             'author' => __('Author', 'rrze-log'),
@@ -181,7 +182,7 @@ class AuditListTable extends WP_List_Table {
         }
         echo '</select>';
 
-        if (!$isSuperadminAudit) {
+        if (!$isDedicatedRoleAudit) {
             echo '&nbsp;';
 
             echo '<label class="screen-reader-text" for="rrze-log-audit-role-filter">' . esc_html(__('Filter by role', 'rrze-log')) . '</label>';
@@ -238,9 +239,9 @@ class AuditListTable extends WP_List_Table {
             $search[] = '"audit_type":"' . $typeFilter . '"';
         }
 
-       $isSuperadminAudit = ($this->auditFile === Constants::SUPERADMIN_AUDIT_LOG_FILE);
+       $isDedicatedRoleAudit = $this->isDedicatedRoleAudit();
 
-        if (!$isSuperadminAudit) {
+        if (!$isDedicatedRoleAudit) {
             $roleFilter = isset($_REQUEST['audit_role']) ? sanitize_key((string) $_REQUEST['audit_role']) : '';
             if ($roleFilter !== '') {
                 $search[] = '"role":"' . $roleFilter . '"';
@@ -251,7 +252,8 @@ class AuditListTable extends WP_List_Table {
             $logFile,
             $search,
             (($currentPage - 1) * $perPage),
-            $perPage
+            $perPage,
+            false
         );
 
         if (!is_network_admin()) {
@@ -330,6 +332,14 @@ class AuditListTable extends WP_List_Table {
         }
 
         return true;
+    }
+
+    /**
+     * Returns whether this table is bound to a dedicated role audit file.
+     */
+    protected function isDedicatedRoleAudit(): bool {
+        return $this->auditFile === Constants::SUPERADMIN_AUDIT_LOG_FILE
+            || $this->auditFile === Constants::WEBSUPPORT_AUDIT_LOG_FILE;
     }
 
 

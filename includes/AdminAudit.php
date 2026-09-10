@@ -886,7 +886,7 @@ class AdminAudit {
 
     /**
     * Writes an audit log entry if the given action is enabled and its type is enabled.
-    * Routes multisite superadmin actions into the dedicated superadmin audit log.
+    * Routes multisite superadmin and websupport actions into dedicated audit logs.
     */
    private function logIfEnabled(string $action, string $message, array $context): void {
        $actions = apply_filters('rrze_log/audit_actions', self::ACTIONS);
@@ -915,6 +915,11 @@ class AdminAudit {
 
        if ($this->isSuperadminAudit($context)) {
            $this->logger->auditSuperadmin($message, $context);
+           return;
+       }
+
+       if ($this->isWebsupportAudit($context)) {
+           $this->logger->auditWebsupport($message, $context);
            return;
        }
 
@@ -1147,6 +1152,34 @@ class AdminAudit {
    }
 
     /**
+     * Decide whether this audit entry must be written to the websupport audit log.
+     * Only applies in multisite and only when actor role is a configured websupport role.
+     */
+    private function isWebsupportAudit(array $context): bool {
+        if (!is_multisite()) {
+            return false;
+        }
+
+        if (!isset($context['actor']) || !is_array($context['actor'])) {
+            return false;
+        }
+
+        $actor = $context['actor'];
+
+        $role = '';
+        if (isset($actor['role']) && is_string($actor['role'])) {
+            $role = $actor['role'];
+        }
+
+        $roles = [];
+        if (isset($actor['roles']) && is_array($actor['roles'])) {
+            $roles = $actor['roles'];
+        }
+
+        return Utils::hasWebsupportRole($roles, $role);
+    }
+
+    /**
      * Returns the primary role for a user; superadmin is handled explicitly.
      */
     private function getPrimaryRoleForUser(\WP_User $user): string {
@@ -1155,6 +1188,11 @@ class AdminAudit {
         }
 
         $roles = array_values((array) $user->roles);
+
+        if (Utils::userIsWebsupport($user)) {
+            return 'websupport';
+        }
+
         return !empty($roles[0]) ? (string) $roles[0] : '';
     }
 
@@ -1171,6 +1209,9 @@ class AdminAudit {
             return true;
         }
         if ($role === 'editor') {
+            return true;
+        }
+        if (Utils::hasWebsupportRole([], $role)) {
             return true;
         }
 
@@ -1206,6 +1247,8 @@ class AdminAudit {
         $role = '';
         if (is_multisite() && is_super_admin((int) $user->ID)) {
             $role = 'superadmin';
+        } elseif (Utils::userIsWebsupport($user)) {
+            $role = 'websupport';
         } elseif (!empty($roles[0])) {
             $role = (string) $roles[0];
         } else {
