@@ -283,11 +283,16 @@ final class Settings {
             wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
         }
 
-        global $title; ?>
+        global $title;
+
+        $activeTab = $this->getCurrentSettingsTab();
+        ?>
         <div class="wrap">
             <h1><?php echo esc_html($title); ?></h1>
+            <?php $this->renderSettingsTabs($activeTab); ?>
             <form method="post">
-                <?php do_settings_sections('rrze-log-settings'); ?>
+                <?php do_settings_sections($this->getSettingsPageForTab($activeTab)); ?>
+                <input type="hidden" name="rrze-log-settings-tab" value="<?php echo esc_attr($activeTab); ?>">
                 <?php settings_fields('rrze-log-settings'); ?>
                 <?php submit_button(__('Save Changes', 'rrze-settings'), 'primary', 'rrze-log-settings-submit-primary'); ?>
             </form>
@@ -296,82 +301,189 @@ final class Settings {
     }
 
     /**
+     * Returns available settings tabs.
+     */
+    protected function getSettingsTabs(): array {
+        return [
+            'general' => __('Allgemein', 'rrze-log'),
+            'action' => __('Action Logs', 'rrze-log'),
+            'debug' => __('Debug Logs', 'rrze-log'),
+            'audit' => __('Audit Logs', 'rrze-log'),
+        ];
+    }
+
+    /**
+     * Returns the current settings tab.
+     */
+    protected function getCurrentSettingsTab(): string {
+        $tab = isset($_GET['tab']) ? sanitize_key((string) $_GET['tab']) : 'general';
+
+        return $this->normalizeSettingsTab($tab);
+    }
+
+    /**
+     * Normalizes a settings tab.
+     */
+    protected function normalizeSettingsTab(string $tab): string {
+        $tabs = $this->getSettingsTabs();
+
+        if (!isset($tabs[$tab])) {
+            return 'general';
+        }
+
+        if ($tab === 'audit' && !is_super_admin()) {
+            return 'general';
+        }
+
+        return $tab;
+    }
+
+    /**
+     * Returns the Settings API page name for a tab.
+     */
+    protected function getSettingsPageForTab(string $tab): string {
+        return 'rrze-log-settings-' . $tab;
+    }
+
+    /**
+     * Renders settings tabs.
+     */
+    protected function renderSettingsTabs(string $activeTab): void {
+        $tabs = $this->getSettingsTabs();
+        $baseUrl = add_query_arg(
+            [
+                'page' => 'rrze-log-settings',
+            ],
+            is_network_admin() ? network_admin_url('admin.php') : admin_url('admin.php')
+        );
+        ?>
+        <nav class="nav-tab-wrapper" aria-label="<?php echo esc_attr__('Settings tabs', 'rrze-log'); ?>">
+            <?php foreach ($tabs as $tab => $label) { ?>
+                <?php
+                if ($tab === 'audit' && !is_super_admin()) {
+                    continue;
+                }
+
+                $url = add_query_arg('tab', $tab, $baseUrl);
+                $class = $tab === $activeTab ? 'nav-tab nav-tab-active' : 'nav-tab';
+                ?>
+                <a class="<?php echo esc_attr($class); ?>" href="<?php echo esc_url($url); ?>">
+                    <?php echo esc_html($label); ?>
+                </a>
+            <?php } ?>
+        </nav>
+        <?php
+    }
+
+    /**
      * Add settings sections and fields.
      */
     public function settingsSection(): void {
         add_settings_section(
-            'rrze-log-settings',
-            __('RRZE Action Log', 'rrze-log'),
+            'rrze-log-adminmenu-settings',
+            __('Admin Menu', 'rrze-log'),
             '__return_false',
-            'rrze-log-settings'
+            'rrze-log-settings-general'
+        );
+
+        add_settings_field(
+            'rrze-log-adminMenu',
+            __('Enable administration menus', 'rrze-log'),
+            [$this, 'adminMenuField'],
+            'rrze-log-settings-general',
+            'rrze-log-adminmenu-settings'
+        );
+
+        add_settings_field(
+            'rrze-log-logAccess',
+            __('Admin log access (allowlist)', 'rrze-log'),
+            [$this, 'logAccessField'],
+            'rrze-log-settings-general',
+            'rrze-log-adminmenu-settings'
+        );
+
+        add_settings_section(
+            'rrze-log-action-log-settings',
+            __('Action Logs', 'rrze-log'),
+            '__return_false',
+            'rrze-log-settings-action'
         );
 
         add_settings_field(
             'rrze-log-enabled',
             __('Enable Log', 'rrze-log'),
             [$this, 'enabledField'],
-            'rrze-log-settings',
-            'rrze-log-settings'
+            'rrze-log-settings-action',
+            'rrze-log-action-log-settings'
         );
 
-        add_settings_field(
-            'rrze-log-maxLines',
-            __('Truncate log file to last N lines', 'rrze-log'),
-            [$this, 'maxLinesField'],
-            'rrze-log-settings',
-            'rrze-log-settings'
-        );
-        
-        if ($this->isDebugLog) {
+        foreach (Constants::LEVELS as $level) {
+            $sectionId = 'rrze-log-action-log-' . strtolower($level);
+
             add_settings_section(
-                'rrze-log-wp-debug-settings',
-                __('WP Debug Log', 'rrze-log'),
-                '__return_false',
-                'rrze-log-settings'
+                $sectionId,
+                sprintf(
+                    /* translators: %s: error level */
+                    __('%s Log', 'rrze-log'),
+                    $level
+                ),
+                [$this, 'actionLogLevelSectionDescription'],
+                'rrze-log-settings-action',
+                [
+                    'level' => $level,
+                ]
             );
 
+            add_settings_field(
+                'rrze-log-action-log-retention-' . strtolower($level),
+                __('Retention', 'rrze-log'),
+                [$this, 'actionLogLevelField'],
+                'rrze-log-settings-action',
+                $sectionId,
+                [
+                    'level' => $level,
+                ]
+            );
+        }
+
+        add_settings_section(
+            'rrze-log-wp-debug-settings',
+            __('WP Debug Log', 'rrze-log'),
+            '__return_false',
+            'rrze-log-settings-debug'
+        );
+
+        if ($this->isDebugLog) {
             add_settings_field(
                 'rrze-log-debugMaxLines',
                 __('Truncate log file to last N lines', 'rrze-log'),
                 [$this, 'debugMaxLinesField'],
-                'rrze-log-settings',
+                'rrze-log-settings-debug',
+                'rrze-log-wp-debug-settings'
+            );
+        } else {
+            add_settings_field(
+                'rrze-log-debugLogDisabled',
+                __('Status', 'rrze-log'),
+                [$this, 'debugLogDisabledField'],
+                'rrze-log-settings-debug',
                 'rrze-log-wp-debug-settings'
             );
         }
-        add_settings_section(
-                'rrze-log-adminmenu-settings',
-                __('Admin Menu', 'rrze-log'),
-                '__return_false',
-                'rrze-log-settings'
-            );
-        add_settings_field(
-            'rrze-log-adminMenu',
-            __('Enable administration menus', 'rrze-log'),
-            [$this, 'adminMenuField'],
-            'rrze-log-settings',
-            'rrze-log-adminmenu-settings'
-        );
-         add_settings_field(
-            'rrze-log-logAccess',
-            __('Admin log access (allowlist)', 'rrze-log'),
-            [$this, 'logAccessField'],
-            'rrze-log-settings',
-            'rrze-log-adminmenu-settings'
-        );
 
         if (is_super_admin()) {
             add_settings_section(
                 'rrze-log-audit-settings',
                 __('Admin Audit Log', 'rrze-log'),
                 '__return_false',
-                'rrze-log-settings'
+                'rrze-log-settings-audit'
             );
 
             add_settings_field(
                 'rrze-log-auditEnabled',
                 __('Enable Admin Audit Log', 'rrze-log'),
                 [$this, 'auditEnabledField'],
-                'rrze-log-settings',
+                'rrze-log-settings-audit',
                 'rrze-log-audit-settings'
             );
 
@@ -379,7 +491,7 @@ final class Settings {
                 'rrze-log-auditTypes',
                 __('Audit Types', 'rrze-log'),
                 [$this, 'auditTypesField'],
-                'rrze-log-settings',
+                'rrze-log-settings-audit',
                 'rrze-log-audit-settings'
             );
 
@@ -387,7 +499,7 @@ final class Settings {
                 'rrze-log-auditMaxLines',
                 __('Truncate audit log file to last N lines', 'rrze-log'),
                 [$this, 'auditMaxLinesField'],
-                'rrze-log-settings',
+                'rrze-log-settings-audit',
                 'rrze-log-audit-settings'
             );
             
@@ -395,7 +507,7 @@ final class Settings {
                 'rrze-log-superadminAuditMaxLines',
                 __('Truncate superadmin audit log file to last N lines', 'rrze-log'),
                 [$this, 'superadminAuditMaxLinesField'],
-                'rrze-log-settings',
+                'rrze-log-settings-audit',
                 'rrze-log-audit-settings'
             );
 
@@ -403,7 +515,7 @@ final class Settings {
                 'rrze-log-websupportAuditMaxLines',
                 __('Truncate websupport audit log file to last N lines', 'rrze-log'),
                 [$this, 'websupportAuditMaxLinesField'],
-                'rrze-log-settings',
+                'rrze-log-settings-audit',
                 'rrze-log-audit-settings'
             );
         }
@@ -432,26 +544,6 @@ final class Settings {
             <input type="checkbox" id="rrze-log-admin-menu" name="<?php printf('%s[adminMenu]', $this->optionName); ?>" value="1" <?php checked($this->options->adminMenu, 1); ?>>
             <?php _e('Enables network wide the Log menu for administrators', 'rrze-log'); ?>
         </label>
-        <?php
-    }
-
-    /**
-     * Display maxLines field (main rrze-log file).
-     */
-    public function maxLinesField(): void { ?>
-        <label for="rrze-log-maxLines">
-            <input
-                type="number"
-                min="1000"
-                max="50000"
-                step="1"
-                id="rrze-log-maxLines"
-                name="<?php printf('%s[maxLines]', $this->optionName); ?>"
-                value="<?php echo esc_attr((string) $this->options->maxLines); ?>"
-                class="small-text"
-            >
-        </label>
-        <p class="description"><?php _e('Keep only the newest lines in the main log file, up to the number specified here.', 'rrze-log'); ?></p>
         <?php
     }
 
@@ -530,6 +622,174 @@ final class Settings {
         <p class="description"><?php _e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
         <?php
     }
+
+    /**
+     * Display message when WP Debug Log is not configured for this plugin.
+     */
+    public function debugLogDisabledField(): void {
+        echo '<p class="description">';
+        echo esc_html__('WP Debug Log is currently not configured for RRZE Log.', 'rrze-log');
+        echo '</p>';
+    }
+
+    /**
+     * Display Action Log level section description.
+     */
+    public function actionLogLevelSectionDescription(array $section): void {
+        $level = $this->getLevelFromSettingsArgs($section);
+        $file = Constants::getLogFileForLevel($level);
+
+        printf(
+            '<p class="description">%s</p>',
+            esc_html(sprintf(
+                /* translators: 1: error level, 2: log file path */
+                __('Settings for %1$s entries written to %2$s.', 'rrze-log'),
+                $level,
+                $file
+            ))
+        );
+    }
+
+    /**
+     * Display Action Log level retention controls.
+     */
+    public function actionLogLevelField(array $args): void {
+        $level = $this->getLevelFromSettingsArgs($args);
+        $limits = isset($this->options->levelMaxLines) && is_array($this->options->levelMaxLines)
+            ? $this->options->levelMaxLines
+            : [];
+        $rotations = isset($this->options->levelRotation) && is_array($this->options->levelRotation)
+            ? $this->options->levelRotation
+            : [];
+
+        $limit = isset($limits[$level]) ? (int) $limits[$level] : (int) $this->options->maxLines;
+        $rotation = isset($rotations[$level]) ? (string) $rotations[$level] : 'none';
+        $limitId = 'rrze-log-level-max-lines-' . strtolower($level);
+        $rotationId = 'rrze-log-level-rotation-' . strtolower($level);
+        $statusId = 'rrze-log-level-rotation-status-' . strtolower($level);
+        $hasRotation = $rotation !== 'none';
+        ?>
+        <fieldset class="rrze-log-action-level-settings<?php echo $hasRotation ? ' rrze-log-has-rotation' : ''; ?>">
+            <p>
+                <label for="<?php echo esc_attr($limitId); ?>">
+                    <?php esc_html_e('Maximum lines', 'rrze-log'); ?>
+                </label><br>
+                <input
+                    type="number"
+                    min="1000"
+                    max="50000"
+                    step="1"
+                    id="<?php echo esc_attr($limitId); ?>"
+                    name="<?php echo esc_attr(sprintf('%s[levelMaxLines][%s]', $this->optionName, $level)); ?>"
+                    value="<?php echo esc_attr((string) $limit); ?>"
+                    class="small-text"
+                    data-rrze-log-max-lines="1"
+                    aria-describedby="<?php echo esc_attr($statusId); ?>"
+                >
+            </p>
+
+            <p>
+                <label for="<?php echo esc_attr($rotationId); ?>">
+                    <?php esc_html_e('Rotation', 'rrze-log'); ?>
+                </label><br>
+                <select
+                    id="<?php echo esc_attr($rotationId); ?>"
+                    name="<?php echo esc_attr(sprintf('%s[levelRotation][%s]', $this->optionName, $level)); ?>"
+                    data-rrze-log-rotation="1"
+                    aria-describedby="<?php echo esc_attr($statusId); ?>"
+                >
+                    <?php foreach (Constants::LOG_ROTATION_INTERVALS as $interval) { ?>
+                        <option value="<?php echo esc_attr($interval); ?>"<?php selected($rotation, $interval); ?>>
+                            <?php echo esc_html($this->getRotationLabel($interval)); ?>
+                        </option>
+                    <?php } ?>
+                </select>
+            </p>
+            <p id="<?php echo esc_attr($statusId); ?>" class="rrze-log-rotation-status">
+                <span class="rrze-log-rotation-status-active">
+                    <?php esc_html_e('Rotation is active. Line-based truncation for this level is disabled.', 'rrze-log'); ?>
+                </span>
+                <span class="rrze-log-rotation-status-inactive">
+                    <?php esc_html_e('Rotation is inactive. This level is truncated to the configured maximum number of lines.', 'rrze-log'); ?>
+                </span>
+            </p>
+        </fieldset>
+        <?php
+    }
+
+    /**
+     * Extract and normalize an Action Log level from Settings API callback arguments.
+     */
+    protected function getLevelFromSettingsArgs(array $args): string {
+        $level = '';
+
+        if (isset($args['level'])) {
+            $level = (string) $args['level'];
+        } elseif (isset($args['args']) && is_array($args['args']) && isset($args['args']['level'])) {
+            $level = (string) $args['args']['level'];
+        }
+
+        return Constants::normalizeLogLevel($level);
+    }
+
+    /**
+     * Returns the label for a rotation interval.
+     */
+    protected function getRotationLabel(string $interval): string {
+        switch ($interval) {
+            case 'daily':
+                return __('Daily', 'rrze-log');
+            case 'weekly':
+                return __('Weekly', 'rrze-log');
+            case 'monthly':
+                return __('Monthly', 'rrze-log');
+            case 'none':
+            default:
+                return __('No rotation', 'rrze-log');
+        }
+    }
+
+    /**
+     * Sanitize per-level Action Log line limits.
+     */
+    protected function sanitizeLevelMaxLines(array $input): array {
+        $current = isset($this->options->levelMaxLines) && is_array($this->options->levelMaxLines)
+            ? $this->options->levelMaxLines
+            : [];
+
+        $fallback = isset($this->options->maxLines) ? (int) $this->options->maxLines : 1000;
+        if ($fallback <= 0) {
+            $fallback = 1000;
+        }
+
+        $output = [];
+
+        foreach (Constants::LEVELS as $level) {
+            $currentValue = isset($current[$level]) ? (int) $current[$level] : $fallback;
+            $value = isset($input[$level]) ? absint($input[$level]) : $currentValue;
+            $output[$level] = $value > 0 ? min($value, 50000) : $currentValue;
+        }
+
+        return $output;
+    }
+
+    /**
+     * Sanitize per-level Action Log rotation settings.
+     */
+    protected function sanitizeLevelRotation(array $input): array {
+        $current = isset($this->options->levelRotation) && is_array($this->options->levelRotation)
+            ? $this->options->levelRotation
+            : [];
+
+        $output = [];
+
+        foreach (Constants::LEVELS as $level) {
+            $value = isset($input[$level]) ? sanitize_key((string) $input[$level]) : ($current[$level] ?? 'none');
+            $output[$level] = in_array($value, Constants::LOG_ROTATION_INTERVALS, true) ? $value : 'none';
+        }
+
+        return $output;
+    }
     
     /**
     * Display logAccess field.
@@ -563,20 +823,41 @@ final class Settings {
      * Validate options input.
      *
      * @param array $input
+     * @param string $tab
      * @return array
      */
-    public function optionsValidate(array $input): array {
-        $input['enabled'] = !empty($input['enabled']) ? 1 : 0;
+    public function optionsValidate(array $input, string $tab = 'general'): array {
+        $tab = $this->normalizeSettingsTab($tab);
+        $output = (array) $this->options;
 
-        $input['maxLines'] = !empty($input['maxLines']) && absint($input['maxLines'])
-            ? min(absint($input['maxLines']), 50000)
-            : $this->options->maxLines;
+        if ($tab === 'general') {
+            $output['adminMenu'] = !empty($input['adminMenu']) ? 1 : 0;
 
-        $input['adminMenu'] = !empty($input['adminMenu']) ? 1 : 0;
-
-        if (is_super_admin()) {
+            if (!is_multisite() || is_super_admin()) {
+                $rawLogAccess = isset($input['logAccess']) ? (string) $input['logAccess'] : '';
+                $logAccess = $this->sanitizeTextarea($rawLogAccess);
+                if (!empty($logAccess) && is_array($logAccess)) {
+                    $logAccess = $this->sanitizeWpLogAccess($logAccess);
+                }
+                $output['logAccess'] = !empty($logAccess) ? $logAccess : '';
+            }
+        } elseif ($tab === 'action') {
+            $output['enabled'] = !empty($input['enabled']) ? 1 : 0;
+            $output['levelMaxLines'] = $this->sanitizeLevelMaxLines(
+                isset($input['levelMaxLines']) && is_array($input['levelMaxLines']) ? $input['levelMaxLines'] : []
+            );
+            $output['levelRotation'] = $this->sanitizeLevelRotation(
+                isset($input['levelRotation']) && is_array($input['levelRotation']) ? $input['levelRotation'] : []
+            );
+        } elseif ($tab === 'debug') {
+            if ($this->isDebugLog) {
+                $output['debugMaxLines'] = !empty($input['debugMaxLines']) && absint($input['debugMaxLines'])
+                    ? min(absint($input['debugMaxLines']), 50000)
+                    : $this->options->debugMaxLines;
+            }
+        } elseif ($tab === 'audit' && is_super_admin()) {
             $auditEnabled = !empty($input['auditEnabled']) ? 1 : 0;
-            $input['auditEnabled'] = $auditEnabled;
+            $output['auditEnabled'] = $auditEnabled;
 
             if ($auditEnabled === 1) {
                 $types = isset($input['auditTypes']) && is_array($input['auditTypes']) ? $input['auditTypes'] : [];
@@ -595,9 +876,9 @@ final class Settings {
                     ];
                 }
 
-                $input['auditTypes'] = $normalized;
+                $output['auditTypes'] = $normalized;
             } else {
-                $input['auditTypes'] = isset($this->options->auditTypes) && is_array($this->options->auditTypes)
+                $output['auditTypes'] = isset($this->options->auditTypes) && is_array($this->options->auditTypes)
                     ? $this->options->auditTypes
                     : [
                         'cms' => 1,
@@ -607,7 +888,7 @@ final class Settings {
             }
 
             $currentAuditMaxLines = isset($this->options->auditMaxLines) ? (int) $this->options->auditMaxLines : 1000;
-            $input['auditMaxLines'] = !empty($input['auditMaxLines']) && absint($input['auditMaxLines'])
+            $output['auditMaxLines'] = !empty($input['auditMaxLines']) && absint($input['auditMaxLines'])
                 ? min(absint($input['auditMaxLines']), 50000)
                 : $currentAuditMaxLines;
             
@@ -615,7 +896,7 @@ final class Settings {
                 ? (int) $this->options->superadminAuditMaxLines
                 : 1000;
 
-            $input['superadminAuditMaxLines'] =
+            $output['superadminAuditMaxLines'] =
                 !empty($input['superadminAuditMaxLines']) && absint($input['superadminAuditMaxLines'])
                     ? min(absint($input['superadminAuditMaxLines']), 500000)
                     : $currentSuperMax;
@@ -624,42 +905,13 @@ final class Settings {
                 ? (int) $this->options->websupportAuditMaxLines
                 : 1000;
 
-            $input['websupportAuditMaxLines'] =
+            $output['websupportAuditMaxLines'] =
                 !empty($input['websupportAuditMaxLines']) && absint($input['websupportAuditMaxLines'])
                     ? min(absint($input['websupportAuditMaxLines']), 500000)
                     : $currentWebsupportMax;
-
-            
-        } else {
-            unset($input['auditEnabled'], $input['auditTypes'], $input['auditMaxLines']);
-            unset($input['superadminAuditMaxLines']);
-            unset($input['websupportAuditMaxLines']);
         }
 
-        // logAccess (allowlist)
-        // Multisite: only superadmins may set it (settings page is blocked anyway, but keep it strict).
-        // Single: admins may set it.
-        if (!is_multisite() || is_super_admin()) {
-            $rawLogAccess = isset($input['logAccess']) ? (string) $input['logAccess'] : '';
-            $logAccess = $this->sanitizeTextarea($rawLogAccess);
-            if (!empty($logAccess) && is_array($logAccess)) {
-                $logAccess = $this->sanitizeWpLogAccess($logAccess);
-            }
-            $input['logAccess'] = !empty($logAccess) ? $logAccess : '';
-        } else {
-            unset($input['logAccess']);
-        }
-        
-        
-        if ($this->isDebugLog) {
-            $input['debugMaxLines'] = !empty($input['debugMaxLines']) && absint($input['debugMaxLines'])
-                ? min(absint($input['debugMaxLines']), 50000)
-                : $this->options->debugMaxLines;
-
-
-        }
-
-        $this->options = (object) wp_parse_args($input, (array) $this->options);
+        $this->options = (object) wp_parse_args($output, (array) $this->options);
         return (array) $this->options;
     }
 
@@ -679,16 +931,20 @@ final class Settings {
         check_admin_referer('rrze-log-settings-options');
 
         $input = isset($_POST[$this->optionName]) && is_array($_POST[$this->optionName]) ? $_POST[$this->optionName] : [];
+        $tab = isset($_POST['rrze-log-settings-tab']) ? sanitize_key((string) $_POST['rrze-log-settings-tab']) : 'general';
+        $tab = $this->normalizeSettingsTab($tab);
 
         if (is_multisite()) {
-            update_site_option($this->optionName, $this->optionsValidate($input));
+            update_site_option($this->optionName, $this->optionsValidate($input, $tab));
             $this->options = Options::getOptions();
+            Cron::reschedule();
             add_action('network_admin_notices', [$this, 'settingsUpdateNotice']);
             return;
         }
 
-        update_option($this->optionName, $this->optionsValidate($input));
+        update_option($this->optionName, $this->optionsValidate($input, $tab));
         $this->options = Options::getOptions();
+        Cron::reschedule();
         add_action('admin_notices', [$this, 'settingsUpdateNotice']);
     }
 
@@ -767,7 +1023,8 @@ final class Settings {
         $action = isset($_GET['action']) ? (string) $_GET['action'] : 'index';
 
         $s = isset($_REQUEST['s']) ? (string) $_REQUEST['s'] : '';
-        $level = isset($_REQUEST['level']) && in_array($_REQUEST['level'], Constants::LEVELS, true) ? (string) $_REQUEST['level'] : '';
+        $level = isset($_REQUEST['level']) ? strtoupper(trim((string) $_REQUEST['level'])) : '';
+        $level = in_array($level, Constants::LEVELS, true) ? $level : 'ERROR';
         $logFile = isset($_REQUEST['logfile']) ? (string) $_REQUEST['logfile'] : date('Y-m-d');
 
         $data = [

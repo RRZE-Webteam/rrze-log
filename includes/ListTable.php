@@ -10,6 +10,8 @@ class ListTable extends WP_List_Table {
     public $options;
     protected string $orderby = 'datetime';
     protected string $order = 'desc';
+    protected string $selectedLevel = 'ERROR';
+    protected string $selectedLogFile = '';
 
     public function __construct() {
         $this->options = Options::getOptions();
@@ -240,7 +242,7 @@ class ListTable extends WP_List_Table {
     public function prepare_items() {
         $s = isset($_REQUEST['s']) ? (string) $_REQUEST['s'] : '';
         $level = isset($_REQUEST['level']) ? (string) $_REQUEST['level'] : '';
-        $logFile = isset($_REQUEST['logfile']) ? (string) $_REQUEST['logfile'] : '';
+        $logFile = isset($_REQUEST['logfile']) ? sanitize_text_field((string) wp_unslash($_REQUEST['logfile'])) : '';
 
         $columns = $this->get_columns();
         $hidden = [];
@@ -264,22 +266,145 @@ class ListTable extends WP_List_Table {
         $search = array_map('trim', explode(' ', trim($s)));
         $search = array_filter($search, 'strlen');
 
-        if ($level !== '') {
-            $search[] = '"level":"' . trim($level) . '"';
+        $level = strtoupper(trim($level));
+        if (!in_array($level, Constants::LEVELS, true)) {
+            $level = 'ERROR';
         }
 
-        $logFilePath = $logFile !== '' ? $logFile : Constants::LOG_FILE;
+        $this->selectedLevel = $level;
+        $this->selectedLogFile = $this->getRequestedLogFileForLevel($level, $logFile);
+
+        $search[] = '"level":"' . trim($level) . '"';
+
+        $this->prepareItemsFromFile(
+            $this->selectedLogFile,
+            $search,
+            $currentPage,
+            $perPage
+        );
+    }
+
+    /**
+     * Returns the selected log file for the requested level.
+     */
+    protected function getRequestedLogFileForLevel(string $level, string $requestedFile): string {
+        $files = $this->getLogFilesForLevel($level);
+        $currentFile = Constants::getLogFileForLevel($level);
+
+        if ($requestedFile === '') {
+            return $currentFile;
+        }
+
+        foreach ($files as $file) {
+            if ($requestedFile === $file || basename($requestedFile) === basename($file)) {
+                return $file;
+            }
+        }
+
+        return $currentFile;
+    }
+
+    /**
+     * Returns current and rotated log files for a level.
+     */
+    protected function getLogFilesForLevel(string $level): array {
+        $currentFile = Constants::getLogFileForLevel($level);
+        $dir = dirname($currentFile);
+        $name = pathinfo($currentFile, PATHINFO_FILENAME);
+        $files = [
+            $currentFile,
+        ];
+
+        if (!is_dir($dir)) {
+            return $files;
+        }
+
+        $patterns = [
+            $dir . '/' . $name . '-daily-[1-7].log',
+            $dir . '/' . $name . '-weekly-[1-5].log',
+            $dir . '/' . $name . '-monthly-[1-9].log',
+            $dir . '/' . $name . '-monthly-1[0-2].log',
+        ];
+
+        foreach ($patterns as $pattern) {
+            $matches = glob($pattern);
+            if (!is_array($matches)) {
+                continue;
+            }
+
+            foreach ($matches as $match) {
+                if (is_file($match)) {
+                    $files[] = $match;
+                }
+            }
+        }
+
+        $files = array_values(array_unique($files));
+        usort($files, [$this, 'compareLogFiles']);
+
+        return $files;
+    }
+
+    /**
+     * Sort log files with the current file first, then newest archive files.
+     */
+    protected function compareLogFiles(string $a, string $b): int {
+        $currentFile = Constants::getLogFileForLevel($this->selectedLevel);
+
+        if ($a === $currentFile) {
+            return -1;
+        }
+
+        if ($b === $currentFile) {
+            return 1;
+        }
+
+        $aTime = @filemtime($a);
+        $bTime = @filemtime($b);
+        $aTime = $aTime ? (int) $aTime : 0;
+        $bTime = $bTime ? (int) $bTime : 0;
+
+        if ($aTime === $bTime) {
+            return strcasecmp(basename($a), basename($b));
+        }
+
+        return $aTime < $bTime ? 1 : -1;
+    }
+
+    /**
+     * Prepare items from a single log file.
+     */
+    protected function prepareItemsFromFile(string $logFilePath, array $search, int $currentPage, int $perPage): void {
+        $offset = ($currentPage - 1) * $perPage;
 
         $parser = new LogParser(
             $logFilePath,
             $search,
-            (($currentPage - 1) * $perPage),
+            $offset,
             $perPage,
             false
         );
 
         $items = $parser->getItemsDecoded();
+        $this->items = $this->normalizeRows($items);
 
+        if (!empty($this->items)) {
+            usort($this->items, [$this, 'compareItems']);
+        }
+
+        $totalItems = (int) $parser->getTotalLines();
+
+        $this->set_pagination_args([
+            'total_items' => $totalItems,
+            'per_page' => $perPage,
+            'total_pages' => $perPage > 0 ? (int) ceil($totalItems / $perPage) : 1,
+        ]);
+    }
+
+    /**
+     * Normalize decoded parser rows for table rendering.
+     */
+    protected function normalizeRows($items): array {
         $this->items = [];
         if (!is_wp_error($items)) {
             foreach ($items as $row) {
@@ -307,17 +432,7 @@ class ListTable extends WP_List_Table {
             }
         }
 
-        if (!empty($this->items)) {
-            usort($this->items, [$this, 'compareItems']);
-        }
-
-        $totalItems = (int) $parser->getTotalLines();
-
-        $this->set_pagination_args([
-            'total_items' => $totalItems,
-            'per_page' => $perPage,
-            'total_pages' => $perPage > 0 ? (int) ceil($totalItems / $perPage) : 1,
-        ]);
+        return $this->items;
     }
     
     
@@ -363,6 +478,7 @@ class ListTable extends WP_List_Table {
             if ('top' === $which) {
                 ob_start();
                 $this->levelsDropdown();
+                $this->logFilesDropdown();
                 $output = ob_get_clean();
 
                 if (!empty($output)) {
@@ -376,10 +492,12 @@ class ListTable extends WP_List_Table {
     }
 
     protected function levelsDropdown() {
-        $levelFilter = isset($_REQUEST['level']) ? (string) $_REQUEST['level'] : '';
+        $levelFilter = isset($_REQUEST['level']) ? strtoupper(trim((string) $_REQUEST['level'])) : 'ERROR';
+        if (!in_array($levelFilter, Constants::LEVELS, true)) {
+            $levelFilter = 'ERROR';
+        }
         ?>
         <select id="levels-filter" name="level">
-            <option value=""><?php _e('All error levels', 'rrze-log'); ?></option>
             <?php foreach (Constants::LEVELS as $level) { ?>
                 <option value="<?php echo esc_attr((string) $level); ?>"<?php selected($levelFilter, $level); ?>>
                     <?php echo esc_html((string) $level); ?>
@@ -387,5 +505,40 @@ class ListTable extends WP_List_Table {
             <?php } ?>
         </select>
         <?php
+    }
+
+    /**
+     * Dropdown with the current and rotated files for the selected level.
+     */
+    protected function logFilesDropdown(): void {
+        $level = $this->selectedLevel;
+        $files = $this->getLogFilesForLevel($level);
+        $selected = $this->selectedLogFile !== '' ? $this->selectedLogFile : Constants::getLogFileForLevel($level);
+        ?>
+        <label class="screen-reader-text" for="rrze-log-file-filter">
+            <?php esc_html_e('Log file', 'rrze-log'); ?>
+        </label>
+        <select id="rrze-log-file-filter" name="logfile">
+            <?php foreach ($files as $file) { ?>
+                <option value="<?php echo esc_attr(basename($file)); ?>"<?php selected($selected, $file); ?>>
+                    <?php echo esc_html($this->getLogFileLabel($file, $level)); ?>
+                </option>
+            <?php } ?>
+        </select>
+        <?php
+    }
+
+    /**
+     * Returns a readable file option label.
+     */
+    protected function getLogFileLabel(string $file, string $level): string {
+        $currentFile = Constants::getLogFileForLevel($level);
+        $label = basename($file);
+
+        if ($file === $currentFile) {
+            $label .= ' (' . __('current', 'rrze-log') . ')';
+        }
+
+        return $label;
     }
 }

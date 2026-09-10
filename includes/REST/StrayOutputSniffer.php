@@ -2,6 +2,8 @@
 
 namespace RRZE\Log\REST;
 
+use RRZE\Log\Constants;
+
 /**
  * StrayOutputSniffer
  *
@@ -70,8 +72,8 @@ class StrayOutputSniffer {
     }
 
     public function defaultLog(string $message): void {
-        $dir  = WP_CONTENT_DIR . '/log';
-        $file = $dir . '/rrze-log.log';
+        $file = Constants::getLogFileForLevel('WARNING');
+        $dir = dirname($file);
         if (!is_dir($dir)) {
             @wp_mkdir_p($dir);
         }

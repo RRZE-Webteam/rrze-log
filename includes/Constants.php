@@ -17,7 +17,32 @@ final class Constants {
     /**
      * Log file name.
      */
-    public const LOG_FILE = self::LOG_DIR . '/rrze-log.log';
+    public const ACTION_LOG_DIR = self::LOG_DIR . '/rrze-log';
+
+    /**
+     * Default log file name.
+     */
+    public const LOG_FILE = self::ACTION_LOG_DIR . '/info.log';
+
+    /**
+     * Log files by error level.
+     */
+    public const LOG_LEVEL_FILES = [
+        'ERROR' => self::ACTION_LOG_DIR . '/error.log',
+        'WARNING' => self::ACTION_LOG_DIR . '/warning.log',
+        'NOTICE' => self::ACTION_LOG_DIR . '/notice.log',
+        'INFO' => self::ACTION_LOG_DIR . '/info.log',
+    ];
+
+    /**
+     * Log rotation intervals.
+     */
+    public const LOG_ROTATION_INTERVALS = [
+        'none',
+        'daily',
+        'weekly',
+        'monthly',
+    ];
 
     /**
      * Admin audit log file name (non-superadmin actors).
@@ -70,4 +95,37 @@ final class Constants {
         'JAVASCRIPT',
         'OTHER'
     ];
+
+    /**
+     * Normalizes an Action Log level.
+     */
+    public static function normalizeLogLevel(string $level): string {
+        $level = strtoupper(trim($level));
+
+        if ($level === 'WARN') {
+            return 'WARNING';
+        }
+
+        if (in_array($level, self::LEVELS, true)) {
+            return $level;
+        }
+
+        return 'INFO';
+    }
+
+    /**
+     * Returns the Action Log file for a level.
+     */
+    public static function getLogFileForLevel(string $level): string {
+        $level = self::normalizeLogLevel($level);
+
+        return self::LOG_LEVEL_FILES[$level];
+    }
+
+    /**
+     * Returns all Action Log files.
+     */
+    public static function getActionLogFiles(): array {
+        return self::LOG_LEVEL_FILES;
+    }
 }

@@ -93,7 +93,7 @@ class Utils
      */
     public static function getLog($logFile = '', $search = [], $offset = 0, $count = -1)
     {
-        $logFile = self::normalizeLogFile((string) $logFile);
+        $logFiles = self::getLogFilesForRequest((string) $logFile);
 
         $search = is_array($search) && self::isNotMultidimensional($search) ?
             array_map('trim', $search) :
@@ -102,22 +102,36 @@ class Utils
         $offset = absint($offset);
         $count = $count < 0 ? -1 : absint($count);
 
-        $logParser = new LogParser($logFile, $search, $offset, $count, false);
-
-        if (!is_network_admin()) {
-            $logItems = $logParser->getItems('siteurl', untrailingslashit(site_url()));
-        } else {
-            $logItems = $logParser->getItems();
-        }
-
+        $limit = $count < 0 ? -1 : ($offset + $count);
         $items = [];
-        if (!is_wp_error($logItems)) {
-            foreach ($logItems as $item) {
-                $items[] = json_decode($item, true);
+        $totalItems = 0;
+
+        foreach ($logFiles as $logFile) {
+            $logParser = new LogParser($logFile, $search, 0, $limit, false);
+
+            if (!is_network_admin()) {
+                $logItems = $logParser->getItems('siteurl', untrailingslashit(site_url()));
+            } else {
+                $logItems = $logParser->getItems();
             }
+
+            if (!is_wp_error($logItems)) {
+                foreach ($logItems as $item) {
+                    $decoded = json_decode((string) $item, true);
+                    if (is_array($decoded)) {
+                        $items[] = $decoded;
+                    }
+                }
+            }
+
+            $totalItems += $logParser->getTotalLines();
         }
 
-        $totalItems = $logParser->getTotalLines();
+        usort($items, [self::class, 'compareLogItemsByDatetimeDesc']);
+
+        if ($offset > 0 || $count >= 0) {
+            $items = array_slice($items, $offset, $count >= 0 ? $count : null);
+        }
 
         return [
             'items' => $items,
@@ -130,7 +144,6 @@ class Utils
      */
     protected static function normalizeLogFile(string $logFile): string {
         $allowed = [
-            Constants::LOG_FILE,
             Constants::AUDIT_LOG_FILE,
             Constants::SUPERADMIN_AUDIT_LOG_FILE,
             Constants::WEBSUPPORT_AUDIT_LOG_FILE,
@@ -147,6 +160,41 @@ class Utils
         }
 
         return Constants::LOG_FILE;
+    }
+
+    /**
+     * Normalize publicly supplied log file paths to known log files.
+     */
+    protected static function getLogFilesForRequest(string $logFile): array {
+        $actionLogFiles = Constants::getActionLogFiles();
+
+        if ($logFile === '') {
+            return array_values($actionLogFiles);
+        }
+
+        foreach ($actionLogFiles as $allowedFile) {
+            if ($logFile === $allowedFile || basename($logFile) === basename($allowedFile)) {
+                return [$allowedFile];
+            }
+        }
+
+        return [self::normalizeLogFile($logFile)];
+    }
+
+    /**
+     * Sort log items newest first.
+     */
+    public static function compareLogItemsByDatetimeDesc(array $a, array $b): int {
+        $aTime = strtotime((string) ($a['datetime'] ?? ''));
+        $bTime = strtotime((string) ($b['datetime'] ?? ''));
+        $aTime = $aTime === false ? 0 : $aTime;
+        $bTime = $bTime === false ? 0 : $bTime;
+
+        if ($aTime === $bTime) {
+            return 0;
+        }
+
+        return $aTime < $bTime ? 1 : -1;
     }
 
     /**

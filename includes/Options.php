@@ -23,6 +23,18 @@ final class Options {
         return [
             'enabled' => '0',
             'maxLines' => 1000,
+            'levelMaxLines' => [
+                'ERROR' => 1000,
+                'WARNING' => 1000,
+                'NOTICE' => 1000,
+                'INFO' => 1000,
+            ],
+            'levelRotation' => [
+                'ERROR' => 'none',
+                'WARNING' => 'none',
+                'NOTICE' => 'none',
+                'INFO' => 'none',
+            ],
             'adminMenu' => '0',
 
             'logAccess' => '',
@@ -61,6 +73,14 @@ final class Options {
 
         $options['enabled'] = !empty($options['enabled']) ? 1 : 0;
         $options['adminMenu'] = !empty($options['adminMenu']) ? 1 : 0;
+        $options['maxLines'] = isset($options['maxLines']) ? absint($options['maxLines']) : $defaults['maxLines'];
+        $options['levelMaxLines'] = self::normalizeLevelMaxLines(
+            isset($options['levelMaxLines']) && is_array($options['levelMaxLines']) ? $options['levelMaxLines'] : [],
+            (int) $options['maxLines']
+        );
+        $options['levelRotation'] = self::normalizeLevelRotation(
+            isset($options['levelRotation']) && is_array($options['levelRotation']) ? $options['levelRotation'] : []
+        );
 
         $options['auditEnabled'] = !empty($options['auditEnabled']) ? 1 : 0;
 
@@ -140,5 +160,37 @@ final class Options {
         }
 
         return $types;
+    }
+
+    /**
+     * Normalizes per-level Action Log line limits.
+     */
+    protected static function normalizeLevelMaxLines(array $limits, int $fallback): array {
+        if ($fallback <= 0) {
+            $fallback = 1000;
+        }
+
+        $normalized = [];
+
+        foreach (Constants::LEVELS as $level) {
+            $value = isset($limits[$level]) ? absint($limits[$level]) : $fallback;
+            $normalized[$level] = $value > 0 ? min($value, 50000) : $fallback;
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Normalizes per-level Action Log rotation settings.
+     */
+    protected static function normalizeLevelRotation(array $rotations): array {
+        $normalized = [];
+
+        foreach (Constants::LEVELS as $level) {
+            $value = isset($rotations[$level]) ? sanitize_key((string) $rotations[$level]) : 'none';
+            $normalized[$level] = in_array($value, Constants::LOG_ROTATION_INTERVALS, true) ? $value : 'none';
+        }
+
+        return $normalized;
     }
 }

@@ -70,10 +70,10 @@ class Logger {
 
 
     /**
-     * Default logger (rrze-log.log).
+     * Default logger.
      */
     protected function log(string $level, string $message, array|object $context = []): bool {
-        return $this->logToFile(Constants::LOG_FILE, $level, $message, $context);
+        return $this->logToFile(Constants::getLogFileForLevel($level), $level, $message, $context);
     }
 
     /**

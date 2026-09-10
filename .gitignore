@@ -15,7 +15,5 @@ composer.phar
 /vendor/
 node_modules/
 package-lock.json
-*.css.map
-*.js.map
+*.map
 package-lock.json
-assets/js/rrze-log.js.map

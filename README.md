@@ -5,8 +5,6 @@
 
 # RRZE Log
 
-## WordPress Plugin
-
 This plugin allows certain actions from plugins and themes to be logged into a log file, which may be necessary for further investigation.
 
 ### Settings Menu (Multisite)
@@ -30,6 +28,7 @@ do_action(string $logHook, mixed $message [, array $context])
 The name of the hook that logs the corresponding error level. Available hooks are:
 
 -   'rrze.log.error'
+-   'rrze.log.warn' (alias for 'rrze.log.warning')
 -   'rrze.log.warning'
 -   'rrze.log.notice'
 -   'rrze.log.info'
@@ -70,8 +69,7 @@ Another use case is logging an Exception that occurs during code execution.
 ```php
 try {
     // ...
-} catch(\Exception $exception) {
-
+} catch (\Exception $exception) {
     do_action('rrze.log.warning', ['exception' => $exception]);
 
     if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -124,6 +122,9 @@ $logs = apply_filters(
 
 ### Notes
 
--   Log files are stored in the directory <code>WP_CONTENT_DIR . '/log/'</code>
--   The file name format is `rrze-log.log` and `wp-debug.log`
+-   Action Log files are stored in the directory <code>WP_CONTENT_DIR . '/log/rrze-log/'</code>
+-   Action Log entries are split by error level into `error.log`, `warning.log`, `notice.log`, and `info.log`
+-   The Action Log admin view opens one error level file at a time and defaults to `ERROR`
+-   Rotated Action Log files can be selected per error level in the Action Log admin view
+-   Audit, Websupport Audit, Superadmin Audit, and WP Debug logs keep their existing storage paths below <code>WP_CONTENT_DIR . '/log/'</code>
 -   The record format is JSON

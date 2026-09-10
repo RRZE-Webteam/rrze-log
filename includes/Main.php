@@ -66,6 +66,7 @@ class Main {
         }
 
         add_action('rrze.log.error', [$this, 'logError'], 10, 2);
+        add_action('rrze.log.warn', [$this, 'logWarning'], 10, 2);
         add_action('rrze.log.warning', [$this, 'logWarning'], 10, 2);
         add_action('rrze.log.notice', [$this, 'logNotice'], 10, 2);
         add_action('rrze.log.info', [$this, 'logInfo'], 10, 2);

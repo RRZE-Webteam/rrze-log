@@ -30,7 +30,7 @@ if ($logfile === '') {
         <form method="get">
             <?php
             foreach ($_GET as $key => $value) {
-                if ($key === 's') {
+                if (in_array($key, ['s', 'level', 'logfile'], true)) {
                     continue;
                 }
                 if (is_array($value)) {
