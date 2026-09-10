@@ -1,6 +1,6 @@
 ### IDES ###
 .vscode/
-**/nbproject/
+nbproject
 .idea/
 ### macOS ###
 .DS_Store
@@ -13,7 +13,5 @@ node_modules/
 /_tmp/
 composer.phar
 /vendor/
-node_modules/
-package-lock.json
 *.map
 package-lock.json
