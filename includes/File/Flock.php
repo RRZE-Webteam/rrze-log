@@ -58,8 +58,8 @@ class Flock
                 throw new FlockException(
                     sprintf(
                         /* translators: %s: directory path. */
-                        __('Cannot create directory %s.', 'rrze-log'),
-                        $dir
+                        esc_html__('Cannot create directory %s.', 'rrze-log'),
+                        esc_html($dir)
                     )
                 );
             }
@@ -68,8 +68,8 @@ class Flock
             throw new FlockException(
                 sprintf(
                     /* translators: %s: directory path. */
-                    __('Directory is not writable: %s', 'rrze-log'),
-                    $dir
+                    esc_html__('Directory is not writable: %s', 'rrze-log'),
+                    esc_html($dir)
                 )
             );
         }
@@ -79,8 +79,8 @@ class Flock
             throw new FlockException(
                 sprintf(
                     /* translators: %s: file path. */
-                    __('Cannot open log file for append: %s', 'rrze-log'),
-                    $this->filePath
+                    esc_html__('Cannot open log file for append: %s', 'rrze-log'),
+                    esc_html($this->filePath)
                 )
             );
         }
@@ -96,8 +96,8 @@ class Flock
                 throw new FlockException(
                     sprintf(
                         /* translators: %s: file path. */
-                        __('Could not get lock on %s (busy).', 'rrze-log'),
-                        $this->filePath
+                        esc_html__('Could not get lock on %s (busy).', 'rrze-log'),
+                        esc_html($this->filePath)
                     )
                 );
             }
@@ -106,8 +106,8 @@ class Flock
                 throw new FlockException(
                     sprintf(
                         /* translators: %s: file path. */
-                        __('Timed out acquiring lock on %s.', 'rrze-log'),
-                        $this->filePath
+                        esc_html__('Timed out acquiring lock on %s.', 'rrze-log'),
+                        esc_html($this->filePath)
                     )
                 );
             }
@@ -129,7 +129,7 @@ class Flock
     public function write(string $bytes, bool $flush = true, bool $fsync = false): int
     {
         if (!$this->locked || !is_resource($this->fp)) {
-            throw new FlockException(__('Write attempted without lock.', 'rrze-log'));
+            throw new FlockException(esc_html__('Write attempted without lock.', 'rrze-log'));
         }
 
         $len = strlen($bytes);
@@ -137,7 +137,7 @@ class Flock
         while ($off < $len) {
             $n = @fwrite($this->fp, substr($bytes, $off));
             if ($n === false) {
-                throw new FlockException(__('Write failed.', 'rrze-log'));
+                throw new FlockException(esc_html__('Write failed.', 'rrze-log'));
             }
             $off += $n;
         }

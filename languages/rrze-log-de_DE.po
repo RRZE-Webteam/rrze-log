@@ -2,36 +2,26 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE Log\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-log\n"
-"POT-Creation-Date: 2025-08-29T08:32:37+00:00\n"
-"PO-Revision-Date: 2025-08-29 10:43+0200\n"
 "Last-Translator: RRZE Webteam <webmaster@fau.de>\n"
 "Language-Team: Deutsch\n"
-"Language: de_DE\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2025-08-29T08:32:37+00:00\n"
+"PO-Revision-Date: 2025-08-29 10:43+0200\n"
+"Language: de_DE\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Poedit 3.7\n"
 
 #. Plugin Name of the plugin
-#: rrze-log.php includes/Settings.php:186
+#: rrze-log.php
 msgid "RRZE Log"
 msgstr "RRZE-Protokoll"
 
-#. Plugin URI of the plugin
-#: rrze-log.php
-msgid "https://gitlab.rrze.fau.de/rrze-webteam/rrze-log"
-msgstr "https://gitlab.rrze.fau.de/rrze-webteam/rrze-log"
-
 #. Description of the plugin
 #: rrze-log.php
-msgid ""
-"The plugin allows you to log certain actions of the plugins and themes in a "
-"log file, which are or may be necessary for further investigations."
-msgstr ""
-"Das Plugin erlaubt es, bestimmte Aktionen der Plugins und Themes in einer "
-"Logdatei zu protokollieren, die für weitere Untersuchungen notwendig sind "
-"oder sein können."
+msgid "The plugin allows you to log certain actions of the plugins and themes in a log file, which are or may be necessary for further investigations."
+msgstr "Das Plugin erlaubt es, bestimmte Aktionen der Plugins und Themes in einer Logdatei zu protokollieren, die für weitere Untersuchungen notwendig sind oder sein können."
 
 #. Author of the plugin
 #: rrze-log.php
@@ -43,34 +33,23 @@ msgstr "RRZE-Webteam"
 msgid "https://www.wp.rrze.fau.de/"
 msgstr "https://www.wp.rrze.fau.de/"
 
-#. translators: 1: number of seconds
-#: includes/Cron.php:70
-#, php-format
-msgid "RRZE Log – every %d seconds"
-msgstr "RRZE-Protokoll – alle %d Sekunden"
-
-#: includes/DebugListTable.php:69 includes/ListTable.php:77
-msgid "Error level"
-msgstr "Fehlerstufe"
-
-#: includes/DebugListTable.php:70 includes/ListTable.php:79
+#: includes/AuditListTable.php:72
+#: includes/DebugListTable.php:63
+#: includes/ListTable.php:38
 msgid "Message"
 msgstr "Nachricht"
 
-#: includes/DebugListTable.php:71 includes/ListTable.php:80
-msgid "Date"
-msgstr "Datum"
-
-#: includes/DebugListTable.php:159 includes/ListTable.php:161
+#: includes/DebugListTable.php:470
 msgid "All error levels"
-msgstr "Alle Fehlerstufen"
+msgstr "Alle Level"
 
-#: includes/DebugLogParser.php:78 includes/LogParser.php:75
+#: includes/DebugLogParser.php:93
+#: includes/LogParser.php:50
 msgid "Log file not found."
 msgstr "Protokolldatei nicht gefunden."
 
-#. translators: %s: error message
-#: includes/DebugLogParser.php:89
+#. translators: %s: Error message.
+#: includes/DebugLogParser.php:104
 #, php-format
 msgid "Cannot open log: %s"
 msgstr "Protokoll kann nicht geöffnet werden: %s"
@@ -103,8 +82,7 @@ msgstr "Sperre für %s konnte nicht hergestellt werden (beschäftigt)."
 #: includes/File/Flock.php:109
 #, php-format
 msgid "Timed out acquiring lock on %s."
-msgstr ""
-"Beim Abrufen der Sperre für %s ist eine Zeitüberschreitung aufgetreten."
+msgstr "Beim Abrufen der Sperre für %s ist eine Zeitüberschreitung aufgetreten."
 
 #: includes/File/Flock.php:132
 msgid "Write attempted without lock."
@@ -114,88 +92,67 @@ msgstr "Schreibversuch ohne Sperre."
 msgid "Write failed."
 msgstr "Schreiben fehlgeschlagen."
 
-#: includes/ListTable.php:78
+#: includes/AuditListTable.php:70
+#: includes/ListTable.php:37
 msgid "Website"
 msgstr "Website"
 
-#: includes/Settings.php:104 includes/Settings.php:105
-#: includes/Settings.php:434
+#: includes/Settings.php:1036
 msgid "Log"
 msgstr "Protokoll"
 
-#: includes/Settings.php:139 includes/Settings.php:140
-msgid "RRZE-Log"
-msgstr "RRZE-Protokoll"
-
-#: includes/Settings.php:151 includes/Settings.php:152
-msgid "WP-Debug"
-msgstr "WP-Debug"
-
-#: includes/Settings.php:193
+#: includes/Settings.php:414
 msgid "Enable Log"
 msgstr "Protokoll aktivieren"
 
-#: includes/Settings.php:201 includes/Settings.php:225
+#: includes/Settings.php:459
 msgid "Truncate log file to last N lines"
 msgstr "Protokolldatei auf die letzten N Zeilen kürzen"
 
-#: includes/Settings.php:209
+#: includes/Settings.php:391
 msgid "Enable administration menus"
 msgstr "Administrations-Menüs aktivieren"
 
-#: includes/Settings.php:218
+#: includes/Settings.php:451
 msgid "WP Debug Log"
 msgstr "WP-Debug-Log"
 
-#: includes/Settings.php:233
-msgid "Log Access"
-msgstr "Log-Zugriff"
-
-#: includes/Settings.php:248
+#: includes/Settings.php:534
 msgid "Enables network-wide logging"
 msgstr "Aktiviert die netzwerkweite Protokollierung"
 
-#: includes/Settings.php:260
+#: includes/Settings.php:545
 msgid "Enables network wide the Log menu for administrators"
 msgstr "Aktiviert netzwerkweit das Log-Menü für Administratoren"
 
-#: includes/Settings.php:274 includes/Settings.php:287
-msgid ""
-"Keep only the newest lines in the log file, up to the number specified here."
-msgstr ""
-"Es werden nur die neuesten Zeilen in der Protokolldatei behalten, bis zur "
-"hier angegebenen Anzahl."
+#: includes/Settings.php:622
+msgid "Keep only the newest lines in the log file, up to the number specified here."
+msgstr "Es werden nur die neuesten Zeilen in der Protokolldatei behalten, bis zur hier angegebenen Anzahl."
 
-#: includes/Settings.php:295
-msgid ""
-"List of usernames with access to view the wp debug log file. Enter one "
-"username per line."
-msgstr ""
-"Liste der Benutzernamen mit Zugriff zum Anzeigen der Debugging-"
-"Protokolldatei. Geben Sie einen Benutzernamen pro Zeile ein."
-
-#: includes/Settings.php:379 includes/Settings.php:397
+#: includes/Settings.php:976
+#: includes/Settings.php:989
+#: includes/Settings.php:1002
+#: includes/Settings.php:1300
+#: includes/Settings.php:1313
 msgid "Number of items per page:"
 msgstr "Einträge pro Seite:"
 
-#: includes/Settings.php:414 includes/Settings.php:447
+#: includes/Settings.php:283
+#: includes/Settings.php:1015
+#: includes/Settings.php:1049
+#: includes/Settings.php:1076
+#: includes/Settings.php:1329
+#: includes/Settings.php:1359
 msgid "You do not have sufficient permissions to access this page."
-msgstr ""
-"Sie haben nicht genügend Berechtigungen, um auf diese Seite zuzugreifen."
+msgstr "Sie haben nicht genügend Berechtigungen, um auf diese Seite zuzugreifen."
 
-#: includes/Settings.php:467
+#: includes/Settings.php:165
+#: includes/Settings.php:166
+#: includes/Settings.php:252
+#: includes/Settings.php:253
+#: includes/Settings.php:1096
 msgid "Debug"
 msgstr "Debug"
-
-#. translators: %s: WP_DEBUG_LOG value.
-#: includes/Utils.php:38
-#, php-format
-msgid ""
-"Invalid value of the WP_DEBUG_LOG constant. WP_DEBUG_LOG must have the "
-"following value: %s"
-msgstr ""
-"Ungültiger Wert der Konstante WP_DEBUG_LOG. WP_DEBUG_LOG muss folgenden Wert "
-"haben: %s"
 
 #. translators: %s: Error message.
 #: includes/Views/base.php:15
@@ -204,40 +161,363 @@ msgid "Error: %s"
 msgstr "Fehler: %s"
 
 #. translators: 1: Server WordPress version number, 2: Required WordPress version number.
-#: rrze-log.php:133
+#: rrze-log.php:130
 #, php-format
-msgid ""
-"The server is running WordPress version %1$s. The plugin requires at least "
-"WordPress version %2$s."
-msgstr ""
-"Auf dem Server läuft WordPress Version %1$s. Das Plugin erfordert mindestens "
-"WordPress Version %2$s."
+msgid "The server is running WordPress version %1$s. The plugin requires at least WordPress version %2$s."
+msgstr "Auf dem Server läuft WordPress Version %1$s. Das Plugin erfordert mindestens WordPress Version %2$s."
 
 #. translators: 1: Server PHP version number, 2: Required PHP version number.
-#: rrze-log.php:141
+#: rrze-log.php:138
 #, php-format
-msgid ""
-"The server is running PHP version %1$s. The plugin requires at least PHP "
-"version %2$s."
-msgstr ""
-"Auf dem Server wird PHP Version %1$s ausgeführt. Das Plugin erfordert "
-"mindestens PHP Version %2$s."
+msgid "The server is running PHP version %1$s. The plugin requires at least PHP version %2$s."
+msgstr "Auf dem Server wird PHP Version %1$s ausgeführt. Das Plugin erfordert mindestens PHP Version %2$s."
 
-#: rrze-log.php:146
+#: rrze-log.php:143
 msgid "This plugin must be activated network-wide on multisite installations."
-msgstr ""
-"Dieses Plugin muss bei Multisite-Installationen netzwerkweit aktiviert "
-"werden."
+msgstr "Dieses Plugin muss bei Multisite-Installationen netzwerkweit aktiviert werden."
 
 #. translators: 1: The plugin name, 2: The error string.
-#: rrze-log.php:184
+#: rrze-log.php:193
 #, php-format
 msgid "Plugins: %1$s: %2$s"
 msgstr "Plugins: %1$s: %2$s"
 
-#~ msgid "Reverse Streaming"
-#~ msgstr "Rückwärtsstreaming"
+#. Plugin URI of the plugin
+#: rrze-log.php
+msgid "https://github.com/RRZE-Webteam/rrze-log"
+msgstr "https://github.com/RRZE-Webteam/rrze-log"
 
-#~ msgid "Parse entire file via reverse streaming (slower, complete)"
-#~ msgstr ""
-#~ "Gesamte Datei per Reverse-Streaming einlesen (langsamer, vollständig)"
+#: includes/AuditListTable.php:69
+#: includes/DebugListTable.php:61
+#: includes/ListTable.php:35
+msgid "Time"
+msgstr "Zeit"
+
+#: includes/AuditListTable.php:71
+msgid "User"
+msgstr "Benutzer"
+
+#: includes/AuditListTable.php:73
+msgid "Type"
+msgstr "Typ"
+
+#: includes/AuditListTable.php:74
+msgid "Object"
+msgstr "Objekt"
+
+#: includes/AuditListTable.php:153
+msgid "All types"
+msgstr "Alle Typen"
+
+#: includes/AuditListTable.php:154
+#: includes/Settings.php:572
+msgid "CMS-Administration"
+msgstr "CMS-Administration"
+
+#: includes/AuditListTable.php:155
+#: includes/Settings.php:578
+msgid "Website-Administration"
+msgstr "Website-Administration"
+
+#: includes/AuditListTable.php:156
+#: includes/Settings.php:584
+msgid "Redaktion"
+msgstr "Redaktion"
+
+#: includes/AuditListTable.php:160
+msgid "All roles"
+msgstr "Alle Rollen"
+
+#: includes/AuditListTable.php:161
+msgid "Superadmin"
+msgstr "Superadmin"
+
+#: includes/AuditListTable.php:162
+msgid "Websupport"
+msgstr "Websupport"
+
+#: includes/AuditListTable.php:163
+msgid "Administrator"
+msgstr "Administrator"
+
+#: includes/AuditListTable.php:164
+msgid "Editor"
+msgstr "Redakteur"
+
+#: includes/AuditListTable.php:165
+msgid "Author"
+msgstr "Autor"
+
+#: includes/AuditListTable.php:166
+msgid "Contributor"
+msgstr "Mitarbeiter"
+
+#: includes/AuditListTable.php:167
+msgid "Subscriber"
+msgstr "Abonnent"
+
+#: includes/AuditListTable.php:168
+msgid "Unknown"
+msgstr "Unbekannt"
+
+#: includes/AuditListTable.php:173
+msgid "Filter by type"
+msgstr "Nach Typ filtern"
+
+#: includes/AuditListTable.php:188
+msgid "Filter by role"
+msgstr "Nach Rolle filtern"
+
+#: includes/AuditListTable.php:693
+msgid "IP address"
+msgstr "IP-Adresse"
+
+#: includes/AuditListTable.php:702
+msgid "Browser"
+msgstr "Browser"
+
+#. translators: %d: interval seconds
+#: includes/Cron.php:86
+msgid "Every %d seconds"
+msgstr "Alle %d Sekunden"
+
+#: includes/Cron.php:95
+#: includes/Settings.php:743
+msgid "Weekly"
+msgstr "Wöchentlich"
+
+#: includes/Cron.php:102
+#: includes/Settings.php:745
+msgid "Monthly"
+msgstr "Monatlich"
+
+#: includes/DebugListTable.php:62
+#: includes/ListTable.php:36
+msgid "Level"
+msgstr "Level"
+
+#: includes/DebugListTable.php:64
+msgid "#"
+msgstr "#"
+
+#: includes/DebugListTable.php:200
+msgid "Occurrences"
+msgstr "Vorkommnisse"
+
+#: includes/DebugListTable.php:262
+msgid "Copy full message"
+msgstr "Vollständige Nachricht kopieren"
+
+#: includes/DebugListTable.php:263
+#: includes/ListTable.php:103
+msgid "Copy"
+msgstr "Kopieren"
+
+#: includes/ListTable.php:102
+msgid "Copy details"
+msgstr "Details kopieren"
+
+#: includes/ListTable.php:232
+msgid "Copy full details"
+msgstr "Vollständige Details kopieren"
+
+#: includes/ListTable.php:534
+msgid "Log file"
+msgstr "Protokolldatei"
+
+#: includes/ListTable.php:554
+msgid "current"
+msgstr "aktuell"
+
+#: includes/Settings.php:144
+#: includes/Settings.php:145
+#: includes/Settings.php:231
+#: includes/Settings.php:232
+msgid "Protokoll"
+msgstr "Protokoll"
+
+#: includes/Settings.php:155
+#: includes/Settings.php:156
+#: includes/Settings.php:242
+#: includes/Settings.php:243
+msgid "Action Log"
+msgstr "Action Log"
+
+#: includes/Settings.php:177
+#: includes/Settings.php:178
+#: includes/Settings.php:264
+#: includes/Settings.php:265
+#: includes/Settings.php:1065
+msgid "Audit"
+msgstr "Audit"
+
+#: includes/Settings.php:188
+#: includes/Settings.php:189
+#: includes/Settings.php:1346
+msgid "Superadmin Audit"
+msgstr "Superadmin Audit"
+
+#: includes/Settings.php:198
+#: includes/Settings.php:199
+#: includes/Settings.php:1376
+msgid "Websupport Audit"
+msgstr "Websupport Audit"
+
+#: includes/Settings.php:210
+#: includes/Settings.php:211
+msgid "Settings"
+msgstr "Einstellungen"
+
+#: includes/Settings.php:308
+msgid "Allgemein"
+msgstr "Allgemein"
+
+#: includes/Settings.php:309
+#: includes/Settings.php:407
+msgid "Action Logs"
+msgstr "Action Logs"
+
+#: includes/Settings.php:310
+msgid "Debug Logs"
+msgstr "Debug Logs"
+
+#: includes/Settings.php:311
+msgid "Audit Logs"
+msgstr "Audit Logs"
+
+#: includes/Settings.php:360
+msgid "Settings tabs"
+msgstr "Einstellungs-Tabs"
+
+#: includes/Settings.php:384
+msgid "Admin Menu"
+msgstr "Admin-Menü"
+
+#: includes/Settings.php:399
+msgid "Admin log access (allowlist)"
+msgstr "Admin-Logzugriff (Allowlist)"
+
+#. translators: %s: error level
+#: includes/Settings.php:427
+msgid "%s Log"
+msgstr "%s Log"
+
+#: includes/Settings.php:439
+msgid "Retention"
+msgstr "Aufbewahrung"
+
+#: includes/Settings.php:467
+msgid "Status"
+msgstr "Status"
+
+#: includes/Settings.php:477
+msgid "Admin Audit Log"
+msgstr "Admin Audit Log"
+
+#: includes/Settings.php:484
+msgid "Enable Admin Audit Log"
+msgstr "Admin Audit Log aktivieren"
+
+#: includes/Settings.php:492
+msgid "Audit Types"
+msgstr "Audit-Typen"
+
+#: includes/Settings.php:500
+msgid "Truncate audit log file to last N lines"
+msgstr "Audit-Protokolldatei auf die letzten N Zeilen kürzen"
+
+#: includes/Settings.php:508
+msgid "Truncate superadmin audit log file to last N lines"
+msgstr "Superadmin-Audit-Protokolldatei auf die letzten N Zeilen kürzen"
+
+#: includes/Settings.php:516
+msgid "Truncate websupport audit log file to last N lines"
+msgstr "Websupport-Audit-Protokolldatei auf die letzten N Zeilen kürzen"
+
+#: includes/Settings.php:556
+msgid "Enables logging of administrative actions (audit log)."
+msgstr "Aktiviert die Protokollierung administrativer Aktionen (Audit Log)."
+
+#: includes/Settings.php:588
+msgid "Controls which categories are written to the audit log. Default when enabling audit: CMS + Website enabled, Editorial disabled."
+msgstr "Legt fest, welche Kategorien in das Audit Log geschrieben werden. Standard beim Aktivieren des Audits: CMS + Website aktiviert, Redaktion deaktiviert."
+
+#: includes/Settings.php:611
+msgid "Keep only the newest lines in the audit log file, up to the number specified here."
+msgstr "Es werden nur die neuesten Zeilen in der Audit-Protokolldatei behalten, bis zur hier angegebenen Anzahl."
+
+#: includes/Settings.php:631
+msgid "WP Debug Log is currently not configured for RRZE Log."
+msgstr "WP Debug Log ist derzeit nicht für RRZE Log konfiguriert."
+
+#. translators: 1: error level, 2: log file path
+#: includes/Settings.php:646
+msgid "Settings for %1$s entries written to %2$s."
+msgstr "Einstellungen für %1$s-Einträge, die nach %2$s geschrieben werden."
+
+#: includes/Settings.php:675
+msgid "Maximum lines"
+msgstr "Maximale Zeilenanzahl"
+
+#: includes/Settings.php:693
+msgid "Rotation"
+msgstr "Rotation"
+
+#: includes/Settings.php:710
+msgid "Rotation is active. Line-based truncation for this level is disabled."
+msgstr "Rotation ist aktiv. Das zeilenbasierte Kürzen ist für dieses Level deaktiviert."
+
+#: includes/Settings.php:713
+msgid "Rotation is inactive. This level is truncated to the configured maximum number of lines."
+msgstr "Rotation ist inaktiv. Dieses Level wird auf die konfigurierte maximale Zeilenanzahl gekürzt."
+
+#: includes/Settings.php:741
+msgid "Daily"
+msgstr "Täglich"
+
+#: includes/Settings.php:748
+msgid "No rotation"
+msgstr "Keine Rotation"
+
+#: includes/Settings.php:813
+msgid "Optional allowlist for additional users who may view admin logs (Action Log + Debug) and their menus on site level. One username per line. Administrators and Websupport users do not need to be listed."
+msgstr "Optionale Allowlist für zusätzliche Benutzer, die Admin-Logs (Action Log + Debug) und die zugehörigen Menüs auf Website-Ebene sehen dürfen. Ein Benutzername pro Zeile. Administratoren und Websupport-Benutzer müssen nicht eingetragen werden."
+
+#: includes/Settings.php:1403
+msgid "Keep only the newest lines in the superadmin audit log file. Applies to multisite superadmin actions only."
+msgstr "Es werden nur die neuesten Zeilen in der Superadmin-Audit-Protokolldatei behalten. Gilt nur für Superadmin-Aktionen in Multisite-Installationen."
+
+#: includes/Settings.php:1429
+msgid "Keep only the newest lines in the websupport audit log file. Applies to multisite websupport role actions only."
+msgstr "Es werden nur die neuesten Zeilen in der Websupport-Audit-Protokolldatei behalten. Gilt nur für Aktionen der Websupport-Rolle in Multisite-Installationen."
+
+#: includes/Utils.php:50
+msgid "WP_DEBUG_LOG ist nicht definiert."
+msgstr "WP_DEBUG_LOG ist nicht definiert."
+
+#: includes/Views/list-table.php:49
+msgid "Search"
+msgstr "Suchen"
+
+#: includes/Views/list-table.php:60
+msgid "List table is not available."
+msgstr "Die Listentabelle ist nicht verfügbar."
+
+#: includes/AuditListTable.php:208
+#: includes/DebugListTable.php:443
+#: includes/ListTable.php:501
+msgid "Filter"
+msgstr "Filtern"
+
+#: includes/Settings.php:297
+msgid "Save Changes"
+msgstr "Änderungen speichern"
+
+#: includes/Settings.php:956
+msgid "Settings saved."
+msgstr "Einstellungen gespeichert."
+
+#. translators: 1: Current WP_DEBUG_LOG value, 2: Expected WP_DEBUG_LOG value.
+#: includes/Utils.php:61
+msgid "Ungültiger Wert für WP_DEBUG_LOG. Aktueller Wert: %1$s — Erwartet: %2$s"
+msgstr "Ungültiger Wert für WP_DEBUG_LOG. Aktueller Wert: %1$s — Erwartet: %2$s"

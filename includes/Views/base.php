@@ -12,15 +12,15 @@ defined('ABSPATH') || exit;
                 <p>
                     <?php printf(
                         /* translators: %s: Error message. */
-                        __('Error: %s', 'rrze-log'),
-                        $message->get_error_message()
+                        esc_html__('Error: %s', 'rrze-log'),
+                        esc_html($message->get_error_message())
                     );
                     ?>
                 </p>
             </div>
         <?php else : ?>
             <div class="updated">
-                <p><?php echo $message; ?></p>
+                <p><?php echo esc_html((string) $message); ?></p>
             </div>
     <?php endif;
     endforeach;

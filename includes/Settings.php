@@ -280,7 +280,7 @@ final class Settings {
      */
     public function settingsPage(): void {
         if (!$this->canAccessSettings()) {
-            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
+            wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'rrze-log'));
         }
 
         global $title;
@@ -294,7 +294,7 @@ final class Settings {
                 <?php do_settings_sections($this->getSettingsPageForTab($activeTab)); ?>
                 <input type="hidden" name="rrze-log-settings-tab" value="<?php echo esc_attr($activeTab); ?>">
                 <?php settings_fields('rrze-log-settings'); ?>
-                <?php submit_button(__('Save Changes', 'rrze-settings'), 'primary', 'rrze-log-settings-submit-primary'); ?>
+                <?php submit_button(__('Save Changes', 'rrze-log'), 'primary', 'rrze-log-settings-submit-primary'); ?>
             </form>
         </div>
         <?php
@@ -530,8 +530,8 @@ final class Settings {
      */
     public function enabledField(): void { ?>
         <label>
-            <input type="checkbox" id="rrze-log-enabled" name="<?php printf('%s[enabled]', $this->optionName); ?>" value="1" <?php checked($this->options->enabled, 1); ?>>
-            <?php _e('Enables network-wide logging', 'rrze-log'); ?>
+            <input type="checkbox" id="rrze-log-enabled" name="<?php echo esc_attr(sprintf('%s[enabled]', $this->optionName)); ?>" value="1" <?php checked($this->options->enabled, 1); ?>>
+            <?php esc_html_e('Enables network-wide logging', 'rrze-log'); ?>
         </label>
         <?php
     }
@@ -541,8 +541,8 @@ final class Settings {
      */
     public function adminMenuField(): void { ?>
         <label>
-            <input type="checkbox" id="rrze-log-admin-menu" name="<?php printf('%s[adminMenu]', $this->optionName); ?>" value="1" <?php checked($this->options->adminMenu, 1); ?>>
-            <?php _e('Enables network wide the Log menu for administrators', 'rrze-log'); ?>
+            <input type="checkbox" id="rrze-log-admin-menu" name="<?php echo esc_attr(sprintf('%s[adminMenu]', $this->optionName)); ?>" value="1" <?php checked($this->options->adminMenu, 1); ?>>
+            <?php esc_html_e('Enables network wide the Log menu for administrators', 'rrze-log'); ?>
         </label>
         <?php
     }
@@ -552,8 +552,8 @@ final class Settings {
      */
     public function auditEnabledField(): void { ?>
         <label>
-            <input type="checkbox" id="rrze-log-audit-enabled" name="<?php printf('%s[auditEnabled]', $this->optionName); ?>" value="1" <?php checked($this->options->auditEnabled ?? 0, 1); ?>>
-            <?php _e('Enables logging of administrative actions (audit log).', 'rrze-log'); ?>
+            <input type="checkbox" id="rrze-log-audit-enabled" name="<?php echo esc_attr(sprintf('%s[auditEnabled]', $this->optionName)); ?>" value="1" <?php checked($this->options->auditEnabled ?? 0, 1); ?>>
+            <?php esc_html_e('Enables logging of administrative actions (audit log).', 'rrze-log'); ?>
         </label>
         <?php
     }
@@ -568,24 +568,24 @@ final class Settings {
         $editorial = !empty($types['editorial']) ? 1 : 0; ?>
         <fieldset>
             <label>
-                <input type="checkbox" name="<?php printf('%s[auditTypes][cms]', $this->optionName); ?>" value="1" <?php checked($cms, 1); ?>>
-                <?php _e('CMS-Administration', 'rrze-log'); ?>
+                <input type="checkbox" name="<?php echo esc_attr(sprintf('%s[auditTypes][cms]', $this->optionName)); ?>" value="1" <?php checked($cms, 1); ?>>
+                <?php esc_html_e('CMS-Administration', 'rrze-log'); ?>
             </label>
             <br>
 
             <label>
-                <input type="checkbox" name="<?php printf('%s[auditTypes][site]', $this->optionName); ?>" value="1" <?php checked($site, 1); ?>>
-                <?php _e('Website-Administration', 'rrze-log'); ?>
+                <input type="checkbox" name="<?php echo esc_attr(sprintf('%s[auditTypes][site]', $this->optionName)); ?>" value="1" <?php checked($site, 1); ?>>
+                <?php esc_html_e('Website-Administration', 'rrze-log'); ?>
             </label>
             <br>
 
             <label>
-                <input type="checkbox" name="<?php printf('%s[auditTypes][editorial]', $this->optionName); ?>" value="1" <?php checked($editorial, 1); ?>>
-                <?php _e('Redaktion', 'rrze-log'); ?>
+                <input type="checkbox" name="<?php echo esc_attr(sprintf('%s[auditTypes][editorial]', $this->optionName)); ?>" value="1" <?php checked($editorial, 1); ?>>
+                <?php esc_html_e('Redaktion', 'rrze-log'); ?>
             </label>
 
             <p class="description">
-                <?php _e('Controls which categories are written to the audit log. Default when enabling audit: CMS + Website enabled, Editorial disabled.', 'rrze-log'); ?>
+                <?php esc_html_e('Controls which categories are written to the audit log. Default when enabling audit: CMS + Website enabled, Editorial disabled.', 'rrze-log'); ?>
             </p>
         </fieldset>
         <?php
@@ -603,12 +603,12 @@ final class Settings {
                 max="50000"
                 step="1"
                 id="rrze-log-auditMaxLines"
-                name="<?php printf('%s[auditMaxLines]', $this->optionName); ?>"
+                name="<?php echo esc_attr(sprintf('%s[auditMaxLines]', $this->optionName)); ?>"
                 value="<?php echo esc_attr((string) $value); ?>"
                 class="small-text"
             >
         </label>
-        <p class="description"><?php _e('Keep only the newest lines in the audit log file, up to the number specified here.', 'rrze-log'); ?></p>
+        <p class="description"><?php esc_html_e('Keep only the newest lines in the audit log file, up to the number specified here.', 'rrze-log'); ?></p>
         <?php
     }
 
@@ -617,9 +617,9 @@ final class Settings {
      */
     public function debugMaxLinesField(): void { ?>
         <label for="rrze-log-debugMaxLines">
-            <input type="number" min="1000" max="50000" step="1" id="rrze-log-debugMaxLines" name="<?php printf('%s[debugMaxLines]', $this->optionName); ?>" value="<?php echo esc_attr((string) $this->options->debugMaxLines); ?>" class="small-text">
+            <input type="number" min="1000" max="50000" step="1" id="rrze-log-debugMaxLines" name="<?php echo esc_attr(sprintf('%s[debugMaxLines]', $this->optionName)); ?>" value="<?php echo esc_attr((string) $this->options->debugMaxLines); ?>" class="small-text">
         </label>
-        <p class="description"><?php _e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
+        <p class="description"><?php esc_html_e('Keep only the newest lines in the log file, up to the number specified here.', 'rrze-log'); ?></p>
         <?php
     }
 
@@ -804,7 +804,7 @@ final class Settings {
         }
 
         echo '<textarea id="rrze-log-logAccess" cols="50" rows="5" name="';
-        printf('%s[logAccess]', $this->optionName);
+        echo esc_attr(sprintf('%s[logAccess]', $this->optionName));
         echo '">';
         echo esc_textarea($val);
         echo '</textarea>';
@@ -953,7 +953,7 @@ final class Settings {
      */
     public function settingsUpdateNotice(): void {
         $class = 'notice updated';
-        $message = __("Settings saved.", 'rrze-settings');
+        $message = __("Settings saved.", 'rrze-log');
 
         printf('<div class="%1s"><p>%2s</p></div>', esc_attr($class), esc_html($message));
     }
@@ -1012,7 +1012,7 @@ final class Settings {
      */
     public function logPage(): void {
         if (!$this->canAdminSeeSiteLogs()) {
-            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
+            wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'rrze-log'));
         }
 
         wp_enqueue_style('rrze-log-list-table');
@@ -1046,7 +1046,7 @@ final class Settings {
         $this->options = Options::getOptions();
 
         if (!is_super_admin() || empty($this->options->auditEnabled)) {
-            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
+            wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'rrze-log'));
         }
 
         wp_enqueue_style('rrze-log-list-table');
@@ -1073,7 +1073,7 @@ final class Settings {
      */
     public function debugLogPage(): void {
         if (!$this->canAdminSeeSiteLogs()) {
-            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
+            wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'rrze-log'));
         }
 
         wp_enqueue_style('rrze-log-list-table');
@@ -1326,7 +1326,7 @@ final class Settings {
         $this->options = Options::getOptions();
 
         if (!is_multisite() || !is_super_admin() || empty($this->options->auditEnabled)) {
-            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
+            wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'rrze-log'));
         }
 
         wp_enqueue_style('rrze-log-list-table');
@@ -1356,7 +1356,7 @@ final class Settings {
         $this->options = Options::getOptions();
 
         if (!is_multisite() || !is_super_admin() || empty($this->options->auditEnabled)) {
-            wp_die(__('You do not have sufficient permissions to access this page.', 'rrze-log'));
+            wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'rrze-log'));
         }
 
         wp_enqueue_style('rrze-log-list-table');
@@ -1394,13 +1394,13 @@ final class Settings {
                max="500000"
                step="1"
                id="rrze-log-superadminAuditMaxLines"
-               name="<?php printf('%s[superadminAuditMaxLines]', $this->optionName); ?>"
+               name="<?php echo esc_attr(sprintf('%s[superadminAuditMaxLines]', $this->optionName)); ?>"
                value="<?php echo esc_attr((string) $value); ?>"
                class="small-text"
            >
        </label>
        <p class="description">
-           <?php _e('Keep only the newest lines in the superadmin audit log file. Applies to multisite superadmin actions only.', 'rrze-log'); ?>
+           <?php esc_html_e('Keep only the newest lines in the superadmin audit log file. Applies to multisite superadmin actions only.', 'rrze-log'); ?>
        </p>
        <?php
    }
@@ -1420,13 +1420,13 @@ final class Settings {
                 max="500000"
                 step="1"
                 id="rrze-log-websupportAuditMaxLines"
-                name="<?php printf('%s[websupportAuditMaxLines]', $this->optionName); ?>"
+                name="<?php echo esc_attr(sprintf('%s[websupportAuditMaxLines]', $this->optionName)); ?>"
                 value="<?php echo esc_attr((string) $value); ?>"
                 class="small-text"
             >
         </label>
         <p class="description">
-            <?php _e('Keep only the newest lines in the websupport audit log file. Applies to multisite websupport role actions only.', 'rrze-log'); ?>
+            <?php esc_html_e('Keep only the newest lines in the websupport audit log file. Applies to multisite websupport role actions only.', 'rrze-log'); ?>
         </p>
         <?php
     }

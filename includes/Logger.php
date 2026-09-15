@@ -73,6 +73,8 @@ class Logger {
      * Default logger.
      */
     protected function log(string $level, string $message, array|object $context = []): bool {
+        Cron::rotateBeforeWrite($level);
+
         return $this->logToFile(Constants::getLogFileForLevel($level), $level, $message, $context);
     }
 

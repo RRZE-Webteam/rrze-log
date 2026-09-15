@@ -13,6 +13,40 @@ function ensureDir(dirPath) {
     }
 }
 
+function removeFileIfExists(filePath) {
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+    }
+}
+
+function removeSourceMaps() {
+    var dirs = [
+        path.join('assets', 'js'),
+        path.join('assets', 'css')
+    ];
+    var i;
+    var files;
+    var j;
+    var filePath;
+
+    for (i = 0; i < dirs.length; i++) {
+        if (!fs.existsSync(dirs[i])) {
+            continue;
+        }
+
+        files = fs.readdirSync(dirs[i]);
+
+        for (j = 0; j < files.length; j++) {
+            if (!files[j].endsWith('.map')) {
+                continue;
+            }
+
+            filePath = path.join(dirs[i], files[j]);
+            removeFileIfExists(filePath);
+        }
+    }
+}
+
 function parseArgs(argv) {
     var mode = 'dev';
     var watch = false;
@@ -69,6 +103,9 @@ function runOnce(mode) {
 
     return buildJs(mode, false).then(function () {
         buildCss(mode);
+        if (mode === 'prod') {
+            removeSourceMaps();
+        }
         return true;
     });
 }
@@ -132,5 +169,4 @@ main().catch(function (err) {
     console.error(err);
     process.exit(1);
 });
-
 

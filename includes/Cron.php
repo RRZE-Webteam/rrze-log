@@ -32,6 +32,11 @@ class Cron {
     protected const MONTHLY_INTERVAL_SLUG = 'rrze_log_monthly';
 
     /**
+     * Network/site option name for per-level rotation state.
+     */
+    protected const ROTATION_STATE_OPTION = 'rrze_log_rotation_state';
+
+    /**
      * Custom interval slug we add to cron_schedules (only if needed).
      */
     protected const CUSTOM_INTERVAL_SLUG = 'rrze_log_every_5_minutes';
@@ -104,6 +109,11 @@ class Cron {
      * Ensure the cron event is scheduled (idempotent).
      */
     public static function ensureScheduled(): void {
+        if (!self::isCronSite()) {
+            self::unschedule();
+            return;
+        }
+
         $options = Options::getOptions();
 
         self::syncRotationEvents($options);
@@ -164,6 +174,10 @@ class Cron {
      *     ]
      */
     public static function handle(): void {
+        if (!self::isCronSite()) {
+            return;
+        }
+
         $options = Options::getOptions();
 
         $targets = self::getActionLogTruncateTargets($options);
@@ -234,6 +248,37 @@ class Cron {
      * Handler: rotate a single Action Log level if still configured.
      */
     public static function handleRotation(string $level = ''): void {
+        if (!self::isCronSite()) {
+            return;
+        }
+
+        $level = Constants::normalizeLogLevel($level);
+        $options = Options::getOptions();
+
+        if (empty($options->enabled)) {
+            return;
+        }
+
+        $rotations = isset($options->levelRotation) && is_array($options->levelRotation)
+            ? $options->levelRotation
+            : [];
+        $rotation = isset($rotations[$level]) ? (string) $rotations[$level] : 'none';
+
+        if ($rotation === 'none') {
+            return;
+        }
+
+        if (!in_array($rotation, Constants::LOG_ROTATION_INTERVALS, true)) {
+            return;
+        }
+
+        self::rotateActionLogFile($level, $rotation);
+    }
+
+    /**
+     * Rotates an Action Log level before writing when the configured period changed.
+     */
+    public static function rotateBeforeWrite(string $level): void {
         $level = Constants::normalizeLogLevel($level);
         $options = Options::getOptions();
 
@@ -338,62 +383,100 @@ class Cron {
      */
     protected static function rotateActionLogFile(string $level, string $rotation): void {
         $file = Constants::getLogFileForLevel($level);
+        $timezone = wp_timezone();
+        $nowDate = new \DateTimeImmutable('now', $timezone);
+        $currentPeriod = self::getRotationPeriodKey($nowDate, $rotation);
+        $statePeriod = self::getRotationStatePeriod($level, $rotation, $file);
+
+        if ($statePeriod === '' || $statePeriod === $currentPeriod) {
+            return;
+        }
+
         if (!file_exists($file) || !is_file($file)) {
+            self::updateRotationStatePeriod($level, $rotation, $currentPeriod);
             return;
         }
 
-        if (!self::isRotationDue($file, $rotation)) {
-            return;
-        }
-
-        $target = self::getRotationTarget($file, $rotation);
+        $target = self::getRotationTargetForPeriod($file, $rotation, $statePeriod);
         if ($target === '') {
+            self::updateRotationStatePeriod($level, $rotation, $currentPeriod);
             return;
         }
 
         if (!self::rotateFile($file, $target)) {
             error_log(sprintf('[RRZE-Log] Rotate failed for %s', $file));
+            return;
         }
+
+        self::updateRotationStatePeriod($level, $rotation, $currentPeriod);
     }
 
     /**
-     * Checks whether the file belongs to an elapsed rotation period.
+     * Returns the stored or initial rotation period for a level.
      */
-    protected static function isRotationDue(string $file, string $rotation): bool {
-        $mtime = @filemtime($file);
-        if (!$mtime) {
-            return false;
+    protected static function getRotationStatePeriod(string $level, string $rotation, string $file): string {
+        $state = self::getRotationState();
+
+        if (
+            isset($state[$level])
+            && is_array($state[$level])
+            && isset($state[$level]['rotation'], $state[$level]['period'])
+            && (string) $state[$level]['rotation'] === $rotation
+        ) {
+            return (string) $state[$level]['period'];
         }
 
-        $timezone = wp_timezone();
-        $fileDate = (new \DateTimeImmutable('@' . $mtime))->setTimezone($timezone);
-        $nowDate = (new \DateTimeImmutable('now', $timezone));
+        $period = self::getInitialRotationPeriod($file, $rotation);
+        self::updateRotationStatePeriod($level, $rotation, $period);
 
-        return self::getRotationPeriodKey($fileDate, $rotation) !== self::getRotationPeriodKey($nowDate, $rotation);
+        return $period;
     }
 
     /**
-     * Returns the rotation archive target for a file.
+     * Returns the initial period for newly configured rotation.
      */
-    protected static function getRotationTarget(string $file, string $rotation): string {
-        $mtime = @filemtime($file);
-        if (!$mtime) {
-            return '';
+    protected static function getInitialRotationPeriod(string $file, string $rotation): string {
+        $timezone = wp_timezone();
+        $mtime = file_exists($file) && is_file($file) ? @filemtime($file) : false;
+
+        if ($mtime) {
+            $date = (new \DateTimeImmutable('@' . $mtime))->setTimezone($timezone);
+            return self::getRotationPeriodKey($date, $rotation);
         }
 
+        $date = new \DateTimeImmutable('now', $timezone);
+        return self::getRotationPeriodKey($date, $rotation);
+    }
+
+    /**
+     * Returns the rotation archive target for a period.
+     */
+    protected static function getRotationTargetForPeriod(string $file, string $rotation, string $period): string {
         $timezone = wp_timezone();
-        $date = (new \DateTimeImmutable('@' . $mtime))->setTimezone($timezone);
         $dir = dirname($file);
         $name = pathinfo($file, PATHINFO_FILENAME);
 
         switch ($rotation) {
             case 'daily':
+                $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $period, $timezone);
+                if (!$date) {
+                    return '';
+                }
                 $suffix = 'daily-' . $date->format('N');
                 break;
             case 'weekly':
-                $suffix = 'weekly-' . self::getWeekInMonth($date);
+                $parts = explode('-', $period);
+                $weekInMonth = end($parts);
+                if ($weekInMonth === false || !ctype_digit((string) $weekInMonth)) {
+                    return '';
+                }
+                $suffix = 'weekly-' . $weekInMonth;
                 break;
             case 'monthly':
+                $date = \DateTimeImmutable::createFromFormat('!Y-m', $period, $timezone);
+                if (!$date) {
+                    return '';
+                }
                 $suffix = 'monthly-' . $date->format('n');
                 break;
             default:
@@ -424,6 +507,72 @@ class Cron {
      */
     protected static function getWeekInMonth(\DateTimeImmutable $date): int {
         return (int) ceil(((int) $date->format('j')) / 7);
+    }
+
+    /**
+     * Returns rotation state from network/site storage.
+     */
+    protected static function getRotationState(): array {
+        $state = is_multisite()
+            ? get_site_option(self::ROTATION_STATE_OPTION, [])
+            : get_option(self::ROTATION_STATE_OPTION, []);
+
+        return is_array($state) ? $state : [];
+    }
+
+    /**
+     * Stores rotation state in network/site storage.
+     */
+    protected static function updateRotationState(array $state): void {
+        if (is_multisite()) {
+            update_site_option(self::ROTATION_STATE_OPTION, $state);
+            return;
+        }
+
+        update_option(self::ROTATION_STATE_OPTION, $state, false);
+    }
+
+    /**
+     * Updates the stored rotation period for a level.
+     */
+    protected static function updateRotationStatePeriod(string $level, string $rotation, string $period): void {
+        if ($period === '') {
+            return;
+        }
+
+        $state = self::getRotationState();
+        $state[$level] = [
+            'rotation' => $rotation,
+            'period' => $period,
+        ];
+
+        self::updateRotationState($state);
+    }
+
+    /**
+     * Clears the stored rotation period for a level.
+     */
+    protected static function clearRotationStatePeriod(string $level): void {
+        $state = self::getRotationState();
+
+        if (!isset($state[$level])) {
+            return;
+        }
+
+        unset($state[$level]);
+        self::updateRotationState($state);
+    }
+
+    /**
+     * Deletes all stored rotation state.
+     */
+    protected static function deleteRotationState(): void {
+        if (is_multisite()) {
+            delete_site_option(self::ROTATION_STATE_OPTION);
+            return;
+        }
+
+        delete_option(self::ROTATION_STATE_OPTION);
     }
 
     /**
@@ -475,6 +624,7 @@ class Cron {
     protected static function syncRotationEvents(object $options): void {
         if (empty($options->enabled)) {
             self::unscheduleRotations();
+            self::deleteRotationState();
             return;
         }
 
@@ -488,9 +638,11 @@ class Cron {
 
             if ($schedule === '') {
                 self::unscheduleRotationForLevel($level);
+                self::clearRotationStatePeriod($level);
                 continue;
             }
 
+            self::getRotationStatePeriod($level, $rotation, Constants::getLogFileForLevel($level));
             self::ensureRotationScheduled($level, $schedule);
         }
     }
@@ -534,10 +686,46 @@ class Cron {
     }
 
     /**
+     * Returns the blog ID that owns network-wide RRZE Log cron events.
+     */
+    protected static function getCronSiteId(): int {
+        if (!is_multisite()) {
+            return get_current_blog_id();
+        }
+
+        if (function_exists('get_main_site_id')) {
+            return (int) get_main_site_id();
+        }
+
+        $network = get_network();
+        return isset($network->site_id) ? (int) $network->site_id : 1;
+    }
+
+    /**
+     * Checks whether the current blog owns the network-wide cron events.
+     */
+    protected static function isCronSite(): bool {
+        if (!is_multisite()) {
+            return true;
+        }
+
+        return get_current_blog_id() === self::getCronSiteId();
+    }
+
+    /**
      * Force re-scheduling: unschedule any existing instance and schedule a fresh one.
      */
     public static function reschedule(): void {
         self::registerScheduleFilter();
+
+        if (is_multisite() && !self::isCronSite()) {
+            switch_to_blog(self::getCronSiteId());
+            self::unschedule();
+            self::ensureScheduled();
+            restore_current_blog();
+            return;
+        }
+
         self::unschedule();
         self::ensureScheduled();
     }
@@ -548,6 +736,30 @@ class Cron {
     public static function unschedule(): void {
         self::unscheduleTruncation();
         self::unscheduleRotations();
+    }
+
+    /**
+     * Unschedule cron events, optionally across the entire network.
+     */
+    public static function unscheduleNetwork(bool $networkWide = false): void {
+        if (!is_multisite() || !$networkWide) {
+            self::unschedule();
+            self::deleteRotationState();
+            return;
+        }
+
+        $siteIds = get_sites([
+            'fields' => 'ids',
+            'number' => 0,
+        ]);
+
+        foreach ($siteIds as $siteId) {
+            switch_to_blog((int) $siteId);
+            self::unschedule();
+            restore_current_blog();
+        }
+
+        self::deleteRotationState();
     }
 
     /**

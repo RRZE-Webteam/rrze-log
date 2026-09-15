@@ -57,8 +57,8 @@ class Utils
             return new \WP_Error(
                 'wp_debug_log',
                 sprintf(
-                    /* translators: %s: Current WP_DEBUG_LOG value. */
-                    __('Ungültiger Wert für WP_DEBUG_LOG. Aktueller Wert: %s — Erwartet: %s', 'rrze-log'),
+                    /* translators: 1: Current WP_DEBUG_LOG value, 2: Expected WP_DEBUG_LOG value. */
+                    __('Ungültiger Wert für WP_DEBUG_LOG. Aktueller Wert: %1$s — Erwartet: %2$s', 'rrze-log'),
                     var_export($value, true),
                     Constants::DEBUG_LOG_FILE
                 )
@@ -306,6 +306,47 @@ class Utils
             esc_attr($utc),
             esc_html($local)
         );
+    }
+
+    /**
+     * Allowed HTML for generated log table fragments.
+     */
+    public static function allowedLogHtml(): array {
+        return [
+            'span' => [
+                'class' => true,
+                'title' => true,
+                'aria-hidden' => true,
+            ],
+            'a' => [
+                'href' => true,
+                'class' => true,
+                'aria-expanded' => true,
+            ],
+            'button' => [
+                'type' => true,
+                'class' => true,
+                'aria-label' => true,
+                'title' => true,
+                'data-copy' => true,
+            ],
+            'details' => [
+                'class' => true,
+                'open' => true,
+            ],
+            'summary' => [],
+            'div' => [
+                'class' => true,
+                'aria-hidden' => true,
+            ],
+            'code' => [
+                'class' => true,
+            ],
+            'pre' => [],
+            'ol' => [],
+            'li' => [],
+            'h4' => [],
+        ];
     }
 
     /*
