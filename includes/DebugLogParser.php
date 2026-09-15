@@ -163,6 +163,7 @@ class DebugLogParser {
                 'datetime'    => $entry['occurrences'][0], // newest
                 'level'       => $entry['level'],
                 'occurrences' => count($entry['occurrences']),
+                'occurrence_timestamps' => array_values($entry['occurrences']),
                 'message'     => $message,
                 'message_short' => $this->shortenMessage($message, 180),
                 'details'       => $detailsArr,

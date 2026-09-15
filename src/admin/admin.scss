@@ -88,6 +88,23 @@ table.rrze-log-debug {
     td.column-message .rrze-log-message-full .rrze-log-copy .dashicons {
 	vertical-align: middle;
     }
+
+    .rrze-log-occurrence-timestamps {
+	margin-top: 10px;
+
+	h4 {
+	    font-size: 13px;
+	    margin: 0 0 6px;
+	}
+
+	ol {
+	    margin: 0 0 0 1.5em;
+	}
+
+	li {
+	    margin: 2px 0;
+	}
+    }
 }
 
 .rrze-log-action-level-settings {

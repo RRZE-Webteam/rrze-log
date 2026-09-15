@@ -140,14 +140,17 @@ class DebugListTable extends WP_List_Table {
     protected function renderMessageCell(array $item): string {
         $full = trim((string) ($item['message'] ?? ''));
         $fullMessage = $this->buildFullMessage($item);
+        $timestampsHtml = $this->renderOccurrenceTimestamps($item);
         $short = $this->buildShortMessage($item, $fullMessage);
 
-        
         if ($short === '') {
             return '';
         }
 
         $expandable = $this->isExpandable($short, $full);
+        if ($timestampsHtml !== '') {
+            $expandable = true;
+        }
 
         $out = '';
 
@@ -155,17 +158,61 @@ class DebugListTable extends WP_List_Table {
             $out .= '<a href="#" class="rrze-log-message-toggle" aria-expanded="false">'
                 . esc_html($short)
                 . '</a>';
-            
+
+            $details = '';
+            if ($fullMessage !== '' && $fullMessage !== $short) {
+                $details .= '<pre>' . esc_html($fullMessage) . '</pre>'
+                    . $this->renderCopyButton($fullMessage);
+            }
+
+            $details .= $timestampsHtml;
+
             $out .= '<div class="rrze-log-message-full" aria-hidden="true">'
-                    . '<pre>' . esc_html($fullMessage) . '</pre>'
-                    . $this->renderCopyButton($fullMessage)
+                    . $details
                     . '</div>';
-            
         } else {
             $out .= esc_html($short);
         }
 
         return $out;
+    }
+
+    /**
+     * Render occurrence timestamps for grouped debug entries.
+     */
+    protected function renderOccurrenceTimestamps(array $item): string {
+        if (!isset($item['occurrence_timestamps']) || !is_array($item['occurrence_timestamps'])) {
+            return '';
+        }
+
+        $timestamps = array_values(array_filter($item['occurrence_timestamps'], [$this, 'filterScalarNonEmpty']));
+        if (empty($timestamps)) {
+            return '';
+        }
+
+        $out = '<div class="rrze-log-occurrence-timestamps">';
+        $out .= '<h4>' . esc_html__('Occurrences', 'rrze-log') . '</h4>';
+        $out .= '<ol>';
+
+        foreach ($timestamps as $timestamp) {
+            $out .= '<li>' . Utils::formatDatetimeWithUtcTooltip(
+                (string) $timestamp,
+                'Y-m-d H:i:s',
+                'Y-m-d H:i:s \U\T\C'
+            ) . '</li>';
+        }
+
+        $out .= '</ol>';
+        $out .= '</div>';
+
+        return $out;
+    }
+
+    /**
+     * Filter helper for timestamp arrays.
+     */
+    protected function filterScalarNonEmpty($value): bool {
+        return is_scalar($value) && trim((string) $value) !== '';
     }
 
     protected function buildFullMessage(array $item): string {
