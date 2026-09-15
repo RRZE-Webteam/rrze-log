@@ -245,7 +245,7 @@ class Plugin {
                 esc_html($name)
             );
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                throw new \Exception($message);
+                throw new \Exception(esc_html($message));
             }
         }
     }

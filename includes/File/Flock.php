@@ -58,7 +58,7 @@ class Flock
                 throw new FlockException(
                     sprintf(
                         /* translators: %s: directory path. */
-                        __('Cannot create directory %s.', 'rrze-log'),
+                        esc_html__('Cannot create directory %s.', 'rrze-log'),
                         esc_html($dir)
                     )
                 );
@@ -68,7 +68,7 @@ class Flock
             throw new FlockException(
                 sprintf(
                     /* translators: %s: directory path. */
-                    __('Directory is not writable: %s', 'rrze-log'),
+                    esc_html__('Directory is not writable: %s', 'rrze-log'),
                     esc_html($dir)
                 )
             );
@@ -79,7 +79,7 @@ class Flock
             throw new FlockException(
                 sprintf(
                     /* translators: %s: file path. */
-                    __('Cannot open log file for append: %s', 'rrze-log'),
+                    esc_html__('Cannot open log file for append: %s', 'rrze-log'),
                     esc_html($this->filePath)
                 )
             );
@@ -96,7 +96,7 @@ class Flock
                 throw new FlockException(
                     sprintf(
                         /* translators: %s: file path. */
-                        __('Could not get lock on %s (busy).', 'rrze-log'),
+                        esc_html__('Could not get lock on %s (busy).', 'rrze-log'),
                         esc_html($this->filePath)
                     )
                 );
@@ -106,7 +106,7 @@ class Flock
                 throw new FlockException(
                     sprintf(
                         /* translators: %s: file path. */
-                        __('Timed out acquiring lock on %s.', 'rrze-log'),
+                        esc_html__('Timed out acquiring lock on %s.', 'rrze-log'),
                         esc_html($this->filePath)
                     )
                 );
