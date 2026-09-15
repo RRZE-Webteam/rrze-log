@@ -239,7 +239,11 @@ class Plugin {
     public function __call(string $name, array $arguments)
     {
         if (!method_exists($this, $name)) {
-            $message = sprintf('Call to undefined method %1$s::%2$s', __CLASS__, $name);
+            $message = sprintf(
+                'Call to undefined method %1$s::%2$s',
+                esc_html(__CLASS__),
+                esc_html($name)
+            );
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 throw new \Exception($message);
             }

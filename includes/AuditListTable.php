@@ -205,7 +205,7 @@ class AuditListTable extends WP_List_Table {
             );
         }
 
-        submit_button(__('Filter'), 'secondary', 'filter_action', false);
+        submit_button(__('Filter', 'rrze-log'), 'secondary', 'filter_action', false);
 
         echo '</div>';
     }

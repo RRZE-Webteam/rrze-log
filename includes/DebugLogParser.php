@@ -100,6 +100,7 @@ class DebugLogParser {
             $this->error = new \WP_Error(
                 'rrze_log_file',
                 sprintf(
+                    /* translators: %s: Error message. */
                     __('Cannot open log: %s', 'rrze-log'),
                     $e->getMessage()
                 )

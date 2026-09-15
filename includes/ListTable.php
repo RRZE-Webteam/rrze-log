@@ -59,13 +59,16 @@ class ListTable extends WP_List_Table {
 
         switch ($columnName) {
             case 'datetime':
-                return Utils::formatDatetimeWithUtcTooltip((string) ($item['datetime'] ?? ''), 'Y-m-d H:i:s', 'Y-m-d H:i:s \U\T\C');
+                return wp_kses(
+                    Utils::formatDatetimeWithUtcTooltip((string) ($item['datetime'] ?? ''), 'Y-m-d H:i:s', 'Y-m-d H:i:s \U\T\C'),
+                    Utils::allowedLogHtml()
+                );
             case 'level':
                 return esc_html((string) ($item['level'] ?? ''));
             case 'occurrences':
                 return esc_html((string) (isset($item['occurrences']) ? (int) $item['occurrences'] : 1));
             case 'message':
-                return $this->renderMessageCell($item);
+                return wp_kses($this->renderMessageCell($item), Utils::allowedLogHtml());
             default:
                 return isset($item[$columnName]) ? esc_html((string) $item[$columnName]) : '';
         }
@@ -197,11 +200,14 @@ class ListTable extends WP_List_Table {
             echo '<td class="column-' . esc_attr($col) . '">';
 
             if ($col === 'datetime') {
-                echo Utils::formatDatetimeWithUtcTooltip((string)($item['datetime'] ?? ''), 'Y-m-d H:i:s','Y-m-d H:i:s \U\T\C');
+                echo wp_kses(
+                    Utils::formatDatetimeWithUtcTooltip((string)($item['datetime'] ?? ''), 'Y-m-d H:i:s','Y-m-d H:i:s \U\T\C'),
+                    Utils::allowedLogHtml()
+                );
             } elseif ($col === 'level') {
                 echo esc_html((string)($item['level'] ?? ''));
             } elseif ($col === 'siteurl') {
-                echo $this->column_siteurl($item);
+                echo wp_kses_post($this->column_siteurl($item));
             } elseif ($col === 'message') {
 
                 $msg = (string)($item['message'] ?? '');
@@ -218,7 +224,7 @@ class ListTable extends WP_List_Table {
                     echo '<div class="rrze-log-message-full" aria-hidden="true">';
 
                     echo '<div class="rrze-log-context-tree">';
-                    echo $contextHtml;
+                    echo wp_kses($contextHtml, Utils::allowedLogHtml());
                     echo '</div>';
 
                     echo '<button type="button" class="button-link rrze-log-copy dashicons-before dashicons-clipboard"'
@@ -482,8 +488,18 @@ class ListTable extends WP_List_Table {
                 $output = ob_get_clean();
 
                 if (!empty($output)) {
-                    echo $output;
-                    submit_button(__('Filter'), '', 'filter_action', false, ['id' => 'rrze-log-level-submit']);
+                    echo wp_kses($output, [
+                        'select' => [
+                            'id' => true,
+                            'name' => true,
+                            'aria-label' => true,
+                        ],
+                        'option' => [
+                            'value' => true,
+                            'selected' => true,
+                        ],
+                    ]);
+                    submit_button(__('Filter', 'rrze-log'), '', 'filter_action', false, ['id' => 'rrze-log-level-submit']);
                 }
             }
             ?>
@@ -515,10 +531,7 @@ class ListTable extends WP_List_Table {
         $files = $this->getLogFilesForLevel($level);
         $selected = $this->selectedLogFile !== '' ? $this->selectedLogFile : Constants::getLogFileForLevel($level);
         ?>
-        <label class="screen-reader-text" for="rrze-log-file-filter">
-            <?php esc_html_e('Log file', 'rrze-log'); ?>
-        </label>
-        <select id="rrze-log-file-filter" name="logfile">
+        <select id="rrze-log-file-filter" name="logfile" aria-label="<?php esc_attr_e('Log file', 'rrze-log'); ?>">
             <?php foreach ($files as $file) { ?>
                 <option value="<?php echo esc_attr(basename($file)); ?>"<?php selected($selected, $file); ?>>
                     <?php echo esc_html($this->getLogFileLabel($file, $level)); ?>

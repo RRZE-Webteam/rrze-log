@@ -75,15 +75,18 @@ class DebugListTable extends WP_List_Table {
 
         switch ($columnName) {
             case 'datetime':
-                return Utils::formatDatetimeWithUtcTooltip(
-                    (string) ($item['datetime'] ?? ''),
-                    'Y-m-d H:i:s',
-                    'Y-m-d H:i:s \U\T\C'
+                return wp_kses(
+                    Utils::formatDatetimeWithUtcTooltip(
+                        (string) ($item['datetime'] ?? ''),
+                        'Y-m-d H:i:s',
+                        'Y-m-d H:i:s \U\T\C'
+                    ),
+                    Utils::allowedLogHtml()
                 );
             case 'level':
                 return esc_html((string) ($item['level'] ?? ''));
             case 'message':
-                return $this->renderMessageCell($item);
+                return wp_kses($this->renderMessageCell($item), Utils::allowedLogHtml());
             case 'occurrences':
                 return esc_html((string) (isset($item['occurrences']) ? (int) $item['occurrences'] : 1));
             default:
@@ -113,15 +116,18 @@ class DebugListTable extends WP_List_Table {
             echo '<td class="' . esc_attr($classes) . '">';
 
             if ($col === 'datetime') {
-                echo Utils::formatDatetimeWithUtcTooltip(
-                    (string) ($item['datetime'] ?? ''),
-                    'Y-m-d H:i:s',
-                    'Y-m-d H:i:s \U\T\C'
+                echo wp_kses(
+                    Utils::formatDatetimeWithUtcTooltip(
+                        (string) ($item['datetime'] ?? ''),
+                        'Y-m-d H:i:s',
+                        'Y-m-d H:i:s \U\T\C'
+                    ),
+                    Utils::allowedLogHtml()
                 );
             } elseif ($col === 'level') {
                 echo esc_html((string) ($item['level'] ?? ''));
             } elseif ($col === 'message') {
-                echo $this->renderMessageCell($item);
+                echo wp_kses($this->renderMessageCell($item), Utils::allowedLogHtml());
             } elseif ($col === 'occurrences') {
                 echo esc_html((string) (isset($item['occurrences']) ? (int) $item['occurrences'] : 1));
             }
@@ -424,8 +430,17 @@ class DebugListTable extends WP_List_Table {
                 $output = ob_get_clean();
 
                 if (!empty($output)) {
-                    echo $output;
-                    submit_button(__('Filter'), '', 'filter_action', false, ['id' => 'rrze-log-level-submit']);
+                    echo wp_kses($output, [
+                        'select' => [
+                            'id' => true,
+                            'name' => true,
+                        ],
+                        'option' => [
+                            'value' => true,
+                            'selected' => true,
+                        ],
+                    ]);
+                    submit_button(__('Filter', 'rrze-log'), '', 'filter_action', false, ['id' => 'rrze-log-level-submit']);
                 }
             }
             ?>
